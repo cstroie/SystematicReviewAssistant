@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
 """
-Complete LLM-based Literature Review Processing Pipeline
-For CDSS in Medical Imaging/Radiology Systematic Review
+Systematic Literature Review Processing Pipeline
+Automate PubMed export analysis using LLMs for screening, extraction, and synthesis
 
-Uses direct HTTP API calls - no external LLM packages required!
-Works with any OpenAI-compatible API using direct REST calls.
-
-Supports:
-- Anthropic Claude (claude-opus-4-5, claude-sonnet-4-5)
-- OpenRouter (openrouter.ai) - supports 100+ models
-- Together.ai (together.xyz)
-- Groq (groq.com)
-- Local models (Ollama, vLLM, etc.)
+Key features:
+- Supports multiple PubMed formats (CSV, MEDLINE/XML/JSON auto-detection)
+- Direct HTTP API integration with 100+ LLMs via multiple providers
+- Complete workflow from screening to thematic synthesis
+- Configurable outputs with structured JSON/CSV reports
 
 Usage:
     # Using Anthropic (default)
