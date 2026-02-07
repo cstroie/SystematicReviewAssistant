@@ -318,12 +318,22 @@ class CDSSLitReviewProcessor:
         self._log("="*70, "HEADER")
         
         try:
-            # Step 1: Parse PubMed export (auto-detects format)
-            self._log("\n[STEP 1/6] Parsing PubMed export...")
-            articles = self._parse_pubmed_export(pubmed_csv_file)
+            # Step 1: Load from cache or parse PubMed export
             articles_file = self.output_dir / "01_parsed_articles.json"
-            self._save_json(articles, articles_file)
-            self._log(f"✓ Parsed {len(articles)} articles from {pubmed_csv_file}")
+            if articles_file.exists():
+                self._log("\n[STEP 1/6] Loading parsed articles from cache...")
+                try:
+                    articles = self._load_json(articles_file)
+                    self._log(f"✓ Loaded {len(articles)} articles from {articles_file.name}")
+                except Exception as e:
+                    self._log(f"Cache read error: {str(e)}, re-parsing file", "WARN")
+                    articles = self._parse_pubmed_export(pubmed_csv_file)
+                    self._save_json(articles, articles_file)
+            else:
+                self._log("\n[STEP 1/6] Parsing PubMed export...")
+                articles = self._parse_pubmed_export(pubmed_csv_file)
+                self._save_json(articles, articles_file)
+                self._log(f"✓ Parsed {len(articles)} articles from {pubmed_csv_file}")
             
             # Step 2: Screen articles
             self._log("\n[STEP 2/6] Screening titles and abstracts...")
@@ -777,6 +787,11 @@ Write in clear, structured prose suitable for a systematic review report."""
         """Save data as formatted JSON"""
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
+            
+    def _load_json(self, filepath: Path) -> any:
+        """Load data from JSON"""
+        with open(filepath, 'r', encoding='utf-8') as f:
+            return json.load(f)
 
 
 def create_parser():
