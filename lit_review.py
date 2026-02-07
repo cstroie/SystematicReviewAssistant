@@ -539,14 +539,6 @@ class CDSSLitReviewProcessor:
                     result = json.loads(response_text)
                 
                 results.append(result)
-                
-                # Save every 10 items or at end of processing
-                if (i + 1) % 10 == 0 or i == total_new - 1:
-                    all_results = cached_results + results
-                    with open(screening_file, 'w', encoding='utf-8') as f:
-                        json.dump(all_results, f, indent=2)
-                    print(f"  Saved {len(all_results)} screening results...")
-                    time.sleep(1)  # Rate limiting
                     
             except (json.JSONDecodeError, Exception) as e:
                 print(f"Error screening {article['pmid']}: {str(e)}", "WARN")
@@ -557,6 +549,14 @@ class CDSSLitReviewProcessor:
                     'reasoning': 'Processing error',
                     'key_terms': []
                 })
+            
+            # Save every 10 items or at end of processing
+            if (i + 1) % 10 == 0 or i == total_new - 1:
+                all_results = cached_results + results
+                with open(screening_file, 'w', encoding='utf-8') as f:
+                    json.dump(all_results, f, indent=2)
+                print(f"  Saved {len(all_results)} screening results...")
+                time.sleep(1)  # Rate limiting
         
         return cached_results + results
     
@@ -583,11 +583,20 @@ class CDSSLitReviewProcessor:
         extraction_prompt = self._load_prompt('extraction')
         results = []
         total_new = len(new_articles)
-        
+
+        topic_file = self.output_dir / "00_review_topic.json"
+        extract_json = "{}"  # Default empty template
+        if topic_file.exists():
+            try:
+                with open(topic_file, 'r', encoding='utf-8') as f:
+                    topic_data = json.load(f)
+                extract = topic_data.get('extract', {})
+                extract_json = json.dumps(extract, indent=2)
+            except Exception as e:
+                print(f"Error loading extract fields: {str(e)} - using empty template")
+
         for i, article in enumerate(new_articles):
-            # Get properly formatted JSON extract template
-            extract_json = self._get_extract_fields()
-            
+            # Format prompt with article data and extraction template
             prompt = extraction_prompt.format(
                 extract=extract_json,
                 pmid=article['pmid'],
@@ -606,14 +615,6 @@ class CDSSLitReviewProcessor:
                     data = json.loads(response_text)
                 
                 results.append(data)
-                
-                # Save every 10 items or at end of processing
-                if (i + 1) % 10 == 0 or i == total_new - 1:
-                    all_results = cached_data + results
-                    with open(extraction_file, 'w', encoding='utf-8') as f:
-                        json.dump(all_results, f, indent=2)
-                    print(f"  Saved {len(all_results)} extracted records...")
-                    time.sleep(1)  # Rate limiting
                     
             except (json.JSONDecodeError, Exception) as e:
                 print(f"Error extracting {article['pmid']}: {str(e)}", "WARN")
@@ -622,7 +623,15 @@ class CDSSLitReviewProcessor:
                     'title': article['title'],
                     'extraction_error': True
                 })
-        
+                        
+            # Save every 10 items or at end of processing
+            if (i + 1) % 10 == 0 or i == total_new - 1:
+                all_results = cached_data + results
+                with open(extraction_file, 'w', encoding='utf-8') as f:
+                    json.dump(all_results, f, indent=2)
+                print(f"  Saved {len(all_results)} extracted records...")
+                time.sleep(1)  # Rate limiting
+
         return cached_data + results
     
     def _assess_quality(self, articles: List[Dict], quality_file: Path) -> List[Dict]:
@@ -667,17 +676,6 @@ class CDSSLitReviewProcessor:
                     result = json.loads(response_text)
                 
                 results.append(result)
-                
-                # Save every 10 items or at end of processing
-                if (i + 1) % 10 == 0 or i == total_new - 1:
-                    all_results = cached_results + results
-                    with open(quality_file, 'w', encoding='utf-8') as f:
-                        json.dump(all_results, f, indent=2)
-                    print(f"  Saved {len(all_results)} quality assessments...")
-                
-                if (i + 1) % 10 == 0:
-                    print(f"  Assessed quality for {i+1}/{total_new} new articles...")
-                    time.sleep(1)  # Rate limiting
                     
             except Exception as e:
                 print(f"Error assessing {article['pmid']}: {str(e)}", "WARN")
@@ -685,6 +683,14 @@ class CDSSLitReviewProcessor:
                     'pmid': article['pmid'],
                     'assessment_error': True
                 })
+            
+            # Save every 10 items or at end of processing
+            if (i + 1) % 10 == 0 or i == total_new - 1:
+                all_results = cached_results + results
+                with open(quality_file, 'w', encoding='utf-8') as f:
+                    json.dump(all_results, f, indent=2)
+                print(f"  Saved {len(all_results)} quality assessments...")
+                time.sleep(1)  # Rate limiting
         
         return cached_results + results
     
@@ -797,19 +803,6 @@ class CDSSLitReviewProcessor:
         """Save data as formatted JSON"""
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-            
-    def _get_extract_fields(self) -> str:
-        """Get extract field descriptions from review metadata"""
-        topic_file = self.output_dir / "00_review_topic.json"
-        if topic_file.exists():
-            try:
-                with open(topic_file, 'r', encoding='utf-8') as f:
-                    topic_data = json.load(f)
-                extract = topic_data.get('extract', {})
-                return json.dumps(extract, indent=2)
-            except Exception as e:
-                print(f"Error loading extract fields: {str(e)} - using empty template")
-        return "{}"
 
     def _load_json(self, filepath: Path) -> any:
         """Load data from JSON"""
