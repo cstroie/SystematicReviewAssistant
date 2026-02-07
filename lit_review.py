@@ -321,14 +321,7 @@ class PubMedQueryGenerator:
             if not all(key in components for key in required_keys):
                 missing = [key for key in required_keys if key not in components]
                 raise ValueError(f"Missing required keys in response: {missing}")
-            
-            # Validate screening criteria
-            screening = components.get('screening', {})
-            if 'inclusion' not in screening or 'exclusion' not in screening:
-                raise ValueError("Screening criteria must include both inclusion and exclusion lists")
-            if not screening['inclusion'] or not screening['exclusion']:
-                raise ValueError("Screening criteria cannot be empty")
-            
+                        
             # Save as single JSON file
             output_path = self.output_dir / "00_review_topic.json"
             output_path.write_text(json.dumps(components, indent=2))
@@ -367,7 +360,7 @@ class CDSSLitReviewProcessor:
         """Execute the complete workflow from CSV to synthesis"""
         
         print("="*70)
-        print("CDSS LITERATURE REVIEW PROCESSING PIPELINE")
+        print("LITERATURE REVIEW PROCESSING PIPELINE")
         print("="*70)
         
         try:
@@ -409,7 +402,7 @@ class CDSSLitReviewProcessor:
                         print("✓ All articles already have screening decisions")
                     
                 except Exception as e:
-                    print(f"Cache error: {str(e)}, re-screening all", "WARN")
+                    print(f"Cache error: {str(e)}, re-screening all")
                     screening_results = self._screen_articles(articles)
             else:
                 print("\n[STEP 2/6] Screening titles and abstracts...")
