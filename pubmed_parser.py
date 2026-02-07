@@ -400,30 +400,13 @@ class PubMedParser:
 
 # Test the parser
 if __name__ == '__main__':
-    import sys
-    
-    if len(sys.argv) < 2:
-        print("Usage: python pubmed_parser.py <file> [format]")
-        print("Supported formats: csv, medline, xml, json")
-        print("Format is auto-detected if not specified")
-        sys.exit(1)
-    
-    file_path = sys.argv[1]
-    format_hint = sys.argv[2] if len(sys.argv) > 2 else None
-    
-    try:
-        articles = PubMedParser.parse(file_path, format_hint)
-        print(f"\n✓ Parsed {len(articles)} articles")
-        
+    # Simple command line test
+    if len(sys.argv) > 1:
+        try:
+            articles = PubMedParser.parse(sys.argv[1])
         if articles:
-            print("\nFirst article:")
-            first = articles[0]
-            print(f"  PMID: {first.get('pmid')}")
-            print(f"  Title: {first.get('title')[:80]}...")
-            print(f"  Abstract: {first.get('abstract')[:80]}...")
+            print(f"\nFirst PMID: {articles[0].get('pmid')} - {articles[0].get('title')[:80]}...")
     
     except Exception as e:
-        print(f"✗ Error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        print(f"Error: {str(e)}")
         sys.exit(1)
