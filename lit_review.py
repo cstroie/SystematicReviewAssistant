@@ -395,7 +395,7 @@ class CDSSLitReviewProcessor:
             print(f"  - EXCLUDE: {exclude_count}")
             print(f"  - UNCERTAIN: {uncertain_count}")
             
-            # Step 3: Extract data from included articles (with cache merging)
+            # Step 3: Extract data from included articles
             extraction_file = self.output_dir / "03_extracted_data.json"
             included_pmids = {r['pmid'] for r in screening_results if r['decision'] == 'INCLUDE'}
             included_articles = [a for a in articles if a['pmid'] in included_pmids]
@@ -404,33 +404,8 @@ class CDSSLitReviewProcessor:
                 print("ERROR: No articles included after screening. Aborting.", "ERROR")
                 return
                 
-            if extraction_file.exists():
-                print("\n[STEP 3/6] Loading extracted data cache...")
-                try:
-                    cached_data = self._load_json(extraction_file)
-                    cached_pmids = {d['pmid'] for d in cached_data if 'pmid' in d}
-                    
-                    # Find articles not in cache
-                    new_articles = [a for a in included_articles if a['pmid'] not in cached_pmids]
-                    
-                    if new_articles:
-                        print(f"  Found {len(cached_data)} cached extractions")
-                        print(f"  Extracting data from {len(new_articles)} new articles...")
-                        new_data = self._extract_article_data(new_articles)
-                        extracted_data = cached_data + new_data
-                    else:
-                        extracted_data = cached_data
-                        print("✓ All included articles already have extracted data")
-                    
-                except Exception as e:
-                    print(f"Cache error: {str(e)}, re-extracting all", "WARN")
-                    extracted_data = self._extract_article_data(included_articles)
-            else:
-                print("\n[STEP 3/6] Extracting data from included articles...")
-                extracted_data = self._extract_article_data(included_articles)
-            
-            # Always save updated extracted data
-            self._save_json(extracted_data, extraction_file)
+            print("\n[STEP 3/6] Extracting data from included articles...")
+            extracted_data = self._extract_article_data(included_articles, extraction_file)
             print(f"✓ Extracted data from {len(extracted_data)} articles")
             
             # Step 4: Assess quality (with cache merging)
@@ -611,14 +586,33 @@ class CDSSLitReviewProcessor:
         
         return cached_results + results
     
-    def _extract_article_data(self, articles: List[Dict]) -> List[Dict]:
-        """Extract structured data from included articles"""
-        extracted = []
+    def _extract_article_data(self, articles: List[Dict], extraction_file: Path) -> List[Dict]:
+        """Extract article data with caching support"""
+        # Try loading existing extracted data
+        cached_data = []
+        if extraction_file.exists():
+            try:
+                with open(extraction_file, 'r', encoding='utf-8') as f:
+                    cached_data = json.load(f)
+                print(f"  Loaded {len(cached_data)} cached extracted records")
+            except Exception as e:
+                print(f"  Cache load error: {str(e)} - creating new cache")
+
+        # Build cached pmids set and extract only new articles
+        cached_pmids = {d['pmid'] for d in cached_data if 'pmid' in d}
+        new_articles = [a for a in articles if a['pmid'] not in cached_pmids]
+
+        if not new_articles:
+            print("✓ All articles already have extracted data")
+            return cached_data
         
         extraction_prompt = self._load_prompt('extraction')
+        results = []
+        total_new = len(new_articles)
         
-        for i, article in enumerate(articles):
+        for i, article in enumerate(new_articles):
             prompt = extraction_prompt.format(
+                extract=self._get_extract_fields(),
                 pmid=article['pmid'],
                 title=article['title'],
                 abstract=article['abstract']
@@ -634,21 +628,28 @@ class CDSSLitReviewProcessor:
                 else:
                     data = json.loads(response_text)
                 
-                extracted.append(data)
+                results.append(data)
                 
-                if (i + 1) % 5 == 0:
-                    print(f"  Extracted {i+1}/{len(articles)} articles...")
-                    time.sleep(1)
+                # Save every 10 items or at end of processing
+                if (i + 1) % 10 == 0 or i == total_new - 1:
+                    all_results = cached_data + results
+                    with open(extraction_file, 'w', encoding='utf-8') as f:
+                        json.dump(all_results, f, indent=2)
+                    print(f"  Saved {len(all_results)} extracted records...")
+                
+                if (i + 1) % 10 == 0:
+                    print(f"  Extracted {i+1}/{total_new} new articles...")
+                    time.sleep(1)  # Rate limiting
                     
             except (json.JSONDecodeError, Exception) as e:
                 print(f"Error extracting {article['pmid']}: {str(e)}", "WARN")
-                extracted.append({
+                results.append({
                     'pmid': article['pmid'],
                     'title': article['title'],
                     'extraction_error': True
                 })
         
-        return extracted
+        return cached_data + results
     
     def _assess_quality(self, extracted_data: List[Dict], articles: List[Dict]) -> List[Dict]:
         """Assess study quality using QUADAS-2 framework"""
@@ -796,6 +797,19 @@ class CDSSLitReviewProcessor:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
             
+    def _get_extract_fields(self) -> str:
+        """Get extract field descriptions from review metadata"""
+        topic_file = self.output_dir / "00_review_topic.json"
+        if topic_file.exists():
+            try:
+                with open(topic_file, 'r', encoding='utf-8') as f:
+                    topic_data = json.load(f)
+                extract = topic_data.get('extract', {})
+                return json.dumps(extract, indent=2)
+            except Exception as e:
+                print(f"Error loading extract fields: {str(e)} - using empty template")
+        return "{}"
+
     def _load_json(self, filepath: Path) -> any:
         """Load data from JSON"""
         with open(filepath, 'r', encoding='utf-8') as f:
