@@ -399,12 +399,13 @@ class PubMedParser:
 # Test the parser
 if __name__ == '__main__':
     # Simple command line test
+    import sys
     if len(sys.argv) > 1:
         try:
             articles = PubMedParser.parse(sys.argv[1])
-        if articles:
-            print(f"\nFirst PMID: {articles[0].get('pmid')} - {articles[0].get('title')[:80]}...")
+            if articles:
+                print(f"\nFirst PMID: {articles[0].get('pmid')} - {articles[0].get('title')[:80]}...")
     
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        sys.exit(1)
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            sys.exit(1)

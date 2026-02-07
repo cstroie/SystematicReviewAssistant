@@ -459,7 +459,7 @@ class CDSSLitReviewProcessor:
 \\maketitle
 
 %s
-\\end{document}""" % synthesis.replace('%', '\\%').replace('_', '\\_')
+\\end{document}""" % synthesis
             
             synthesis_file.write_text(latex_doc)
             self._log(f"✓ LaTeX synthesis document saved - {len(latex_doc)} characters")
@@ -735,17 +735,6 @@ Return ONLY JSON:
             'studies_sample': extracted_data[:3],
             'total_count': len(extracted_data)
         }
-        
-You are writing a thematic synthesis section for a systematic review on 
-"Clinical Decision Support Systems in Medical Imaging/Radiology".
-
-We have analyzed {len(extracted_data)} studies. Here's a sample of the extracted data:
-
-{json.dumps(summary_dict, indent=2)}
-
-Based on this analysis and typical patterns in this field, provide a comprehensive synthesis with these sections:
-
-
 
         synthesis_prompt = """You are writing a thematic synthesis section for a systematic review in LaTeX format on "Clinical Decision Support Systems in Medical Imaging/Radiology".
 
@@ -755,36 +744,34 @@ We have analyzed {len(extracted_data)} studies. Here's a sample of the extracted
 
 Based on this analysis and typical patterns in this field, provide a comprehensive synthesis as a proper LaTeX document with these sections:
 
-\\section*{{Thematic Synthesis}}
-
-\\subsection*{{Study Characteristics}}
+\\section*{{Study Characteristics}}
 Include range of years, study designs, sample sizes, and other relevant characteristics, imaging modalities covered, clinical domains studied. Format as paragraphs.
 
-\\subsection*{{Types of CDSS Systems}}
+\\section*{{Types of CDSS Systems}}
 - Distribution of AI/ML vs rule-based systems
 - Technology trends over time
 
-\\subsection*{{Clinical Performance}}
-- Range of reported metrics: sensitivity, specificity, AUC (use \\% for percentages)
+\\section*{{Clinical Performance}}
+- Range of reported metrics: sensitivity, specificity, AUC, accuracy
 - Highlight best/worst performing systems
 - Performance differences across domains
 
-\\subsection*{{Thematic Analysis}}
+\\section*{{Thematic Analysis}}
 - Common themes across studies
 - Key findings and consistencies
 - Important variations and contradictions
 
-\\subsection*{{Methodological Assessment}}
+\\section*{{Methodological Assessment}}
 - Common methodological strengths
 - Prevalent limitations
 - Overall quality trends based on QUADAS-2 assessments
 
-\\subsection*{{Clinical Implications}}
+\\section*{{Clinical Implications}}
 - Evidence for clinical implementation
 - Adoption barriers
 - Impact on clinical workflows
 
-\\subsection*{{Research Gaps and Recommendations}}
+\\section*{{Research Gaps and Recommendations}}
 - Underrepresented clinical areas needing research
 - Methodological improvements needed (gaps in study design, reporting)
 - Recommended future research
