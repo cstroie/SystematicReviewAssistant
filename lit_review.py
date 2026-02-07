@@ -317,10 +317,17 @@ class PubMedQueryGenerator:
             components = json.loads(json_match.group())
             
             # Validate components
-            required_keys = ['query', 'topic', 'title']
+            required_keys = ['query', 'topic', 'title', 'screening']
             if not all(key in components for key in required_keys):
                 missing = [key for key in required_keys if key not in components]
                 raise ValueError(f"Missing required keys in response: {missing}")
+            
+            # Validate screening criteria
+            screening = components.get('screening', {})
+            if 'inclusion' not in screening or 'exclusion' not in screening:
+                raise ValueError("Screening criteria must include both inclusion and exclusion lists")
+            if not screening['inclusion'] or not screening['exclusion']:
+                raise ValueError("Screening criteria cannot be empty")
             
             # Save as single JSON file
             output_path = self.output_dir / "00_review_topic.json"
