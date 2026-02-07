@@ -88,8 +88,6 @@ class PubMedParser:
         # Detect format if not provided
         file_format = format_hint or PubMedParser.detect_format(file_path)
         
-        print(f"Detected format: {file_format.upper()}")
-        
         if file_format == 'csv':
             return PubMedParser.parse_csv(file_path)
         elif file_format == 'medline':
