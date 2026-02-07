@@ -21,7 +21,7 @@ Example valid JSON response:
 {{
   "query": "(clinical decision support system[Title/Abstract]) AND (medical imaging[MAJR] OR radiology[MAJR]) AND (\"artificial intelligence\"[Title/Abstract] OR \"machine learning\"[Title/Abstract])",
   "topic": "Clinical Decision Support Systems in Medical Imaging/Radiology",
-  "title": "A Systematic Review of \\textit{Clinical Decision Support Systems} in Medical Imaging"
+  "title": "A Systematic Review of Clinical Decision Support Systems in Medical Imaging"
 }}
 
 Respond ONLY with valid JSON in this structure. Do not include markdown formatting.
