@@ -286,6 +286,55 @@ class DirectAPIClient:
         raise ValueError("Failed after all retries")
 
 
+class PubMedQueryGenerator:
+    """Generates PubMed query and review metadata from free-text task description"""
+    
+    def __init__(self, llm_client: DirectAPIClient, output_dir: Path):
+        self.llm = llm_client
+        self.output_dir = output_dir
+        self.output_dir.mkdir(exist_ok=True)
+        self.prompt = self._load_prompt('pubmed_query_gen')
+    
+    def _load_prompt(self, name: str) -> str:
+        """Load prompt template from prompts directory"""
+        prompt_path = Path(__file__).parent / 'prompts' / f'{name}.txt'
+        try:
+            return prompt_path.read_text(encoding='utf-8').strip()
+        except IOError as e:
+            raise ValueError(f"Failed to load prompt '{name}': {str(e)}") from e
+    
+    def generate(self, task_description: str):
+        """Generate and save PubMed query components"""
+        try:
+            # Call LLM to generate components
+            prompt = self.prompt.format(task_description=task_description)
+            response_text = self.llm.call(prompt)
+            
+            # Extract JSON response
+            json_match = re.search(r'{.*}', response_text, re.DOTALL)
+            if not json_match:
+                raise ValueError("No JSON found in LLM response")
+            components = json.loads(json_match.group())
+            
+            # Validate components
+            required_keys = ['query', 'topic', 'title']
+            if not all(key in components for key in required_keys):
+                missing = [key for key in required_keys if key not in components]
+                raise ValueError(f"Missing required keys in response: {missing}")
+            
+            # Save outputs
+            (self.output_dir / 'QUERY.txt').write_text(components['query'])
+            (self.output_dir / 'TOPIC.txt').write_text(components['topic'])
+            (self.output_dir / 'TITLE.txt').write_text(components['title'])
+            
+            print(f"✓ Generated PubMed query components:")
+            print(f"  Query saved to: {self.output_dir/'QUERY.txt'}")
+            print(f"  Topic saved to: {self.output_dir/'TOPIC.txt'}")
+            print(f"  Title saved to: {self.output_dir/'TITLE.txt'}")
+        except Exception as e:
+            print(f"❌ Error generating PubMed components: {str(e)}")
+            raise
+
 class CDSSLitReviewProcessor:
     """Main pipeline processor for systematic literature review"""
     
@@ -755,6 +804,7 @@ Supported Providers:
     )
     
     parser.add_argument('input_file', help='PubMed export file (CSV/XML/MEDLINE/TXT/JSON)')
+    parser.add_argument('--task', help='Free-text research topic description (generates PubMed query and metadata)')
     parser.add_argument('--provider', choices=list(API_CONFIGS.keys()),
                        default='anthropic', help='LLM provider')
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
@@ -814,8 +864,20 @@ def main():
             api_key=args.api_key
         )
         
-        # Run pipeline
-        print(f"\nStarting pipeline...\n")
+        # Generate PubMed query components if task description provided
+        output_dir = Path(args.output_dir)
+        if args.task:
+            print("\n" + "="*70)
+            print("GENERATING PUBMED QUERY COMPONENTS")
+            print("="*70)
+            output_dir.mkdir(exist_ok=True, parents=True)
+            generator = PubMedQueryGenerator(llm_client, output_dir)
+            generator.generate(args.task)
+            print("\n✓ PubMed query generation complete\n")
+            return  # Stop after generating query components
+        
+        # Run full pipeline
+        print(f"\nStarting full pipeline...\n")
         processor = CDSSLitReviewProcessor(
             llm_client=llm_client,
             output_dir=args.output_dir,

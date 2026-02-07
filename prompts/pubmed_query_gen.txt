@@ -1,0 +1,27 @@
+Generate a systematic literature review components based on this research topic description:
+"{task_description}"
+
+Return JSON with three keys:
+1. "query" - a properly formatted PubMed search query using MeSH terms and keywords
+2. "topic" - a short formal topic description for documentation
+3. "title" - a LaTeX-formatted title for the review article
+
+Follow these guidelines for the query:
+- Include MeSH terms and keywords
+- Use appropriate field tags like [Title/Abstract], [MAJR], etc
+- Apply proper boolean operators
+- Include publication date filters when appropriate
+- Use parentheses for proper operator precedence
+
+For the title:
+- Use LaTeX formatting for any special characters or capitalization
+- Include the main topic and methodology ("systematic review" or "meta-analysis")
+
+Example valid JSON response:
+{
+  "query": "(clinical decision support system[Title/Abstract]) AND (medical imaging[MAJR] OR radiology[MAJR]) AND (\"artificial intelligence\"[Title/Abstract] OR \"machine learning\"[Title/Abstract])",
+  "topic": "Clinical Decision Support Systems in Medical Imaging/Radiology",
+  "title": "A Systematic Review of \\textit{Clinical Decision Support Systems} in Medical Imaging"
+}
+
+Respond ONLY with valid JSON in this structure. Do not include markdown formatting.
