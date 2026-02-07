@@ -335,10 +335,34 @@ class CDSSLitReviewProcessor:
                 self._save_json(articles, articles_file)
                 self._log(f"✓ Parsed {len(articles)} articles from {pubmed_csv_file}")
             
-            # Step 2: Screen articles
-            self._log("[STEP 2/6] Screening titles and abstracts...")
-            screening_results = self._screen_articles(articles)
+            # Step 2: Screen articles (cache-aware)
             screening_file = self.output_dir / "02_screening_results.json"
+            if screening_file.exists():
+                self._log("[STEP 2/6] Loading screening cache...")
+                try:
+                    cached_screening = self._load_json(screening_file)
+                    cached_pmids = {r['pmid'] for r in cached_screening}
+                    
+                    # Find articles not in cache
+                    new_articles = [a for a in articles if a['pmid'] not in cached_pmids]
+                    
+                    if new_articles:
+                        self._log(f"  Found {len(cached_screening)} cached decisions")
+                        self._log(f"  Screening {len(new_articles)} new articles...")
+                        new_screening = self._screen_articles(new_articles)
+                        screening_results = cached_screening + new_screening
+                    else:
+                        screening_results = cached_screening
+                        self._log("✓ All articles already have screening decisions")
+                    
+                except Exception as e:
+                    self._log(f"Cache error: {str(e)}, re-screening all", "WARN")
+                    screening_results = self._screen_articles(articles)
+            else:
+                self._log("[STEP 2/6] Screening titles and abstracts...")
+                screening_results = self._screen_articles(articles)
+            
+            # Always save updated screening results
             self._save_json(screening_results, screening_file)
             
             include_count = sum(1 for r in screening_results if r['decision'] == 'INCLUDE')
