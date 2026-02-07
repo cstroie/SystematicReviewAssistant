@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 LaTeX Article Generator for Systematic Review
 
@@ -534,7 +535,7 @@ class LaTeXArticleGenerator:
         # Build comprehensive prompt with all data
         prompt = self._build_article_prompt()
         
-        print("Making LLM call (this may take 2-5 minutes)...")
+        print("Making LLM call (this may take several minutes)...")
         article_content = self.call_llm(prompt)
         
         return article_content
@@ -551,7 +552,7 @@ class LaTeXArticleGenerator:
         data_summary = self._format_data_for_prompt()
         
         prompt = f"""
-You are an expert academic researcher writing a peer-review ready systematic review article on clinical decision support systems in pediatric radiology.
+ROLE: You are an expert academic researcher writing a peer-review ready systematic review article on clinical decision support systems in pediatric radiology.
 
 TASK: Generate a complete, publication-ready LaTeX academic article based on the systematic review data and the PRISMA 2020 framework.
 
@@ -814,13 +815,6 @@ def generate_article_main(output_dir: str, provider: str = 'anthropic',
     Raises:
         ValueError: If data collection fails or API errors occur
     """
-        model: Model name
-        api_url: Custom API URL
-        api_key: API key
-    
-    Returns:
-        Path to generated LaTeX file
-    """
     
     output_dir = Path(output_dir)
     
@@ -858,6 +852,7 @@ def generate_article_main(output_dir: str, provider: str = 'anthropic',
     return output_file
 
 
+# Command line interface
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Generate LaTeX systematic review article from pipeline outputs'
