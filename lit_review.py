@@ -38,6 +38,12 @@ import os
 import argparse
 import urllib.request
 import urllib.error
+
+class APIKeyError(Exception):
+    """Custom exception for missing API keys"""
+    def __init__(self, env_var):
+        super().__init__()
+        self.env_var = env_var
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional
@@ -190,7 +196,7 @@ class DirectAPIClient:
         if config['api_key_env']:
             self.api_key = api_key or os.getenv(config['api_key_env'])
             if not self.api_key and provider != 'local':
-                raise ValueError(f"API key not found. Set {config['api_key_env']} environment variable")
+                raise APIKeyError(config['api_key_env'])
         else:
             self.api_key = None  # Local models don't need a key
         
@@ -817,8 +823,14 @@ def main():
         )
         processor.run_complete_pipeline(args.input_file)
         
-    except KeyError as e:
-        print(f"Error: Missing API key - {str(e)}")
+    except APIKeyError as e:
+        print("\n" + "="*50)
+        print("API KEY NOT FOUND!")
+        print("="*50)
+        print(f"You need to set the environment variable: {e.env_var}")
+        print("\nTo set it temporarily for this session:")
+        print(f"  export {e.env_var}=\"your-api-key-here\"")
+        print("\nTo set it permanently, add the export to your ~/.bashrc or ~/.zshrc")
         show_provider_info()
         sys.exit(1)
     except Exception as e:
