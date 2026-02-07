@@ -955,9 +955,9 @@ def main():
     
     args = parser.parse_args()
     
-    # Validate CSV file exists
-    if not Path(args.csv_file).exists():
-        print(f"Error: CSV file '{args.csv_file}' not found")
+    # Validate input file exists
+    if not Path(args.input_file).exists():
+        print(f"Error: Input file '{args.input_file}' not found")
         sys.exit(1)
     
     # Show provider info if requested
@@ -983,7 +983,7 @@ def main():
             output_dir=args.output_dir,
             log_verbose=not args.quiet
         )
-        processor.run_complete_pipeline(args.csv_file)
+        processor.run_complete_pipeline(args.input_file)
         
     except KeyError as e:
         print(f"Error: Missing API key - {str(e)}")
