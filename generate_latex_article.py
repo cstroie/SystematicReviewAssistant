@@ -382,13 +382,19 @@ class ArticleDataCollector:
             url = original.get('url', study.get('url', ''))
             year = original.get('year', study.get('year', '0000'))
             
-            # Create unique citation key
-            if isinstance(authors, list):
-                first_author_last = authors[0].split()[-1] if authors else 'Unknown'
+            # Create unique citation key - prioritize PMID
+            citation_key = ""
+            if pmid and pmid.strip() and pmid != 'N/A':
+                citation_key = f"pmid{pmid.strip()}"
+            elif doi and doi.strip() and doi != 'N/A':
+                citation_key = doi.strip()
             else:
-                first_author_last = authors.split()[0] if authors else 'Unknown'
-                
-            citation_key = f"{first_author_last}{year}{i:02d}".lower()
+                # Fallback to author-year-index if no PMID/DOI
+                if isinstance(authors, list):
+                    first_author_last = authors[0].split()[-1] if authors else 'Unknown'
+                else:
+                    first_author_last = authors.split()[0] if authors else 'Unknown'
+                citation_key = f"{first_author_last}{year}{i:02d}".lower()
             
             # Format authors for BibTeX
             if isinstance(authors, list):
