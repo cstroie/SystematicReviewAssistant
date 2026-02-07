@@ -55,7 +55,12 @@ Example valid JSON response:
       "Literature reviews without primary data",
       "Animal or phantom studies only"
     ]
-  }}
+  }},
+  "extract": {{
+    "cdss_type": "AI/ML-based|Rule-based|Hybrid|Statistical",
+    "cdss_name": "system name or 'Not specified'",
+    "clinical_validation": "Phase of clinical validation (pre-clinical/retrospective/prospective/multi-center)",
+    "integration_level": "PACS/RIS integration level (none/basic/full)"
 }}
 
 Respond ONLY with valid JSON in this structure. Do not include markdown formatting.
