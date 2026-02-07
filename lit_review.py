@@ -374,17 +374,41 @@ class CDSSLitReviewProcessor:
             self._log(f"  - EXCLUDE: {exclude_count}")
             self._log(f"  - UNCERTAIN: {uncertain_count}")
             
-            # Step 3: Extract data from included articles
-            self._log("[STEP 3/6] Extracting data from included articles...")
+            # Step 3: Extract data from included articles (with cache merging)
+            extraction_file = self.output_dir / "03_extracted_data.json"
             included_pmids = {r['pmid'] for r in screening_results if r['decision'] == 'INCLUDE'}
             included_articles = [a for a in articles if a['pmid'] in included_pmids]
             
             if not included_articles:
                 self._log("ERROR: No articles included after screening. Aborting.", "ERROR")
                 return
+                
+            if extraction_file.exists():
+                self._log("[STEP 3/6] Loading extracted data cache...")
+                try:
+                    cached_data = self._load_json(extraction_file)
+                    cached_pmids = {d['pmid'] for d in cached_data if 'pmid' in d}
+                    
+                    # Find articles not in cache
+                    new_articles = [a for a in included_articles if a['pmid'] not in cached_pmids]
+                    
+                    if new_articles:
+                        self._log(f"  Found {len(cached_data)} cached extractions")
+                        self._log(f"  Extracting data from {len(new_articles)} new articles...")
+                        new_data = self._extract_article_data(new_articles)
+                        extracted_data = cached_data + new_data
+                    else:
+                        extracted_data = cached_data
+                        self._log("✓ All included articles already have extracted data")
+                    
+                except Exception as e:
+                    self._log(f"Cache error: {str(e)}, re-extracting all", "WARN")
+                    extracted_data = self._extract_article_data(included_articles)
+            else:
+                self._log("[STEP 3/6] Extracting data from included articles...")
+                extracted_data = self._extract_article_data(included_articles)
             
-            extracted_data = self._extract_article_data(included_articles)
-            extraction_file = self.output_dir / "03_extracted_data.json"
+            # Always save updated extracted data
             self._save_json(extracted_data, extraction_file)
             self._log(f"✓ Extracted data from {len(extracted_data)} articles")
             
