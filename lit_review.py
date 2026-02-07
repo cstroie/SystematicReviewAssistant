@@ -399,18 +399,6 @@ class CDSSLitReviewProcessor:
             self._log("Make sure pubmed_parser.py is in the same folder as this script")
             raise
         
-        # Check for cache first
-        cache_file = self.output_dir / "00_articles_cache.json"
-        if cache_file.exists():
-            self._log(f"Loading articles from cache: {cache_file}")
-            try:
-                with open(cache_file, 'r', encoding='utf-8') as f:
-                    articles = json.load(f)
-                self._log(f"✓ Loaded {len(articles)} articles from cache")
-                return articles
-            except Exception as e:
-                self._log(f"Cache read error: {str(e)}, re-parsing file", "WARN")
-        
         # Parse file with auto-detection
         try:
             articles = PubMedParser.parse(file_path)
@@ -419,13 +407,6 @@ class CDSSLitReviewProcessor:
             if not articles:
                 raise ValueError("No articles found in the file")
             
-            # Cache the parsed articles
-            try:
-                with open(cache_file, 'w', encoding='utf-8') as f:
-                    json.dump(articles, f, indent=2, ensure_ascii=False)
-                self._log(f"✓ Cached {len(articles)} articles to {cache_file}")
-            except Exception as e:
-                self._log(f"Warning: Could not cache articles: {str(e)}", "WARN")
             
             return articles
             
