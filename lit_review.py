@@ -585,8 +585,11 @@ class CDSSLitReviewProcessor:
         total_new = len(new_articles)
         
         for i, article in enumerate(new_articles):
+            # Get properly formatted JSON extract template
+            extract_json = self._get_extract_fields()
+            
             prompt = extraction_prompt.format(
-                extract=self._get_extract_fields(),
+                extract=extract_json,
                 pmid=article['pmid'],
                 title=article['title'],
                 abstract=article['abstract']
