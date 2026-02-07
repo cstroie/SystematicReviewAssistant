@@ -697,6 +697,16 @@ class CDSSLitReviewProcessor:
     def _perform_synthesis(self, extracted_data: List[Dict]) -> str:
         """Perform thematic synthesis and identify patterns"""
         
+        # Load review topic from metadata
+        topic_file = self.output_dir / "00_review_topic.json"
+        if not topic_file.exists():
+            raise ValueError(f"Review topic file {topic_file.name} not found - run with --task first")
+        
+        with open(topic_file, 'r', encoding='utf-8') as f:
+            topic_data = json.load(f)
+        
+        topic = topic_data['topic']
+        
         # Prepare summary of extracted data
         summary_dict = {
             'total_studies': len(extracted_data),
@@ -706,6 +716,7 @@ class CDSSLitReviewProcessor:
         
         synthesis_template = self._load_prompt('synthesis')
         synthesis_prompt = synthesis_template.format(
+            topic=topic,
             total_studies=len(extracted_data),
             data_sample=json.dumps(summary_dict, indent=2)
         )
