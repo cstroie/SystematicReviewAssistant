@@ -321,7 +321,7 @@ class CDSSLitReviewProcessor:
             # Step 1: Load from cache or parse PubMed export
             articles_file = self.output_dir / "01_parsed_articles.json"
             if articles_file.exists():
-                self._log("\n[STEP 1/6] Loading parsed articles from cache...")
+                self._log("[STEP 1/6] Loading parsed articles from cache...")
                 try:
                     articles = self._load_json(articles_file)
                     self._log(f"✓ Loaded {len(articles)} articles from {articles_file.name}")
@@ -330,13 +330,13 @@ class CDSSLitReviewProcessor:
                     articles = self._parse_pubmed_export(pubmed_csv_file)
                     self._save_json(articles, articles_file)
             else:
-                self._log("\n[STEP 1/6] Parsing PubMed export...")
+                self._log("[STEP 1/6] Parsing PubMed export...")
                 articles = self._parse_pubmed_export(pubmed_csv_file)
                 self._save_json(articles, articles_file)
                 self._log(f"✓ Parsed {len(articles)} articles from {pubmed_csv_file}")
             
             # Step 2: Screen articles
-            self._log("\n[STEP 2/6] Screening titles and abstracts...")
+            self._log("[STEP 2/6] Screening titles and abstracts...")
             screening_results = self._screen_articles(articles)
             screening_file = self.output_dir / "02_screening_results.json"
             self._save_json(screening_results, screening_file)
@@ -351,7 +351,7 @@ class CDSSLitReviewProcessor:
             self._log(f"  - UNCERTAIN: {uncertain_count}")
             
             # Step 3: Extract data from included articles
-            self._log("\n[STEP 3/6] Extracting data from included articles...")
+            self._log("[STEP 3/6] Extracting data from included articles...")
             included_pmids = {r['pmid'] for r in screening_results if r['decision'] == 'INCLUDE'}
             included_articles = [a for a in articles if a['pmid'] in included_pmids]
             
@@ -365,21 +365,21 @@ class CDSSLitReviewProcessor:
             self._log(f"✓ Extracted data from {len(extracted_data)} articles")
             
             # Step 4: Assess quality
-            self._log("\n[STEP 4/6] Assessing study quality (QUADAS-2)...")
+            self._log("[STEP 4/6] Assessing study quality (QUADAS-2)...")
             quality_assessments = self._assess_quality(extracted_data, included_articles)
             quality_file = self.output_dir / "04_quality_assessment.json"
             self._save_json(quality_assessments, quality_file)
             self._log(f"✓ Quality assessment complete for {len(quality_assessments)} studies")
             
             # Step 5: Synthesis
-            self._log("\n[STEP 5/6] Performing thematic synthesis...")
+            self._log("[STEP 5/6] Performing thematic synthesis...")
             synthesis = self._perform_synthesis(extracted_data)
             synthesis_file = self.output_dir / "05_thematic_synthesis.txt"
             synthesis_file.write_text(synthesis)
             self._log(f"✓ Synthesis complete - {len(synthesis)} characters written")
             
             # Step 6: Generate summary table
-            self._log("\n[STEP 6/6] Generating summary table...")
+            self._log("[STEP 6/6] Generating summary table...")
             self._generate_summary_table(extracted_data)
             
             # Final summary
