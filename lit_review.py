@@ -322,15 +322,12 @@ class PubMedQueryGenerator:
                 missing = [key for key in required_keys if key not in components]
                 raise ValueError(f"Missing required keys in response: {missing}")
             
-            # Save outputs
-            (self.output_dir / 'QUERY.txt').write_text(components['query'])
-            (self.output_dir / 'TOPIC.txt').write_text(components['topic'])
-            (self.output_dir / 'TITLE.txt').write_text(components['title'])
+            # Save as single JSON file
+            output_path = self.output_dir / "00_review_topic.json"
+            output_path.write_text(json.dumps(components, indent=2))
             
-            print(f"✓ Generated PubMed query components:")
-            print(f"  Query saved to: {self.output_dir/'QUERY.txt'}")
-            print(f"  Topic saved to: {self.output_dir/'TOPIC.txt'}")
-            print(f"  Title saved to: {self.output_dir/'TITLE.txt'}")
+            print(f"✓ Generated review metadata:")
+            print(f"  Saved to: {output_path}")
         except Exception as e:
             print(f"❌ Error generating PubMed components: {str(e)}")
             raise
