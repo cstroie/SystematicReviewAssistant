@@ -1,0 +1,775 @@
+"""
+LaTeX Article Generator for Systematic Review
+
+Generates a publication-ready LaTeX article from systematic review data.
+Uses direct HTTP API calls to LLM for article generation.
+
+Features:
+- Comprehensive article structure (PRISMA 2020 compliant)
+- Thematic synthesis integration
+- Publication-ready formatting
+- Multiple output formats
+
+Usage:
+    python generate_latex_article.py output_dir
+    python generate_latex_article.py output_dir --provider anthropic
+    python generate_latex_article.py output_dir --model claude-opus-4-5-20251101
+"""
+
+import json
+import csv
+import urllib.request
+import urllib.error
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
+import argparse
+import os
+import time
+import re
+
+
+class ArticleDataCollector:
+    """Collect and prepare data for article generation"""
+    
+    def __init__(self, output_dir: str):
+        self.output_dir = Path(output_dir)
+        self.data = {}
+        
+    def collect_all_data(self) -> Dict:
+        """Collect all required data from pipeline outputs"""
+        
+        print("Collecting data from pipeline outputs...")
+        
+        # Load screening results
+        self._load_screening_results()
+        
+        # Load extracted data
+        self._load_extracted_data()
+        
+        # Load quality assessment
+        self._load_quality_assessment()
+        
+        # Load thematic synthesis
+        self._load_thematic_synthesis()
+        
+        # Load summary characteristics
+        self._load_summary_characteristics()
+        
+        # Calculate statistics
+        self._calculate_statistics()
+        
+        print("✓ Data collection complete")
+        return self.data
+    
+    def _load_screening_results(self):
+        """Load screening results"""
+        file_path = self.output_dir / "02_screening_results.json"
+        
+        if not file_path.exists():
+            print(f"Warning: {file_path} not found")
+            self.data['screening'] = {}
+            return
+        
+        with open(file_path, 'r') as f:
+            results = json.load(f)
+        
+        total = len(results)
+        included = sum(1 for r in results if r.get('decision') == 'INCLUDE')
+        excluded = sum(1 for r in results if r.get('decision') == 'EXCLUDE')
+        uncertain = sum(1 for r in results if r.get('decision') == 'UNCERTAIN')
+        
+        self.data['screening'] = {
+            'total_identified': total,
+            'total_screened': total,
+            'included': included,
+            'excluded': excluded,
+            'uncertain': uncertain,
+            'excluded_total': excluded + uncertain,  # Uncertain go to full-text
+            'full_text_assessed': included + uncertain,
+            'full_text_excluded': uncertain,
+            'final_included': included
+        }
+        
+        print(f"  Screening: {included} included, {excluded} excluded, {uncertain} uncertain")
+    
+    def _load_extracted_data(self):
+        """Load extracted study data"""
+        file_path = self.output_dir / "03_extracted_data.json"
+        
+        if not file_path.exists():
+            print(f"Warning: {file_path} not found")
+            self.data['extracted'] = []
+            return
+        
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+        
+        # Filter out items with errors
+        self.data['extracted'] = [d for d in data if 'extraction_error' not in d]
+        
+        print(f"  Extracted: {len(self.data['extracted'])} studies")
+    
+    def _load_quality_assessment(self):
+        """Load quality assessment data"""
+        file_path = self.output_dir / "04_quality_assessment.json"
+        
+        if not file_path.exists():
+            print(f"Warning: {file_path} not found")
+            self.data['quality'] = []
+            return
+        
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+        
+        self.data['quality'] = [d for d in data if 'assessment_error' not in d]
+        
+        print(f"  Quality assessment: {len(self.data['quality'])} studies rated")
+    
+    def _load_thematic_synthesis(self):
+        """Load thematic synthesis text"""
+        file_path = self.output_dir / "05_thematic_synthesis.txt"
+        
+        if not file_path.exists():
+            print(f"Warning: {file_path} not found")
+            self.data['synthesis'] = ""
+            return
+        
+        with open(file_path, 'r') as f:
+            self.data['synthesis'] = f.read()
+        
+        print(f"  Synthesis: {len(self.data['synthesis'])} characters")
+    
+    def _load_summary_characteristics(self):
+        """Load summary characteristics table"""
+        file_path = self.output_dir / "summary_characteristics_table.csv"
+        
+        if not file_path.exists():
+            print(f"Warning: {file_path} not found")
+            self.data['characteristics_table'] = []
+            return
+        
+        rows = []
+        with open(file_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                rows.append(row)
+        
+        self.data['characteristics_table'] = rows
+        
+        print(f"  Characteristics table: {len(rows)} studies")
+    
+    def _calculate_statistics(self):
+        """Calculate summary statistics"""
+        extracted = self.data.get('extracted', [])
+        
+        if not extracted:
+            self.data['statistics'] = {}
+            return
+        
+        stats = {
+            'total_studies': len(extracted),
+            'year_range': self._get_year_range(extracted),
+            'modalities': self._get_modalities(extracted),
+            'domains': self._get_domains(extracted),
+            'cdss_types': self._get_cdss_types(extracted),
+            'study_designs': self._get_study_designs(extracted),
+            'sample_sizes': self._get_sample_size_stats(extracted),
+            'performance_metrics': self._get_performance_metrics(extracted),
+        }
+        
+        self.data['statistics'] = stats
+        
+        print(f"  Statistics: {stats['total_studies']} studies analyzed")
+    
+    def _get_year_range(self, data: List[Dict]) -> str:
+        years = [int(d.get('year', 0)) for d in data if d.get('year')]
+        if not years:
+            return "Unknown"
+        return f"{min(years)}-{max(years)}"
+    
+    def _get_modalities(self, data: List[Dict]) -> Dict[str, int]:
+        modalities = {}
+        for d in data:
+            mods = d.get('imaging_modality', [])
+            if isinstance(mods, list):
+                for m in mods:
+                    modalities[m] = modalities.get(m, 0) + 1
+            elif isinstance(mods, str) and mods:
+                modalities[mods] = modalities.get(mods, 0) + 1
+        return dict(sorted(modalities.items(), key=lambda x: x[1], reverse=True))
+    
+    def _get_domains(self, data: List[Dict]) -> Dict[str, int]:
+        domains = {}
+        for d in data:
+            domain = d.get('clinical_domain', 'Unknown')
+            if domain:
+                domains[domain] = domains.get(domain, 0) + 1
+        return dict(sorted(domains.items(), key=lambda x: x[1], reverse=True))
+    
+    def _get_cdss_types(self, data: List[Dict]) -> Dict[str, int]:
+        types = {}
+        for d in data:
+            cdss_type = d.get('cdss_type', 'Unknown')
+            if cdss_type:
+                types[cdss_type] = types.get(cdss_type, 0) + 1
+        return dict(sorted(types.items(), key=lambda x: x[1], reverse=True))
+    
+    def _get_study_designs(self, data: List[Dict]) -> Dict[str, int]:
+        designs = {}
+        for d in data:
+            design = d.get('study_design', 'Unknown')
+            if design:
+                designs[design] = designs.get(design, 0) + 1
+        return dict(sorted(designs.items(), key=lambda x: x[1], reverse=True))
+    
+    def _get_sample_size_stats(self, data: List[Dict]) -> Dict:
+        sizes = []
+        for d in data:
+            size_dict = d.get('sample_size', {})
+            if isinstance(size_dict, dict):
+                n = size_dict.get('total_patients')
+                if n and isinstance(n, int):
+                    sizes.append(n)
+        
+        if not sizes:
+            return {'median': 'N/A', 'range': 'N/A', 'mean': 'N/A'}
+        
+        sizes.sort()
+        return {
+            'median': sizes[len(sizes)//2],
+            'range': f"{min(sizes)}-{max(sizes)}",
+            'mean': round(sum(sizes) / len(sizes), 0)
+        }
+    
+    def _get_performance_metrics(self, data: List[Dict]) -> Dict:
+        sensitivity = []
+        specificity = []
+        auc = []
+        
+        for d in data:
+            metrics = d.get('key_metrics', {})
+            if isinstance(metrics, dict):
+                sens = metrics.get('sensitivity')
+                spec = metrics.get('specificity')
+                a = metrics.get('auc')
+                
+                if sens and isinstance(sens, (int, float)):
+                    sensitivity.append(float(sens))
+                if spec and isinstance(spec, (int, float)):
+                    specificity.append(float(spec))
+                if a and isinstance(a, (int, float)):
+                    auc.append(float(a))
+        
+        return {
+            'sensitivity': self._metric_stats(sensitivity),
+            'specificity': self._metric_stats(specificity),
+            'auc': self._metric_stats(auc),
+        }
+    
+    def _metric_stats(self, values: List[float]) -> Dict:
+        if not values:
+            return {'median': 'N/A', 'range': 'N/A', 'count': 0}
+        
+        values.sort()
+        return {
+            'median': round(values[len(values)//2], 3),
+            'range': f"{round(min(values), 3)}-{round(max(values), 3)}",
+            'count': len(values),
+            'mean': round(sum(values) / len(values), 3)
+        }
+
+
+class LaTeXArticleGenerator:
+    """Generate LaTeX article using LLM"""
+    
+    def __init__(self, data: Dict, provider: str = 'anthropic', 
+                 model: Optional[str] = None, api_url: Optional[str] = None,
+                 api_key: Optional[str] = None):
+        """
+        Initialize article generator
+        
+        Args:
+            data: Collected data dictionary
+            provider: API provider (anthropic, openrouter, together, groq, local)
+            model: Model name (uses provider default if not specified)
+            api_url: Custom API URL
+            api_key: API key (uses env var if not specified)
+        """
+        self.data = data
+        self.provider = provider.lower()
+        
+        # API configuration (same as in main pipeline)
+        self.api_configs = {
+            'anthropic': {
+                'base_url': 'https://api.anthropic.com/v1',
+                'endpoint': '/messages',
+                'api_key_env': 'ANTHROPIC_API_KEY',
+                'default_model': 'claude-opus-4-5-20251101',
+            },
+            'openrouter': {
+                'base_url': 'https://openrouter.ai/api/v1',
+                'endpoint': '/chat/completions',
+                'api_key_env': 'OPENROUTER_API_KEY',
+                'default_model': 'meta-llama/llama-2-70b-chat-hf',
+            },
+            'together': {
+                'base_url': 'https://api.together.xyz/v1',
+                'endpoint': '/chat/completions',
+                'api_key_env': 'TOGETHER_API_KEY',
+                'default_model': 'meta-llama/Llama-2-70b-chat-hf',
+            },
+            'groq': {
+                'base_url': 'https://api.groq.com/openai/v1',
+                'endpoint': '/chat/completions',
+                'api_key_env': 'GROQ_API_KEY',
+                'default_model': 'mixtral-8x7b-32768',
+            },
+            'local': {
+                'base_url': 'http://localhost:11434/v1',
+                'endpoint': '/chat/completions',
+                'api_key_env': None,
+                'default_model': 'llama2',
+            }
+        }
+        
+        if self.provider not in self.api_configs:
+            raise ValueError(f"Unknown provider: {provider}")
+        
+        config = self.api_configs[self.provider]
+        
+        self.base_url = api_url or config['base_url']
+        self.endpoint = config['endpoint']
+        self.full_url = self.base_url.rstrip('/') + self.endpoint
+        self.model = model or config['default_model']
+        
+        # Get API key
+        if config['api_key_env']:
+            self.api_key = api_key or os.getenv(config['api_key_env'])
+            if not self.api_key and provider != 'local':
+                raise ValueError(f"API key not found. Set {config['api_key_env']} environment variable")
+        else:
+            self.api_key = None
+        
+        print(f"✓ Initialized {provider.upper()} API client")
+        print(f"  Model: {self.model}")
+    
+    def call_llm(self, prompt: str, max_retries: int = 3) -> str:
+        """Make LLM API call with retry logic"""
+        
+        # Prepare request based on provider
+        if self.provider == 'anthropic':
+            headers = {
+                'Content-Type': 'application/json',
+                'x-api-key': self.api_key,
+                'anthropic-version': '2023-06-01'
+            }
+            body = {
+                'model': self.model,
+                'max_tokens': 8000,  # Higher for article generation
+                'messages': [{'role': 'user', 'content': prompt}]
+            }
+        else:  # OpenAI-compatible
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {self.api_key}' if self.api_key else ''
+            }
+            body = {
+                'model': self.model,
+                'max_tokens': 8000,
+                'temperature': 0.3,
+                'messages': [{'role': 'user', 'content': prompt}]
+            }
+        
+        body_json = json.dumps(body).encode('utf-8')
+        
+        # Retry loop
+        for attempt in range(max_retries):
+            try:
+                req = urllib.request.Request(
+                    self.full_url,
+                    data=body_json,
+                    headers=headers,
+                    method='POST'
+                )
+                
+                with urllib.request.urlopen(req, timeout=60) as response:
+                    response_data = json.loads(response.read().decode('utf-8'))
+                    
+                    # Extract response based on provider
+                    if self.provider == 'anthropic':
+                        result = response_data.get('content', [{}])[0].get('text', '')
+                    else:
+                        result = response_data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                    
+                    if not result:
+                        raise ValueError("Empty response from API")
+                    
+                    return result
+            
+            except urllib.error.HTTPError as e:
+                if e.code == 429:  # Rate limit
+                    wait_time = 5 * (attempt + 1)
+                    print(f"  Rate limited. Waiting {wait_time}s...")
+                    time.sleep(wait_time)
+                    continue
+                elif e.code in [500, 502, 503, 504]:  # Server error
+                    wait_time = 2 * (attempt + 1)
+                    print(f"  Server error ({e.code}). Waiting {wait_time}s...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    raise ValueError(f"API error {e.code}")
+            
+            except urllib.error.URLError as e:
+                if attempt < max_retries - 1:
+                    wait_time = 2 * (attempt + 1)
+                    print(f"  Connection error. Waiting {wait_time}s...")
+                    time.sleep(wait_time)
+                    continue
+                raise ValueError(f"Connection error: {e.reason}")
+            
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"  Error: {str(e)}. Retrying...")
+                    time.sleep(2)
+                    continue
+                raise
+        
+        raise ValueError("Failed to get response after all retries")
+    
+    def generate_article(self) -> str:
+        """Generate complete LaTeX article"""
+        
+        print("\nGenerating LaTeX article...")
+        
+        # Build comprehensive prompt with all data
+        prompt = self._build_article_prompt()
+        
+        print("Making LLM call (this may take 2-5 minutes)...")
+        article_content = self.call_llm(prompt)
+        
+        return article_content
+    
+    def _build_article_prompt(self) -> str:
+        """Build comprehensive prompt for article generation"""
+        
+        # Format data for prompt
+        data_summary = self._format_data_for_prompt()
+        
+        prompt = f"""
+You are an expert academic researcher writing a peer-review ready systematic review article on clinical decision support systems in pediatric radiology.
+
+TASK: Generate a complete, publication-ready LaTeX academic article based on the systematic review data and the PRISMA 2020 framework.
+
+DATA PROVIDED:
+
+{data_summary}
+
+INSTRUCTIONS:
+
+1. ARTICLE STRUCTURE (in this exact order):
+   - Complete LaTeX document with proper preamble
+   - Title: "Clinical Decision Support Systems in Pediatric Medical Imaging: A Systematic Review of Implementations, Proposals, and User Experiences"
+   - Abstract (250-300 words)
+   - Introduction (1000-1200 words) with background, justification, and 5 research questions
+   - Methods (1000-1500 words) with detailed protocol, search strategy, selection criteria, data extraction, quality assessment
+   - Results (1500-2500 words) with study characteristics, CDSS types, diagnostic accuracy, implementation status, quality assessment
+   - Thematic Synthesis (1500-2000 words) analyzing major themes with quantitative and qualitative data
+   - Discussion (1500-2000 words) interpreting findings, addressing implementation barriers, pediatric considerations
+   - Conclusions (300-400 words) with actionable recommendations
+   - References in proper format
+
+2. CONTENT REQUIREMENTS:
+
+   ABSTRACT:
+   - Background on CDSS in pediatric radiology
+   - Systematic review objective
+   - Methods (search, PRISMA, QUADAS-2)
+   - Key results (numbers, performance ranges)
+   - Conclusions with clinical implications
+
+   INTRODUCTION:
+   - Evolution of CDSS from rule-based to AI/ML
+   - Why pediatric radiology is unique
+   - Clinical challenges in pediatric imaging
+   - Current landscape and gaps
+   - Explicit research questions (5)
+
+   METHODS:
+   - PubMed search strategy (exact query)
+   - Date range: 2014-2024 (rationale)
+   - Inclusion/exclusion criteria (explicit)
+   - Screening process (two-stage)
+   - Data extraction (standardized form)
+   - Quality assessment (QUADAS-2 details)
+   - Analysis approach (quantitative + thematic)
+   - PRISMA 2020 compliance statement
+
+   RESULTS:
+   - Study selection numbers with percentages
+   - Study characteristics (Table 1 reference)
+   - CDSS types and distribution
+   - Breakdown by modality (CT, MRI, US, etc.)
+   - Breakdown by clinical domain
+   - Performance metrics (sensitivity, specificity, AUC) with ranges
+   - Implementation status and challenges
+   - User experience findings
+   - Quality assessment distribution
+
+   THEMATIC SYNTHESIS:
+   - 6 major themes identified and analyzed:
+     1. Technology Evolution (shift to AI/ML)
+     2. Clinical Performance (diagnostic value)
+     3. Implementation Challenges (barriers)
+     4. User Acceptance (human factors)
+     5. Pediatric Considerations (age-specific issues)
+     6. Evidence Gaps (research needs)
+   - For each theme: evidence quality, frequency, clinical significance
+   - Cross-cutting patterns and paradoxes
+
+   DISCUSSION:
+   - Principal findings in context
+   - Why implementation hasn't advanced despite good evidence
+   - Quantitative limitations (heterogeneity, bias, gaps)
+   - Qualitative limitations (limited diversity, publication bias)
+   - Technical barriers (EHR integration, data standardization)
+   - Organizational barriers (cost, workflow, institutional factors)
+   - Human factors (skepticism, trust, job concerns)
+   - Healthcare system factors (regulation, liability, reimbursement)
+   - Pediatric-specific challenges and opportunities
+   - Future research priorities
+   - Clinical practice implications
+   - Comparison with related reviews
+
+   CONCLUSIONS:
+   - Summary of main findings
+   - Clinical significance
+   - Most critical research gap
+   - Specific recommendations for:
+     * Clinicians/institutions
+     * Researchers
+     * Industry/developers
+     * Policymakers
+
+3. QUALITY & STYLE:
+   - Professional academic tone throughout
+   - Clear, concise writing (no jargon without explanation)
+   - Evidence-based (all claims supported by data provided)
+   - Balanced (acknowledge both strengths and limitations)
+   - Critical analysis (explain WHY findings matter)
+   - Transparency about limitations
+   - Actionable recommendations
+   - PRISMA 2020 compliant
+
+4. LATEX FORMATTING:
+   - Complete working LaTeX document
+   - Standard article class with 12pt font
+   - Proper math mode for statistics
+   - Tables with booktabs styling
+   - Figures referenced appropriately
+   - Hyperlinked references
+   - Proper bibliography
+
+5. SPECIFIC DATA TO INCLUDE:
+   - Screening numbers: {json.dumps(self.data.get('screening', {}), indent=2)}
+   - Study statistics: {json.dumps(self.data.get('statistics', {}), indent=2)}
+   - Quality assessment summary: {self._format_quality_data()}
+   - Performance metrics ranges by modality
+   - Distribution of CDSS types
+   - Years covered: {self.data.get('statistics', {}).get('year_range', 'N/A')}
+
+6. TABLES & FIGURES TO REFERENCE:
+   - Table 1: Study characteristics (reference the data provided)
+   - Table 2: QUADAS-2 assessment summary
+   - Table 3: Performance metrics by modality
+   - Table 4: Studies by clinical domain
+   - Figure 1: PRISMA flow diagram (describe)
+   - Figure 2: Study distribution over time
+   - Figure 3: CDSS types distribution
+
+IMPORTANT:
+- Include all provided data meaningfully
+- Analyze and interpret, don't just list
+- Make it publication-ready for high-impact journals
+- Ensure proper LaTeX compilation
+- Word count: 8000-10000 words total
+- Professional, rigorous academic style
+- Ready for peer review
+
+Generate the complete LaTeX document now:
+"""
+        return prompt
+    
+    def _format_data_for_prompt(self) -> str:
+        """Format data for inclusion in prompt"""
+        lines = []
+        
+        # Screening data
+        screening = self.data.get('screening', {})
+        lines.append("SCREENING RESULTS:")
+        lines.append(f"  - Total articles identified: {screening.get('total_identified', 0)}")
+        lines.append(f"  - Articles screened: {screening.get('total_screened', 0)}")
+        lines.append(f"  - Articles excluded (screening): {screening.get('excluded', 0)}")
+        lines.append(f"  - Articles marked uncertain: {screening.get('uncertain', 0)}")
+        lines.append(f"  - Full-text assessed: {screening.get('full_text_assessed', 0)}")
+        lines.append(f"  - Full-text excluded: {screening.get('full_text_excluded', 0)}")
+        lines.append(f"  - Final studies included: {screening.get('final_included', 0)}")
+        lines.append("")
+        
+        # Statistics
+        stats = self.data.get('statistics', {})
+        lines.append("STUDY STATISTICS:")
+        lines.append(f"  - Total studies: {stats.get('total_studies', 0)}")
+        lines.append(f"  - Year range: {stats.get('year_range', 'N/A')}")
+        
+        lines.append("  Modalities studied:")
+        for mod, count in stats.get('modalities', {}).items():
+            lines.append(f"    - {mod}: {count}")
+        
+        lines.append("  Clinical domains:")
+        for domain, count in stats.get('domains', {}).items():
+            lines.append(f"    - {domain}: {count}")
+        
+        lines.append("  CDSS types:")
+        for ctype, count in stats.get('cdss_types', {}).items():
+            lines.append(f"    - {ctype}: {count}")
+        
+        lines.append("  Study designs:")
+        for design, count in stats.get('study_designs', {}).items():
+            lines.append(f"    - {design}: {count}")
+        
+        # Sample sizes
+        sample_stats = stats.get('sample_sizes', {})
+        lines.append("  Sample sizes:")
+        lines.append(f"    - Median: {sample_stats.get('median', 'N/A')}")
+        lines.append(f"    - Range: {sample_stats.get('range', 'N/A')}")
+        
+        # Performance metrics
+        perf = stats.get('performance_metrics', {})
+        lines.append("  Performance metrics:")
+        if perf.get('sensitivity'):
+            lines.append(f"    - Sensitivity: {perf['sensitivity']}")
+        if perf.get('specificity'):
+            lines.append(f"    - Specificity: {perf['specificity']}")
+        if perf.get('auc'):
+            lines.append(f"    - AUC: {perf['auc']}")
+        
+        lines.append("")
+        
+        # Quality assessment
+        lines.append("QUALITY ASSESSMENT SUMMARY:")
+        quality = self.data.get('quality', [])
+        if quality:
+            low_risk = sum(1 for q in quality if q.get('overall_bias') == 'Low')
+            mod_risk = sum(1 for q in quality if q.get('overall_bias') == 'Moderate')
+            high_risk = sum(1 for q in quality if q.get('overall_bias') == 'High')
+            lines.append(f"  - Low risk: {low_risk} ({100*low_risk//len(quality)}%)")
+            lines.append(f"  - Moderate risk: {mod_risk} ({100*mod_risk//len(quality)}%)")
+            lines.append(f"  - High risk: {high_risk} ({100*high_risk//len(quality)}%)")
+        lines.append("")
+        
+        # Thematic synthesis
+        synthesis = self.data.get('synthesis', '')
+        if synthesis:
+            lines.append("THEMATIC SYNTHESIS (base for analysis):")
+            lines.append(synthesis[:2000])  # First 2000 chars
+            lines.append("...")
+            lines.append("")
+        
+        return "\n".join(lines)
+    
+    def _format_quality_data(self) -> str:
+        """Format quality assessment data"""
+        quality = self.data.get('quality', [])
+        if not quality:
+            return "No quality data"
+        
+        summary = {
+            'total_assessed': len(quality),
+            'low_risk': sum(1 for q in quality if q.get('overall_bias') == 'Low'),
+            'moderate_risk': sum(1 for q in quality if q.get('overall_bias') == 'Moderate'),
+            'high_risk': sum(1 for q in quality if q.get('overall_bias') == 'High'),
+        }
+        
+        return json.dumps(summary, indent=2)
+
+
+def generate_article_main(output_dir: str, provider: str = 'anthropic',
+                         model: Optional[str] = None, api_url: Optional[str] = None,
+                         api_key: Optional[str] = None) -> Path:
+    """Main function to generate article
+    
+    Args:
+        output_dir: Directory with pipeline outputs
+        provider: API provider
+        model: Model name
+        api_url: Custom API URL
+        api_key: API key
+    
+    Returns:
+        Path to generated LaTeX file
+    """
+    
+    output_dir = Path(output_dir)
+    
+    # Collect data
+    collector = ArticleDataCollector(str(output_dir))
+    data = collector.collect_all_data()
+    
+    # Generate article
+    generator = LaTeXArticleGenerator(
+        data,
+        provider=provider,
+        model=model,
+        api_url=api_url,
+        api_key=api_key
+    )
+    
+    article_content = generator.generate_article()
+    
+    # Save article
+    output_file = output_dir / 'systematic_review_article.tex'
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(article_content)
+    
+    print(f"\n✓ Article generated successfully!")
+    print(f"  Saved to: {output_file}")
+    print(f"  Size: {len(article_content)} bytes")
+    
+    # Try to compile
+    print("\nNote: To compile the LaTeX document:")
+    print(f"  pdflatex {output_file}")
+    print(f"  bibtex {output_file.stem}")
+    print(f"  pdflatex {output_file}")
+    print(f"  pdflatex {output_file}")
+    
+    return output_file
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Generate LaTeX systematic review article from pipeline outputs'
+    )
+    parser.add_argument('output_dir', help='Directory with pipeline outputs')
+    parser.add_argument('--provider', choices=['anthropic', 'openrouter', 'together', 'groq', 'local'],
+                       default='anthropic', help='LLM provider')
+    parser.add_argument('--model', help='Model name (uses provider default if not specified)')
+    parser.add_argument('--api-url', help='Custom API URL')
+    parser.add_argument('--api-key', help='API key (uses env var if not specified)')
+    
+    args = parser.parse_args()
+    
+    try:
+        generate_article_main(
+            args.output_dir,
+            provider=args.provider,
+            model=args.model,
+            api_url=args.api_url,
+            api_key=args.api_key
+        )
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        exit(1)
