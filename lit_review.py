@@ -383,33 +383,8 @@ class CDSSLitReviewProcessor:
             
             # Step 2: Screen articles (cache-aware)
             screening_file = self.output_dir / "02_screening_results.json"
-            if screening_file.exists():
-                print("\n[STEP 2/6] Loading screening cache...")
-                try:
-                    cached_screening = self._load_json(screening_file)
-                    cached_pmids = {r['pmid'] for r in cached_screening}
-                    
-                    # Find articles not in cache
-                    new_articles = [a for a in articles if a['pmid'] not in cached_pmids]
-                    
-                    if new_articles:
-                        print(f"  Found {len(cached_screening)} cached decisions")
-                        print(f"  Screening {len(new_articles)} new articles...")
-                        new_screening = self._screen_articles(new_articles)
-                        screening_results = cached_screening + new_screening
-                    else:
-                        screening_results = cached_screening
-                        print("✓ All articles already have screening decisions")
-                    
-                except Exception as e:
-                    print(f"Cache error: {str(e)}, re-screening all")
-                    screening_results = self._screen_articles(articles)
-            else:
-                print("\n[STEP 2/6] Screening titles and abstracts...")
-                screening_results = self._screen_articles(articles)
-            
-            # Always save updated screening results
-            self._save_json(screening_results, screening_file)
+            print("\n[STEP 2/6] Screening titles and abstracts...")
+            screening_results = self._screen_articles(articles, screening_file)
             
             include_count = sum(1 for r in screening_results if r['decision'] == 'INCLUDE')
             exclude_count = sum(1 for r in screening_results if r['decision'] == 'EXCLUDE')
@@ -543,9 +518,25 @@ class CDSSLitReviewProcessor:
             print(f"Error parsing file: {str(e)}", "ERROR")
             raise
     
-    def _screen_articles(self, articles: List[Dict]) -> List[Dict]:
-        """Screen articles for inclusion based on title and abstract"""
-        results = []
+    def _screen_articles(self, articles: List[Dict], screening_file: Path) -> List[Dict]:
+        """Screen articles for inclusion with caching support"""
+        # Try loading existing screening results
+        cached_results = []
+        if screening_file.exists():
+            try:
+                with open(screening_file, 'r', encoding='utf-8') as f:
+                    cached_results = json.load(f)
+                print(f"  Loaded {len(cached_results)} cached screening decisions")
+            except Exception as e:
+                print(f"  Cache load error: {str(e)} - creating new cache")
+        
+        # Build cached pmids set and screen only new articles
+        cached_pmids = {r['pmid'] for r in cached_results}
+        new_articles = [a for a in articles if a['pmid'] not in cached_pmids]
+        
+        if not new_articles:
+            print("✓ All articles already have screening decisions")
+            return cached_results
         
         # Load screening criteria from generated metadata
         topic_file = self.output_dir / "00_review_topic.json"
@@ -575,7 +566,10 @@ class CDSSLitReviewProcessor:
         
         screening_prompt = self._load_prompt('screening')
         
-        for i, article in enumerate(articles):
+        results = []
+        total_new = len(new_articles)
+        
+        for i, article in enumerate(new_articles):
             prompt = screening_prompt.format(
                 topic=topic,
                 inclusion=inclusion_str,
@@ -597,8 +591,15 @@ class CDSSLitReviewProcessor:
                 
                 results.append(result)
                 
+                # Save every 10 items or at end of processing
+                if (i + 1) % 10 == 0 or i == total_new - 1:
+                    all_results = cached_results + results
+                    with open(screening_file, 'w', encoding='utf-8') as f:
+                        json.dump(all_results, f, indent=2)
+                    print(f"  Saved {len(all_results)} screening results")
+                
                 if (i + 1) % 10 == 0:
-                    print(f"  Screened {i+1}/{len(articles)} articles...")
+                    print(f"  Screened {i+1}/{total_new} new articles...")
                     time.sleep(1)  # Rate limiting
                     
             except (json.JSONDecodeError, Exception) as e:
@@ -611,7 +612,7 @@ class CDSSLitReviewProcessor:
                     'key_terms': []
                 })
         
-        return results
+        return cached_results + results
     
     def _extract_article_data(self, articles: List[Dict]) -> List[Dict]:
         """Extract structured data from included articles"""
