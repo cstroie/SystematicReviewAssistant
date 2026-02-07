@@ -35,10 +35,11 @@ class DiagramNumbers:
     # Eligibility phase
     full_text_retrieved: int
     full_text_excluded: int
-    full_text_exclude_reasons: Dict[str, int] = None
-    
     # Inclusion phase
     studies_included_qualitative: int
+    
+    # Fields with default values must come after non-default fields
+    full_text_exclude_reasons: Dict[str, int] = None
     studies_included_quantitative: int = None
     
     # Optional
