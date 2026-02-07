@@ -877,7 +877,7 @@ def generate_article_main(output_dir: str, provider: str = 'anthropic',
     
     # Save article
     output_file = output_dir / 'systematic_review_article.tex'
-    bib_file = output_dir / 'references.bib'
+    bib_file = output_dir / 'systematic_review_article.bib'
     
     # Save LaTeX article
     with open(output_file, 'w', encoding='utf-8') as f:
