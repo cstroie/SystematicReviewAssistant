@@ -636,9 +636,6 @@ class CDSSLitReviewProcessor:
                     with open(extraction_file, 'w', encoding='utf-8') as f:
                         json.dump(all_results, f, indent=2)
                     print(f"  Saved {len(all_results)} extracted records...")
-                
-                if (i + 1) % 10 == 0:
-                    print(f"  Extracted {i+1}/{total_new} new articles...")
                     time.sleep(1)  # Rate limiting
                     
             except (json.JSONDecodeError, Exception) as e:
