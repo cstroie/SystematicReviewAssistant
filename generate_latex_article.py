@@ -740,14 +740,19 @@ INSTRUCTIONS:
    - Actionable recommendations
    - PRISMA 2020 compliant
 
-4. LATEX FORMATTING:
-   - Complete working LaTeX document
-   - Standard article class with 12pt font
+4. LATEX FORMATTING (XeLaTeX compatible):
+   - \documentclass[12pt]{article}
+   - \usepackage{fontspec}
+   - \setmainfont{Times New Roman}
+   - \usepackage{polyglossia}
+   - \setmainlanguage{english}
    - Proper math mode for statistics
    - Tables with booktabs styling
    - Figures referenced appropriately
    - Hyperlinked references
    - Proper bibliography
+   - Complete Unicode support
+   - Remove any pdflatex-specific packages
 
 5. SPECIFIC DATA TO INCLUDE:
    - Screening numbers: {json.dumps(self.data.get('screening', {}), indent=2)}
@@ -936,11 +941,11 @@ def generate_article_main(output_dir: str, provider: str = 'anthropic',
     #print(f"  Total size: {len(article_content) + len(bib_content)} bytes")
     
     # Try to compile
-    print("\nNote: To compile the LaTeX document with references:")
-    print(f"  pdflatex {output_file.name}")
+    print("\nNote: To compile the XeLaTeX document with references:")
+    print(f"  xelatex {output_file.name}")
     print(f"  bibtex {output_file.stem}")
-    print(f"  pdflatex {output_file.name}")
-    print(f"  pdflatex {output_file.name}")
+    print(f"  xelatex {output_file.name}")
+    print(f"  xelatex {output_file.name}")
     
     return output_file
 
