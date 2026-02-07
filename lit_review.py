@@ -805,35 +805,29 @@ Write in clear, structured prose suitable for a systematic review report."""
 def create_parser():
     """Create argument parser"""
     parser = argparse.ArgumentParser(
-        description='LLM-based Literature Review Pipeline for CDSS in Radiology',
+        description='Systematic Literature Review Processor',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-PROVIDERS (no external packages needed - direct HTTP calls):
-  anthropic   - Anthropic Claude models (default)
+Examples:
+  # Basic usage with Anthropic Claude (needs API key):
+  %(prog)s pubmed_results.csv
+  
+  # Use OpenRouter's LLaMA 2 (specify model):
+  %(prog)s pubmed.txt --provider openrouter --model meta-llama/llama-2-70b-chat-hf
+  
+  # Local Ollama model (http://localhost:11434):
+  %(prog)s pubmed.xml --provider local --model llama2
+  
+Supported Providers:
+  anthropic   - Anthropic Claude (default)
   openrouter  - OpenRouter (100+ models)
   together    - Together.ai
-  groq        - Groq (very fast)
-  local       - Local models via Ollama/vLLM
-
-EXAMPLES:
-  # Anthropic (requires ANTHROPIC_API_KEY)
-  %(prog)s pubmed.csv
-  
-  # OpenRouter (requires OPENROUTER_API_KEY)
-  %(prog)s pubmed.csv --provider openrouter --model meta-llama/llama-2-70b-chat-hf
-  
-  # Together.ai (requires TOGETHER_API_KEY)
-  %(prog)s pubmed.csv --provider together --model meta-llama/Llama-2-70b-chat-hf
-  
-  # Groq (requires GROQ_API_KEY)
-  %(prog)s pubmed.csv --provider groq --model mixtral-8x7b-32768
-  
-  # Local Ollama (run: ollama serve)
-  %(prog)s pubmed.csv --provider local --model llama2
+  groq        - Groq (fast inference)
+  local       - Local models (Ollama/vLLM)
         """
     )
     
-    parser.add_argument('csv_file', help='PubMed CSV export file')
+    parser.add_argument('input_file', help='PubMed export file (CSV/XML/MEDLINE/TXT/JSON)')
     parser.add_argument('--provider', choices=list(API_CONFIGS.keys()),
                        default='anthropic', help='LLM provider')
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
@@ -861,7 +855,7 @@ def show_provider_info():
 
 
 def main():
-    """Main entry point"""
+    """Systematic literature review processing pipeline"""
     parser = create_parser()
     
     # Show help if no args
