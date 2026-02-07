@@ -596,10 +596,7 @@ class CDSSLitReviewProcessor:
                     all_results = cached_results + results
                     with open(screening_file, 'w', encoding='utf-8') as f:
                         json.dump(all_results, f, indent=2)
-                    print(f"  Saved {len(all_results)} screening results")
-                
-                if (i + 1) % 10 == 0:
-                    print(f"  Screened {i+1}/{total_new} new articles...")
+                    print(f"  Saved {len(all_results)} screening results...")
                     time.sleep(1)  # Rate limiting
                     
             except (json.JSONDecodeError, Exception) as e:
