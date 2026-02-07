@@ -412,10 +412,35 @@ class CDSSLitReviewProcessor:
             self._save_json(extracted_data, extraction_file)
             self._log(f"✓ Extracted data from {len(extracted_data)} articles")
             
-            # Step 4: Assess quality
-            self._log("[STEP 4/6] Assessing study quality (QUADAS-2)...")
-            quality_assessments = self._assess_quality(extracted_data, included_articles)
+            # Step 4: Assess quality (with cache merging)
             quality_file = self.output_dir / "04_quality_assessment.json"
+            if quality_file.exists():
+                self._log("[STEP 4/6] Loading quality assessment cache...")
+                try:
+                    cached_assessments = self._load_json(quality_file)
+                    cached_pmids = {a['pmid'] for a in cached_assessments if 'pmid' in a}
+                    
+                    # Find articles not in cache
+                    new_articles = [a for a in extracted_data if a['pmid'] not in cached_pmids]
+                    
+                    if new_articles:
+                        self._log(f"  Found {len(cached_assessments)} cached assessments")
+                        self._log(f"  Assessing quality for {len(new_articles)} new articles...")
+                        new_included_articles = [a for a in included_articles if a['pmid'] not in cached_pmids]
+                        new_assessments = self._assess_quality(new_articles, new_included_articles)
+                        quality_assessments = cached_assessments + new_assessments
+                    else:
+                        quality_assessments = cached_assessments
+                        self._log("✓ All included articles already have quality assessments")
+                    
+                except Exception as e:
+                    self._log(f"Cache error: {str(e)}, re-assessing all", "WARN")
+                    quality_assessments = self._assess_quality(extracted_data, included_articles)
+            else:
+                self._log("[STEP 4/6] Assessing study quality (QUADAS-2)...")
+                quality_assessments = self._assess_quality(extracted_data, included_articles)
+            
+            # Always save updated assessments
             self._save_json(quality_assessments, quality_file)
             self._log(f"✓ Quality assessment complete for {len(quality_assessments)} studies")
             
