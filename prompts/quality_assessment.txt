@@ -1,0 +1,37 @@
+Assess the quality of this diagnostic study using QUADAS-2 framework.
+
+PMID: {pmid}
+TITLE: {title}
+ABSTRACT: {abstract}
+
+Evaluate these QUADAS-2 domains (answer: Yes|No|Unclear for each):
+
+1. PATIENT SELECTION
+   - Was a consecutive/random sample enrolled?
+   - Was case-control design avoided?
+
+2. INDEX TEST  
+   - Were index test results blinded to reference standard?
+   - Were cutoffs pre-specified?
+
+3. REFERENCE STANDARD
+   - Is reference standard appropriate?
+   - Were results blinded to index test?
+
+4. FLOW AND TIMING
+   - Was interval between tests appropriate?
+   - Did all patients receive reference standard?
+
+Return ONLY JSON:
+{{
+  "pmid": "{pmid}",
+  "domains": {{
+    "patient_selection": "Yes|No|Unclear",
+    "index_test": "Yes|No|Unclear", 
+    "reference_standard": "Yes|No|Unclear",
+    "flow_timing": "Yes|No|Unclear"
+  }},
+  "overall_bias": "Low|Moderate|High",
+  "applicability": "Low|Moderate|High",
+  "notes": "brief justification"
+}}

@@ -1,0 +1,34 @@
+Extract structured information from this research article.
+Return ONLY valid JSON with no markdown formatting.
+
+ARTICLE:
+PMID: {pmid}
+TITLE: {title}
+ABSTRACT: {abstract}
+
+Extract and return this JSON structure (use null for unavailable data):
+{{
+  "pmid": "{pmid}",
+  "title": "{title}",
+  "year": "publication year (integer)",
+  "study_design": "RCT|Retrospective|Prospective|Case Series|Cross-sectional|Other",
+  "sample_size": {{
+    "total_patients": "number or null",
+    "total_images": "number or null"
+  }},
+  "clinical_domain": "specific clinical application (e.g., 'Breast Cancer Detection')",
+  "imaging_modality": ["list", "of", "modalities"],
+  "cdss_type": "AI/ML-based|Rule-based|Hybrid|Statistical",
+  "cdss_name": "system name or 'Not specified'",
+  "primary_outcomes": ["list", "of", "outcome", "measures"],
+  "key_metrics": {{
+    "sensitivity": "value or null",
+    "specificity": "value or null",
+    "auc": "value or null",
+    "accuracy": "value or null"
+  }},
+  "comparison": "compared against what? (e.g., radiologist alone, standard of care)",
+  "main_findings": "1-2 sentence summary of key results",
+  "limitations": ["list", "of", "limitations"],
+  "clinical_implications": "stated implications or clinical impact"
+}}

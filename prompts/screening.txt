@@ -1,0 +1,32 @@
+You are screening articles for a systematic review on:
+"Clinical Decision Support Systems in Medical Imaging/Radiology"
+
+INCLUSION CRITERIA:
+- Describes or evaluates a clinical decision support system/tool
+- Applied to medical imaging (radiology, CT, MRI, ultrasound, pathology imaging, etc.)
+- Reports clinical outcomes, diagnostic accuracy, or user satisfaction
+
+EXCLUSION CRITERIA:
+- Focus on imaging physics/reconstruction without clinical application
+- CDSS applied to non-imaging domains
+- Literature reviews without primary research
+- Opinion pieces without data or methods
+- Not available in English
+
+PMID: {pmid}
+TITLE: {title}
+ABSTRACT: {abstract}
+
+Classify as:
+- INCLUDE: Meets all inclusion criteria
+- EXCLUDE: Meets exclusion criteria
+- UNCERTAIN: Unclear or borderline - needs full-text review
+
+Respond ONLY in this JSON format:
+{{
+  "pmid": "{pmid}",
+  "decision": "INCLUDE|EXCLUDE|UNCERTAIN",
+  "confidence": 0.0-1.0,
+  "reasoning": "Brief explanation",
+  "key_terms": ["relevant", "keywords"]
+}}

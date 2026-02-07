@@ -296,6 +296,14 @@ class CDSSLitReviewProcessor:
         print(f"Pipeline initialized at {self.start_time}")
         print(f"Using {llm_client.provider} with model {llm_client.model}")
     
+    def _load_prompt(self, name: str) -> str:
+        """Load prompt template from prompts directory"""
+        prompt_path = Path(__file__).parent / 'prompts' / f'{name}.txt'
+        try:
+            return prompt_path.read_text(encoding='utf-8').strip()
+        except IOError as e:
+            raise ValueError(f"Failed to load prompt '{name}': {str(e)}") from e
+    
     def run_complete_pipeline(self, pubmed_file: str):
         """Execute the complete workflow from CSV to synthesis"""
         
@@ -487,41 +495,10 @@ class CDSSLitReviewProcessor:
         """Screen articles for inclusion based on title and abstract"""
         results = []
         
-        screening_prompt_template = """You are screening articles for a systematic review on:
-"Clinical Decision Support Systems in Medical Imaging/Radiology"
-
-INCLUSION CRITERIA:
-- Describes or evaluates a clinical decision support system/tool
-- Applied to medical imaging (radiology, CT, MRI, ultrasound, pathology imaging, etc.)
-- Reports clinical outcomes, diagnostic accuracy, or user satisfaction
-
-EXCLUSION CRITERIA:
-- Focus on imaging physics/reconstruction without clinical application
-- CDSS applied to non-imaging domains
-- Literature reviews without primary research
-- Opinion pieces without data or methods
-- Not available in English
-
-PMID: {pmid}
-TITLE: {title}
-ABSTRACT: {abstract}
-
-Classify as:
-- INCLUDE: Meets all inclusion criteria
-- EXCLUDE: Meets exclusion criteria
-- UNCERTAIN: Unclear or borderline - needs full-text review
-
-Respond ONLY in this JSON format:
-{{
-  "pmid": "{pmid}",
-  "decision": "INCLUDE|EXCLUDE|UNCERTAIN",
-  "confidence": 0.0-1.0,
-  "reasoning": "Brief explanation",
-  "key_terms": ["relevant", "keywords"]
-}}"""
+        screening_prompt = self._load_prompt('screening')
         
         for i, article in enumerate(articles):
-            prompt = screening_prompt_template.format(
+            prompt = screening_prompt.format(
                 pmid=article['pmid'],
                 title=article['title'],
                 abstract=article['abstract']
@@ -559,43 +536,10 @@ Respond ONLY in this JSON format:
         """Extract structured data from included articles"""
         extracted = []
         
-        extraction_prompt_template = """Extract structured information from this research article.
-Return ONLY valid JSON with no markdown formatting.
-
-ARTICLE:
-PMID: {pmid}
-TITLE: {title}
-ABSTRACT: {abstract}
-
-Extract and return this JSON structure (use null for unavailable data):
-{{
-  "pmid": "{pmid}",
-  "title": "{title}",
-  "year": "publication year (integer)",
-  "study_design": "RCT|Retrospective|Prospective|Case Series|Cross-sectional|Other",
-  "sample_size": {{
-    "total_patients": "number or null",
-    "total_images": "number or null"
-  }},
-  "clinical_domain": "specific clinical application (e.g., 'Breast Cancer Detection')",
-  "imaging_modality": ["list", "of", "modalities"],
-  "cdss_type": "AI/ML-based|Rule-based|Hybrid|Statistical",
-  "cdss_name": "system name or 'Not specified'",
-  "primary_outcomes": ["list", "of", "outcome", "measures"],
-  "key_metrics": {{
-    "sensitivity": "value or null",
-    "specificity": "value or null",
-    "auc": "value or null",
-    "accuracy": "value or null"
-  }},
-  "comparison": "compared against what? (e.g., radiologist alone, standard of care)",
-  "main_findings": "1-2 sentence summary of key results",
-  "limitations": ["list", "of", "limitations"],
-  "clinical_implications": "stated implications or clinical impact"
-}}"""
+        extraction_prompt = self._load_prompt('extraction')
         
         for i, article in enumerate(articles):
-            prompt = extraction_prompt_template.format(
+            prompt = extraction_prompt.format(
                 pmid=article['pmid'],
                 title=article['title'],
                 abstract=article['abstract']
@@ -631,46 +575,10 @@ Extract and return this JSON structure (use null for unavailable data):
         """Assess study quality using QUADAS-2 framework"""
         quality_results = []
         
-        quadas2_prompt_template = """Assess the quality of this diagnostic study using QUADAS-2 framework.
-
-PMID: {pmid}
-TITLE: {title}
-ABSTRACT: {abstract}
-
-Evaluate these QUADAS-2 domains (answer: Yes|No|Unclear for each):
-
-1. PATIENT SELECTION
-   - Was a consecutive/random sample enrolled?
-   - Was case-control design avoided?
-
-2. INDEX TEST  
-   - Were index test results blinded to reference standard?
-   - Were cutoffs pre-specified?
-
-3. REFERENCE STANDARD
-   - Is reference standard appropriate?
-   - Were results blinded to index test?
-
-4. FLOW AND TIMING
-   - Was interval between tests appropriate?
-   - Did all patients receive reference standard?
-
-Return ONLY JSON:
-{{
-  "pmid": "{pmid}",
-  "domains": {{
-    "patient_selection": "Yes|No|Unclear",
-    "index_test": "Yes|No|Unclear", 
-    "reference_standard": "Yes|No|Unclear",
-    "flow_timing": "Yes|No|Unclear"
-  }},
-  "overall_bias": "Low|Moderate|High",
-  "applicability": "Low|Moderate|High",
-  "notes": "brief justification"
-}}"""
+        quadas2_prompt = self._load_prompt('quality_assessment')
         
         for i, article in enumerate(articles):
-            prompt = quadas2_prompt_template.format(
+            prompt = quadas2_prompt.format(
                 pmid=article['pmid'],
                 title=article['title'],
                 abstract=article['abstract']
@@ -709,51 +617,11 @@ Return ONLY JSON:
             'total_count': len(extracted_data)
         }
         
-        synthesis_prompt = f"""You are writing a thematic synthesis section for a systematic review on 
-"Clinical Decision Support Systems in Medical Imaging/Radiology".
-
-We have analyzed {len(extracted_data)} studies. Here's a sample of the extracted data:
-
-{json.dumps(summary_dict, indent=2)}
-
-Based on this analysis and typical patterns in this field, provide a comprehensive synthesis with these sections:
-
-1. STUDY CHARACTERISTICS
-   - Range of years, study designs, sample sizes
-   - Imaging modalities covered
-   - Clinical domains studied
-
-2. TYPES OF CDSS SYSTEMS
-   - Distribution by type (AI/ML vs rule-based)
-   - Technology trends over time
-
-3. CLINICAL PERFORMANCE
-   - Range of reported metrics (sensitivity, specificity, AUC)
-   - Best and worst performing systems
-   - Performance by clinical domain
-
-4. THEMATIC ANALYSIS
-   - Common themes across studies
-   - Key findings and consistencies
-   - Important variations and contradictions
-
-5. METHODOLOGICAL ASSESSMENT  
-   - Common strengths
-   - Prevalent limitations
-   - Quality trends
-
-6. CLINICAL IMPLICATIONS
-   - Evidence for clinical implementation
-   - Adoption barriers
-   - Impact on clinical workflows
-
-7. RESEARCH GAPS AND RECOMMENDATIONS
-   - Underrepresented clinical domains
-   - Methodological gaps
-   - Recommendations for future research
-
-Write in clear, structured prose suitable for a systematic review report. Use concrete examples 
-from the studies where possible."""
+        synthesis_template = self._load_prompt('synthesis')
+        synthesis_prompt = synthesis_template.format(
+            total_studies=len(extracted_data),
+            data_sample=json.dumps(summary_dict, indent=2)
+        )
         
         try:
             response_text = self.llm.call(synthesis_prompt)

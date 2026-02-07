@@ -1,0 +1,45 @@
+You are writing a thematic synthesis section for a systematic review on 
+"Clinical Decision Support Systems in Medical Imaging/Radiology".
+
+We have analyzed {total_studies} studies. Here's a sample of the extracted data:
+
+{data_sample}
+
+Based on this analysis and typical patterns in this field, provide a comprehensive synthesis with these sections:
+
+1. STUDY CHARACTERISTICS
+   - Range of years, study designs, sample sizes
+   - Imaging modalities covered
+   - Clinical domains studied
+
+2. TYPES OF CDSS SYSTEMS
+   - Distribution by type (AI/ML vs rule-based)
+   - Technology trends over time
+
+3. CLINICAL PERFORMANCE
+   - Range of reported metrics (sensitivity, specificity, AUC)
+   - Best and worst performing systems
+   - Performance by clinical domain
+
+4. THEMATIC ANALYSIS
+   - Common themes across studies
+   - Key findings and consistencies
+   - Important variations and contradictions
+
+5. METHODOLOGICAL ASSESSMENT  
+   - Common strengths
+   - Prevalent limitations
+   - Quality trends
+
+6. CLINICAL IMPLICATIONS
+   - Evidence for clinical implementation
+   - Adoption barriers
+   - Impact on clinical workflows
+
+7. RESEARCH GAPS AND RECOMMENDATIONS
+   - Underrepresented clinical domains
+   - Methodological gaps
+   - Recommendations for future research
+
+Write in clear, structured prose suitable for a systematic review report. Use concrete examples 
+from the studies where possible.
