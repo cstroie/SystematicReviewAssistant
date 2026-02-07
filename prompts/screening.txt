@@ -5,7 +5,7 @@ INCLUSION CRITERIA:
 {inclusion}
 
 EXCLUSION CRITERIA:
-{exlcusion}
+{exclusion}
 
 PMID: {pmid}
 TITLE: {title}

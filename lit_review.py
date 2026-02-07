@@ -547,10 +547,28 @@ class CDSSLitReviewProcessor:
         """Screen articles for inclusion based on title and abstract"""
         results = []
         
+        # Load screening criteria from generated metadata
+        topic_file = self.output_dir / "00_review_topic.json"
+        topic_data = {}
+        if topic_file.exists():
+            try:
+                with open(topic_file, 'r', encoding='utf-8') as f:
+                    topic_data = json.load(f)
+            except Exception as e:
+                print(f"Warning: Error loading review topic: {str(e)}")
+        
+        # Get formatted criteria
+        inclusion = "\n- ".join([""] + topic_data.get('screening', {}).get('inclusion', ["No inclusion criteria set"]))
+        exclusion = "\n- ".join([""] + topic_data.get('screening', {}).get('exclusion', ["No exclusion criteria set"]))
+        topic = topic_data.get('topic', 'Systematic Review Topic')
+        
         screening_prompt = self._load_prompt('screening')
         
         for i, article in enumerate(articles):
             prompt = screening_prompt.format(
+                topic=topic,
+                inclusion=inclusion,
+                exclusion=exclusion,
                 pmid=article['pmid'],
                 title=article['title'],
                 abstract=article['abstract']
