@@ -741,11 +741,11 @@ INSTRUCTIONS:
    - PRISMA 2020 compliant
 
 4. LATEX FORMATTING (XeLaTeX compatible):
-   - \documentclass[12pt]{article}
-   - \usepackage{fontspec}
-   - \setmainfont{Times New Roman}
-   - \usepackage{polyglossia}
-   - \setmainlanguage{english}
+   - \\documentclass[12pt]{{article}}
+   - \\usepackage{{fontspec}}
+   - \\setmainfont{{Times New Roman}}
+   - \\usepackage{{polyglossia}}
+   - \\setmainlanguage{{english}}
    - Proper math mode for statistics
    - Tables with booktabs styling
    - Figures referenced appropriately
