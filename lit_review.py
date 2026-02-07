@@ -322,9 +322,9 @@ class CDSSLitReviewProcessor:
         self._log("="*70, "HEADER")
         
         try:
-            # Step 1: Parse CSV
+            # Step 1: Parse PubMed export (auto-detects format)
             self._log("\n[STEP 1/6] Parsing PubMed export...")
-            articles = self._parse_pubmed_csv(pubmed_csv_file)
+            articles = self._parse_pubmed_export(pubmed_csv_file)
             articles_file = self.output_dir / "01_parsed_articles.json"
             self._save_json(articles, articles_file)
             self._log(f"✓ Parsed {len(articles)} articles from {pubmed_csv_file}")
@@ -390,31 +390,51 @@ class CDSSLitReviewProcessor:
             self._log(traceback.format_exc(), "ERROR")
             raise
     
-    def _parse_pubmed_csv(self, csv_file: str) -> List[Dict]:
-        """Parse PubMed CSV export format"""
-        articles = []
+    def _parse_pubmed_export(self, file_path: str) -> List[Dict]:
+        """
+        Parse PubMed export file (auto-detects format)
         
+        Supports: CSV, MEDLINE (.txt), XML, JSON
+        """
         try:
-            with open(csv_file, 'r', encoding='utf-8-sig') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    article = {
-                        'pmid': str(row.get('PMID', '')).strip(),
-                        'title': row.get('Title', '').strip(),
-                        'abstract': row.get('Abstract', '').strip(),
-                        'authors': row.get('Authors', '').strip(),
-                        'journal': row.get('Journal', '').strip(),
-                        'pub_date': row.get('Publication Date', '').strip(),
-                        'doi': row.get('DOI', '').strip(),
-                    }
-                    if article['pmid']:  # Only include if PMID exists
-                        articles.append(article)
+            from pubmed_parser import PubMedParser
+        except ImportError:
+            self._log("ERROR: pubmed_parser module not found in same directory", "ERROR")
+            self._log("Make sure pubmed_parser.py is in the same folder as this script")
+            raise
+        
+        # Check for cache first
+        cache_file = self.output_dir / "00_articles_cache.json"
+        if cache_file.exists():
+            self._log(f"Loading articles from cache: {cache_file}")
+            try:
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    articles = json.load(f)
+                self._log(f"✓ Loaded {len(articles)} articles from cache")
+                return articles
+            except Exception as e:
+                self._log(f"Cache read error: {str(e)}, re-parsing file", "WARN")
+        
+        # Parse file with auto-detection
+        try:
+            articles = PubMedParser.parse(file_path)
+            self._log(f"✓ Parsed {len(articles)} articles from {Path(file_path).name}")
             
-            self._log(f"Successfully parsed {len(articles)} articles from CSV")
+            if not articles:
+                raise ValueError("No articles found in the file")
+            
+            # Cache the parsed articles
+            try:
+                with open(cache_file, 'w', encoding='utf-8') as f:
+                    json.dump(articles, f, indent=2, ensure_ascii=False)
+                self._log(f"✓ Cached {len(articles)} articles to {cache_file}")
+            except Exception as e:
+                self._log(f"Warning: Could not cache articles: {str(e)}", "WARN")
+            
             return articles
             
         except Exception as e:
-            self._log(f"Error parsing CSV: {str(e)}", "ERROR")
+            self._log(f"Error parsing file: {str(e)}", "ERROR")
             raise
     
     def _screen_articles(self, articles: List[Dict]) -> List[Dict]:
