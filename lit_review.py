@@ -770,13 +770,8 @@ Write in clear, structured prose suitable for a systematic review report. Use co
 from the studies where possible."""
         
         try:
-            response = self.client.messages.create(
-                model="claude-opus-4-5-20251101",
-                max_tokens=3000,
-                messages=[{"role": "user", "content": synthesis_prompt}]
-            )
-            
-            synthesis_text = response.content[0].text
+            response_text = self.llm.call(synthesis_prompt)
+            synthesis_text = response_text.strip()
             return synthesis_text
             
         except Exception as e:
