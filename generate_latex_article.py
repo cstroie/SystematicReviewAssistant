@@ -799,11 +799,21 @@ Generate the complete LaTeX document now:
 def generate_article_main(output_dir: str, provider: str = 'anthropic',
                          model: Optional[str] = None, api_url: Optional[str] = None,
                          api_key: Optional[str] = None) -> Path:
-    """Main function to generate article
+    """Main entry point for article generation
     
     Args:
-        output_dir: Directory with pipeline outputs
-        provider: API provider
+        output_dir: Path to directory with pipeline output files
+        provider: LLM provider name
+        model: Model name (optional)
+        api_url: Custom API URL (optional)
+        api_key: API key (optional)
+        
+    Returns:
+        Path to generated LaTeX file
+        
+    Raises:
+        ValueError: If data collection fails or API errors occur
+    """
         model: Model name
         api_url: Custom API URL
         api_key: API key
