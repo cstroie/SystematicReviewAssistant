@@ -3,54 +3,183 @@
 Complete LLM-based Literature Review Processing Pipeline
 For CDSS in Medical Imaging/Radiology Systematic Review
 
-This script automates:
-1. PubMed CSV parsing
-2. Title/abstract screening
-3. Data extraction
-4. Quality assessment
-5. Thematic synthesis
-6. Summary table generation
+Supports any OpenAI-compatible API:
+- Anthropic Claude (claude-opus-4-5, claude-sonnet-4-5)
+- OpenRouter (openrouter.ai) - supports 100+ models
+- Together.ai (together.xyz)
+- Local models (Ollama, vLLM, etc.)
 
 Usage:
-    python cdss_lit_review_pipeline.py <pubmed_export.csv>
+    # Using Anthropic (default)
+    export ANTHROPIC_API_KEY="sk-ant-..."
+    python cdss_lit_review_pipeline.py pubmed_export.csv
+    
+    # Using OpenRouter
+    export OPENROUTER_API_KEY="sk-or-..."
+    python cdss_lit_review_pipeline.py pubmed_export.csv --provider openrouter --model meta-llama/llama-2-70b-chat-hf
+    
+    # Using Together.ai
+    export TOGETHER_API_KEY="..."
+    python cdss_lit_review_pipeline.py pubmed_export.csv --provider together --model meta-llama/Llama-2-70b-chat-hf
+    
+    # Using local Ollama
+    python cdss_lit_review_pipeline.py pubmed_export.csv --provider local --model llama2 --api-url http://localhost:11434/v1
 """
 
 import json
 import csv
 import time
 import sys
+import os
+import argparse
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional
 import re
 
 try:
-    from anthropic import Anthropic
+    from openai import OpenAI
 except ImportError:
-    print("Error: anthropic package not found. Install with: pip install anthropic")
+    print("Error: openai package not found. Install with: pip install openai")
     sys.exit(1)
 
 try:
     import pandas as pd
 except ImportError:
-    print("Warning: pandas not found. Summary table generation will be skipped.")
     pd = None
+
+
+# API Configuration for different providers
+API_CONFIGS = {
+    'anthropic': {
+        'base_url': 'https://api.anthropic.com/v1',
+        'api_key_env': 'ANTHROPIC_API_KEY',
+        'default_model': 'claude-opus-4-5-20251101',
+        'description': 'Anthropic Claude models',
+        'max_tokens': 4096
+    },
+    'openrouter': {
+        'base_url': 'https://openrouter.ai/api/v1',
+        'api_key_env': 'OPENROUTER_API_KEY',
+        'default_model': 'meta-llama/llama-2-70b-chat-hf',
+        'description': 'OpenRouter (100+ models available)',
+        'max_tokens': 4096,
+        'note': 'Popular models: meta-llama/llama-2-70b-chat-hf, mistralai/mistral-7b-instruct, openchat/openchat-7b'
+    },
+    'together': {
+        'base_url': 'https://api.together.xyz/v1',
+        'api_key_env': 'TOGETHER_API_KEY',
+        'default_model': 'meta-llama/Llama-2-70b-chat-hf',
+        'description': 'Together.ai (various open source models)',
+        'max_tokens': 4096
+    },
+    'local': {
+        'base_url': 'http://localhost:11434/v1',
+        'api_key_env': None,
+        'default_model': 'llama2',
+        'description': 'Local models via Ollama/vLLM',
+        'max_tokens': 2048,
+        'note': 'Run: ollama serve (or other local server)'
+    },
+    'groq': {
+        'base_url': 'https://api.groq.com/openai/v1',
+        'api_key_env': 'GROQ_API_KEY',
+        'default_model': 'mixtral-8x7b-32768',
+        'description': 'Groq (very fast inference)',
+        'max_tokens': 8192,
+        'note': 'Models: mixtral-8x7b-32768, llama2-70b-4096'
+    }
+}
+
+
+class LLMClient:
+    """Wrapper for any OpenAI-compatible LLM API"""
+    
+    def __init__(self, provider: str = 'anthropic', model: Optional[str] = None, 
+                 api_url: Optional[str] = None, api_key: Optional[str] = None):
+        """
+        Initialize LLM client
+        
+        Args:
+            provider: 'anthropic', 'openrouter', 'together', 'local', 'groq'
+            model: Model name (uses provider default if not specified)
+            api_url: Custom API URL (overrides provider default)
+            api_key: API key (uses env var if not specified)
+        """
+        self.provider = provider.lower()
+        
+        if self.provider not in API_CONFIGS:
+            raise ValueError(f"Unknown provider: {provider}. Choose from: {list(API_CONFIGS.keys())}")
+        
+        config = API_CONFIGS[self.provider]
+        
+        # Get API URL
+        self.base_url = api_url or config['base_url']
+        
+        # Get model
+        self.model = model or config['default_model']
+        
+        # Get API key
+        if config['api_key_env']:
+            self.api_key = api_key or os.getenv(config['api_key_env'])
+            if not self.api_key and provider != 'local':
+                raise ValueError(f"API key not found. Set {config['api_key_env']} environment variable")
+        else:
+            self.api_key = 'not-needed'  # Local models don't need a key
+        
+        # Initialize OpenAI client with custom base URL
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url
+        )
+        
+        self.max_tokens = config.get('max_tokens', 4096)
+        
+        print(f"✓ Initialized {config['description']}")
+        print(f"  Model: {self.model}")
+        print(f"  Base URL: {self.base_url}")
+    
+    def call(self, prompt: str, max_tokens: Optional[int] = None) -> str:
+        """
+        Call LLM with prompt
+        
+        Args:
+            prompt: Input prompt
+            max_tokens: Max tokens (uses default if not specified)
+        
+        Returns:
+            Model response text
+        """
+        max_tokens = max_tokens or self.max_tokens
+        
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=max_tokens,
+            temperature=0.3  # Lower temperature for more consistent results
+        )
+        
+        return response.choices[0].message.content
 
 
 class CDSSLitReviewProcessor:
     """Main pipeline processor for systematic literature review"""
     
-    def __init__(self, output_dir: str = "lit_review_output", log_verbose: bool = True):
-        """Initialize processor with output directory and logging preferences"""
+    def __init__(self, llm_client: LLMClient, output_dir: str = "lit_review_output", 
+                 log_verbose: bool = True):
+        """Initialize processor with LLM client"""
+        self.llm = llm_client
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
-        self.client = Anthropic()
         self.log_verbose = log_verbose
         self.start_time = datetime.now()
         
         # Initialize log file
         self.log_file = self.output_dir / "processing_log.txt"
         self._log(f"Pipeline initialized at {self.start_time}")
+        self._log(f"Using {llm_client.provider} with model {llm_client.model}")
     
     def _log(self, message: str, level: str = "INFO"):
         """Log messages to file and optionally console"""
@@ -217,25 +346,20 @@ Respond ONLY in this JSON format:
             )
             
             try:
-                response = self.client.messages.create(
-                    model="claude-opus-4-5-20251101",
-                    max_tokens=300,
-                    messages=[{"role": "user", "content": prompt}]
-                )
+                response_text = self.llm.call(prompt, max_tokens=300)
                 
-                result_text = response.content[0].text
                 # Extract JSON from response (handles potential markdown formatting)
-                json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
                 if json_match:
                     result = json.loads(json_match.group())
                 else:
-                    result = json.loads(result_text)
+                    result = json.loads(response_text)
                 
                 results.append(result)
                 
                 if (i + 1) % 10 == 0:
                     self._log(f"  Screened {i+1}/{len(articles)} articles...")
-                    time.sleep(2)  # Rate limiting
+                    time.sleep(1)  # Rate limiting
                     
             except (json.JSONDecodeError, Exception) as e:
                 self._log(f"Error screening {article['pmid']}: {str(e)}", "WARN")
@@ -296,19 +420,14 @@ Extract and return this JSON structure (use null for unavailable data):
             )
             
             try:
-                response = self.client.messages.create(
-                    model="claude-opus-4-5-20251101",
-                    max_tokens=1500,
-                    messages=[{"role": "user", "content": prompt}]
-                )
+                response_text = self.llm.call(prompt, max_tokens=1500)
                 
-                result_text = response.content[0].text
                 # Extract JSON
-                json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
                 if json_match:
                     data = json.loads(json_match.group())
                 else:
-                    data = json.loads(result_text)
+                    data = json.loads(response_text)
                 
                 extracted.append(data)
                 
@@ -377,18 +496,13 @@ Return ONLY JSON:
             )
             
             try:
-                response = self.client.messages.create(
-                    model="claude-opus-4-5-20251101",
-                    max_tokens=500,
-                    messages=[{"role": "user", "content": prompt}]
-                )
+                response_text = self.llm.call(prompt, max_tokens=500)
                 
-                result_text = response.content[0].text
-                json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
                 if json_match:
                     result = json.loads(json_match.group())
                 else:
-                    result = json.loads(result_text)
+                    result = json.loads(response_text)
                 
                 quality_results.append(result)
                 
@@ -461,13 +575,7 @@ Write in clear, structured prose suitable for a systematic review report. Use co
 from the studies where possible."""
         
         try:
-            response = self.client.messages.create(
-                model="claude-opus-4-5-20251101",
-                max_tokens=3000,
-                messages=[{"role": "user", "content": synthesis_prompt}]
-            )
-            
-            synthesis_text = response.content[0].text
+            synthesis_text = self.llm.call(synthesis_prompt, max_tokens=3000)
             return synthesis_text
             
         except Exception as e:
@@ -511,25 +619,117 @@ from the studies where possible."""
             json.dump(data, f, indent=2, ensure_ascii=False)
 
 
+def create_parser():
+    """Create argument parser"""
+    parser = argparse.ArgumentParser(
+        description='LLM-based Literature Review Processing Pipeline for CDSS in Radiology',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+PROVIDERS:
+  anthropic   - Anthropic Claude models (default)
+  openrouter  - OpenRouter (100+ models)
+  together    - Together.ai
+  groq        - Groq (very fast)
+  local       - Local models via Ollama/vLLM
+
+EXAMPLES:
+  # Anthropic (requires ANTHROPIC_API_KEY)
+  %(prog)s pubmed.csv
+  
+  # OpenRouter (requires OPENROUTER_API_KEY)
+  %(prog)s pubmed.csv --provider openrouter --model meta-llama/llama-2-70b-chat-hf
+  
+  # Together.ai (requires TOGETHER_API_KEY)
+  %(prog)s pubmed.csv --provider together --model meta-llama/Llama-2-70b-chat-hf
+  
+  # Local Ollama
+  %(prog)s pubmed.csv --provider local --model llama2
+  
+  # Groq (requires GROQ_API_KEY)
+  %(prog)s pubmed.csv --provider groq --model mixtral-8x7b-32768
+        """
+    )
+    
+    parser.add_argument('csv_file', help='PubMed CSV export file')
+    parser.add_argument('--provider', choices=list(API_CONFIGS.keys()), 
+                       default='anthropic', help='LLM provider')
+    parser.add_argument('--model', help='Model name (uses provider default if not specified)')
+    parser.add_argument('--api-url', help='Custom API URL (overrides provider default)')
+    parser.add_argument('--api-key', help='API key (uses env var if not specified)')
+    parser.add_argument('--output-dir', default='lit_review_output', help='Output directory')
+    parser.add_argument('--quiet', action='store_true', help='Suppress log output')
+    
+    return parser
+
+
+def show_provider_info():
+    """Show information about available providers"""
+    print("\n" + "="*70)
+    print("AVAILABLE LLM PROVIDERS")
+    print("="*70 + "\n")
+    
+    for provider_name, config in API_CONFIGS.items():
+        print(f"Provider: {provider_name.upper()}")
+        print(f"  Description: {config['description']}")
+        print(f"  Default Model: {config['default_model']}")
+        if 'api_key_env' in config and config['api_key_env']:
+            print(f"  API Key Env Var: {config['api_key_env']}")
+        if 'note' in config:
+            print(f"  Note: {config['note']}")
+        print()
+
+
 def main():
     """Main entry point"""
-    if len(sys.argv) < 2:
-        print("Usage: python cdss_lit_review_pipeline.py <pubmed_export.csv> [output_dir]")
-        print("\nExample:")
-        print("  python cdss_lit_review_pipeline.py articles.csv results/")
-        sys.exit(1)
+    parser = create_parser()
     
-    csv_file = sys.argv[1]
-    output_dir = sys.argv[2] if len(sys.argv) > 2 else "lit_review_output"
+    # Show help if no args
+    if len(sys.argv) == 1:
+        parser.print_help()
+        show_provider_info()
+        sys.exit(0)
+    
+    args = parser.parse_args()
     
     # Validate CSV file exists
-    if not Path(csv_file).exists():
-        print(f"Error: CSV file '{csv_file}' not found")
+    if not Path(args.csv_file).exists():
+        print(f"Error: CSV file '{args.csv_file}' not found")
         sys.exit(1)
     
-    # Run pipeline
-    processor = CDSSLitReviewProcessor(output_dir=output_dir, log_verbose=True)
-    processor.run_complete_pipeline(csv_file)
+    # Show provider info if requested
+    if args.provider not in API_CONFIGS:
+        print(f"Error: Unknown provider '{args.provider}'")
+        show_provider_info()
+        sys.exit(1)
+    
+    try:
+        # Initialize LLM client
+        print(f"\nInitializing LLM client...")
+        llm_client = LLMClient(
+            provider=args.provider,
+            model=args.model,
+            api_url=args.api_url,
+            api_key=args.api_key
+        )
+        
+        # Run pipeline
+        print(f"\nStarting pipeline...\n")
+        processor = CDSSLitReviewProcessor(
+            llm_client=llm_client,
+            output_dir=args.output_dir,
+            log_verbose=not args.quiet
+        )
+        processor.run_complete_pipeline(args.csv_file)
+        
+    except KeyError as e:
+        print(f"Error: Missing API key - {str(e)}")
+        show_provider_info()
+        sys.exit(1)
+    except Exception as e:
+        print(f"Fatal error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":
