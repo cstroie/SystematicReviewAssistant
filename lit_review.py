@@ -293,22 +293,8 @@ class CDSSLitReviewProcessor:
         self.start_time = datetime.now()
         
         # Initialize log file
-        self.log_file = self.output_dir / "processing_log.txt"
         print(f"Pipeline initialized at {self.start_time}")
         print(f"Using {llm_client.provider} with model {llm_client.model}")
-    
-    def _log(self, message: str, level: str = "INFO"):
-        """Log messages to file and optionally console"""
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_message = f"[{timestamp}] {level}: {message}"
-        
-        # Write to log file
-        with open(self.log_file, 'a') as f:
-            f.write(log_message + "\n")
-        
-        # Print to console if verbose
-        if self.log_verbose:
-            print(log_message)
     
     def run_complete_pipeline(self, pubmed_file: str):
         """Execute the complete workflow from CSV to synthesis"""
