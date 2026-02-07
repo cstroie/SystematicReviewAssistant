@@ -8,6 +8,10 @@ Return JSON with these keys:
 4. "screening" - contains two sub-keys:
    - "inclusion" - list of 3-5 criteria for including articles
    - "exclusion" - list of 3-5 criteria for excluding articles
+5. "extract" - dictionary of field names and descriptions for key topic-specific data to extract.
+                Choose field names that capture essential characteristics of interventions/outcomes.
+                Fields should be specific, well-defined, and directly relevant to answering
+                the review's research questions.
 
 First deeply understand the research topic and domain to create meaningful criteria that address:
 - Study designs/methodology
