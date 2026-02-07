@@ -8,7 +8,7 @@ Return JSON with these keys:
 4. "screening" - contains two sub-keys:
    - "inclusion" - list of 3-5 criteria for including articles
    - "exclusion" - list of 3-5 criteria for excluding articles
-5. "extract" - dictionary of field names and descriptions for key topic-specific data to extract.
+5. "extract" - dictionary of 1-3 field names and descriptions for key topic-specific data to extract.
                 Choose field names that capture essential characteristics of interventions/outcomes.
                 Fields should be specific, well-defined, and directly relevant to answering
                 the review's research questions.
@@ -58,9 +58,8 @@ Example valid JSON response:
   }},
   "extract": {{
     "cdss_type": "AI/ML-based|Rule-based|Hybrid|Statistical",
-    "cdss_name": "system name or 'Not specified'",
-    "clinical_validation": "Phase of clinical validation (pre-clinical/retrospective/prospective/multi-center)",
     "integration_level": "PACS/RIS integration level (none/basic/full)"
+  }}
 }}
 
 Respond ONLY with valid JSON in this structure. Do not include markdown formatting.

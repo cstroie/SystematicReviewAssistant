@@ -1,5 +1,5 @@
 You are writing a thematic synthesis section for a systematic review on 
-"Clinical Decision Support Systems in Medical Imaging/Radiology".
+"{topic}".
 
 We have analyzed {total_studies} studies. Here's a sample of the extracted data:
 

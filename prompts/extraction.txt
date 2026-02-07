@@ -18,8 +18,6 @@ Extract and return this JSON structure (use null for unavailable data):
   }},
   "clinical_domain": "specific clinical application (e.g., 'Breast Cancer Detection')",
   "imaging_modality": ["list", "of", "modalities"],
-  "cdss_type": "AI/ML-based|Rule-based|Hybrid|Statistical",
-  "cdss_name": "system name or 'Not specified'",
   "primary_outcomes": ["list", "of", "outcome", "measures"],
   "key_metrics": {{
     "sensitivity": "value or null",
@@ -27,6 +25,7 @@ Extract and return this JSON structure (use null for unavailable data):
     "auc": "value or null",
     "accuracy": "value or null"
   }},
+  "extract": {extract},
   "comparison": "compared against what? (e.g., radiologist alone, standard of care)",
   "main_findings": "1-2 sentence summary of key results",
   "limitations": ["list", "of", "limitations"],
