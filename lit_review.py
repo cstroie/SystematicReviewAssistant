@@ -549,26 +549,37 @@ class CDSSLitReviewProcessor:
         
         # Load screening criteria from generated metadata
         topic_file = self.output_dir / "00_review_topic.json"
-        topic_data = {}
-        if topic_file.exists():
-            try:
-                with open(topic_file, 'r', encoding='utf-8') as f:
-                    topic_data = json.load(f)
-            except Exception as e:
-                print(f"Warning: Error loading review topic: {str(e)}")
+        if not topic_file.exists():
+            raise ValueError(f"Review topic file {topic_file.name} not found - run with --task first")
+            
+        try:
+            with open(topic_file, 'r', encoding='utf-8') as f:
+                topic_data = json.load(f)
+        except Exception as e:
+            raise ValueError(f"Error loading review topic: {str(e)}") from e
         
-        # Get formatted criteria
-        inclusion = "\n- ".join([""] + topic_data.get('screening', {}).get('inclusion', ["No inclusion criteria set"]))
-        exclusion = "\n- ".join([""] + topic_data.get('screening', {}).get('exclusion', ["No exclusion criteria set"]))
-        topic = topic_data.get('topic', 'Systematic Review Topic')
+        # Validate required screening criteria
+        screening = topic_data.get('screening', {})
+        inclusion = screening.get('inclusion', [])
+        exclusion = screening.get('exclusion', [])
+        
+        if not inclusion:
+            raise ValueError("Screening criteria missing inclusion list in topic file")
+        if not exclusion:
+            raise ValueError("Screening criteria missing exclusion list in topic file")
+            
+        # Format criteria
+        inclusion_str = "\n- ".join([""] + inclusion)
+        exclusion_str = "\n- ".join([""] + exclusion)
+        topic = topic_data['topic']
         
         screening_prompt = self._load_prompt('screening')
         
         for i, article in enumerate(articles):
             prompt = screening_prompt.format(
                 topic=topic,
-                inclusion=inclusion,
-                exclusion=exclusion,
+                inclusion=inclusion_str,
+                exclusion=exclusion_str,
                 pmid=article['pmid'],
                 title=article['title'],
                 abstract=article['abstract']
