@@ -803,8 +803,8 @@ Supported Providers:
         """
     )
     
-    parser.add_argument('input_file', help='PubMed export file (CSV/XML/MEDLINE/TXT/JSON)')
-    parser.add_argument('--task', help='Free-text research topic description (generates PubMed query and metadata)')
+    parser.add_argument('input_file', nargs='?', help='PubMed export file (CSV/XML/MEDLINE/TXT/JSON) (required when not using --task)')
+    parser.add_argument('--task', help='Free-text research topic description (generates PubMed query and metadata - requires no input file)')
     parser.add_argument('--provider', choices=list(API_CONFIGS.keys()),
                        default='anthropic', help='LLM provider')
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
@@ -843,8 +843,16 @@ def main():
     
     args = parser.parse_args()
     
-    # Validate input file exists
-    if not Path(args.input_file).exists():
+    # Validate arguments
+    if args.task and args.input_file:
+        print("Error: Cannot specify both --task and input file")
+        sys.exit(1)
+    if not args.task and not args.input_file:
+        print("Error: Must specify either an input file or --task")
+        sys.exit(1)
+    
+    # Validate input file exists if required
+    if not args.task and not Path(args.input_file).exists():
         print(f"Error: Input file '{args.input_file}' not found")
         sys.exit(1)
     
