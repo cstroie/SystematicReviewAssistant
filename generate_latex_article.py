@@ -920,15 +920,15 @@ def generate_article_main(output_dir: str, provider: str = 'anthropic',
         api_key=api_key
     )
     
-    #article_content = generator.generate_article()
+    article_content = generator.generate_article()
     
     # Save article
     output_file = output_dir / 'systematic_review_article.tex'
     bib_file = output_dir / 'systematic_review_article.bib'
     
     # Save LaTeX article
-    #with open(output_file, 'w', encoding='utf-8') as f:
-    #    f.write(article_content)
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(article_content)
     
     # Save BibTeX references
     bib_content = collector.generate_bibtex()
@@ -938,7 +938,7 @@ def generate_article_main(output_dir: str, provider: str = 'anthropic',
     print(f"\n✓ Article generated successfully!")
     print(f"  Saved to: {output_file}")
     print(f"  References saved to: {bib_file}")
-    #print(f"  Total size: {len(article_content) + len(bib_content)} bytes")
+    print(f"  Total size: {len(article_content) + len(bib_content)} bytes")
     
     # Try to compile
     print("\nNote: To compile the XeLaTeX document with references:")
