@@ -691,9 +691,11 @@ INSTRUCTIONS:
    - Breakdown by modality (CT, MRI, US, etc.)
    - Breakdown by clinical domain
    - Performance metrics (sensitivity, specificity, AUC) with ranges
+   - Cost-effectiveness analysis where available (report on ROI, cost per case)
    - Implementation status and challenges
    - User experience findings
    - Quality assessment distribution
+   - Successful implementation case studies (focus on deployed systems)
 
    THEMATIC SYNTHESIS:
    - 6 major themes identified and analyzed:
@@ -715,20 +717,31 @@ INSTRUCTIONS:
    - Organizational barriers (cost, workflow, institutional factors)
    - Human factors (skepticism, trust, job concerns)
    - Healthcare system factors (regulation, liability, reimbursement)
+   - Regulatory frameworks for CDSS validation (FDA, CE Mark, etc.)
    - Pediatric-specific challenges and opportunities
+   - Case studies of successful implementations with key success factors
    - Future research priorities
    - Clinical practice implications
    - Comparison with related reviews
+   - Solutions for improving AI/ML transparency:
+     * Explainable AI (XAI) techniques
+     * Model documentation standards
+     * Open-source implementations
+     * Independent validation protocols
 
    CONCLUSIONS:
    - Summary of main findings
    - Clinical significance
    - Most critical research gap
+   - Recommendations for high-risk-of-bias study designs:
+     * Improved reporting standards
+     * Prospective validation studies
+     * Real-world performance monitoring
    - Specific recommendations for:
      * Clinicians/institutions
      * Researchers
      * Industry/developers
-     * Policymakers
+     * Policymakers (including regulatory frameworks)
 
 3. QUALITY & STYLE:
    - Professional academic tone throughout
