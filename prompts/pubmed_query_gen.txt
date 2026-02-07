@@ -1,10 +1,26 @@
 Generate a systematic literature review components based on this research topic description:
 "{task_description}"
 
-Return JSON with three keys:
+Return JSON with these keys:
 1. "query" - a properly formatted PubMed search query using MeSH terms and keywords
 2. "topic" - a short formal topic description for documentation
 3. "title" - a LaTeX-formatted title for the review article
+4. "screening" - contains two sub-keys:
+   - "inclusion" - list of 3-5 criteria for including articles
+   - "exclusion" - list of 3-5 criteria for excluding articles
+
+First deeply understand the research topic and domain to create meaningful criteria that address:
+- Study designs/methodology
+- Population/interventions
+- Outcomes/measurements
+- Clinical applications
+- Technical implementations
+
+Criteria should be:
+- Specific and measurable
+- Mutually exclusive between inclusion/exclusion
+- Relevant to the review's research questions
+- Free from implementation bias
 
 Follow these guidelines for the query:
 - Include MeSH terms and keywords
@@ -21,7 +37,21 @@ Example valid JSON response:
 {{
   "query": "(clinical decision support system[Title/Abstract]) AND (medical imaging[MAJR] OR radiology[MAJR]) AND (\"artificial intelligence\"[Title/Abstract] OR \"machine learning\"[Title/Abstract])",
   "topic": "Clinical Decision Support Systems in Medical Imaging/Radiology",
-  "title": "A Systematic Review of Clinical Decision Support Systems in Medical Imaging"
+  "title": "A Systematic Review of Clinical Decision Support Systems in Medical Imaging",
+  "screening": {{
+    "inclusion": [
+      "Primary research studies evaluating clinical decision support systems",
+      "Applied to medical imaging interpretation (radiology, CT, MRI, etc)",
+      "Reports diagnostic accuracy metrics (sensitivity, specificity)",
+      "Includes human clinical validation"
+    ],
+    "exclusion": [
+      "Studies focused only on imaging physics/reconstruction",
+      "Non-clinical applications (e.g., industrial imaging)",
+      "Literature reviews without primary data",
+      "Animal or phantom studies only"
+    ]
+  }}
 }}
 
 Respond ONLY with valid JSON in this structure. Do not include markdown formatting.
