@@ -636,9 +636,9 @@ class LaTeXArticleGenerator:
         data_summary = self._format_data_for_prompt()
         
         prompt = f"""
-ROLE: You are an expert academic researcher writing a peer-review ready systematic review article on clinical decision support systems in pediatric radiology.
+ROLE: You are an expert academic researcher writing an original, insightful systematic review article on clinical decision support systems in pediatric radiology.
 
-TASK: Generate a complete, publication-ready LaTeX academic article based on the systematic review data and the PRISMA 2020 framework.
+TASK: Generate a complete, publication-ready LaTeX academic article with fresh perspectives and critical analysis based on systematic review data and PRISMA 2020 framework.
 
 DATA PROVIDED:
 
@@ -709,8 +709,9 @@ INSTRUCTIONS:
    - Cross-cutting patterns and paradoxes
 
    DISCUSSION:
-   - Principal findings in context
-   - Why implementation hasn't advanced despite good evidence
+   - Principal findings with fresh interpretation
+   - Discuss why implementation lags behind technical capabilities
+   - Analyze research paradoxes (e.g., strong performance metrics vs. poor adoption)
    - Quantitative limitations (heterogeneity, bias, gaps)
    - Qualitative limitations (limited diversity, publication bias)
    - Technical barriers (EHR integration, data standardization)
@@ -719,11 +720,11 @@ INSTRUCTIONS:
    - Healthcare system factors (regulation, liability, reimbursement)
    - Regulatory frameworks for CDSS validation (FDA, CE Mark, etc.)
    - Pediatric-specific challenges and opportunities
-   - Case studies of successful implementations with key success factors
-   - Future research priorities
-   - Clinical practice implications
-   - Comparison with related reviews
-   - Solutions for improving AI/ML transparency:
+   - Case studies highlighting novel implementation approaches
+   - Future research priorities with original proposals
+   - Clinical practice implications addressing real-world constraints
+   - Comparison with related reviews while highlighting unique contributions
+   - Innovative solutions for AI/ML transparency:
      * Explainable AI (XAI) techniques
      * Model documentation standards
      * Open-source implementations
@@ -744,13 +745,17 @@ INSTRUCTIONS:
      * Policymakers (including regulatory frameworks)
 
 3. QUALITY & STYLE:
-   - Professional academic tone throughout
-   - Clear, concise writing (no jargon without explanation)
+   - Professional academic tone with moderate stylistic variation
+   - Clear, concise writing that favors direct communication over filler phrases
    - Evidence-based (all claims supported by data provided)
-   - Balanced (acknowledge both strengths and limitations)
    - Critical analysis (explain WHY findings matter)
-   - Transparency about limitations
-   - Actionable recommendations
+   - Use jargon strategically - explain technical terms if needed
+   - Vary sentence structure to avoid repetitive patterns
+   - Include original insights from thematic synthesis
+   - Add unique research perspectives where appropriate
+   - Balance formality with natural phrasing
+   - Transparency about limitations and research paradoxes
+   - Actionable recommendations with practical implementation guidance
    - PRISMA 2020 compliant
 
 4. LATEX FORMATTING (XeLaTeX compatible):
