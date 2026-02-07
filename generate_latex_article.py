@@ -48,7 +48,9 @@ class ArticleDataCollector:
             output_dir: Path to directory containing pipeline output files
         """
         self.output_dir = Path(output_dir)
-        self.data = {}
+        self.data = {
+            'original_articles': []  # Articles from initial parsing
+        }
         
     def collect_all_data(self) -> Dict:
         """Collect and organize all data from pipeline outputs
@@ -73,6 +75,9 @@ class ArticleDataCollector:
         
         # Load quality assessment
         self._load_quality_assessment()
+        
+        # Load original articles for reference data
+        self._load_original_articles()
         
         # Load thematic synthesis
         self._load_thematic_synthesis()
@@ -180,6 +185,24 @@ class ArticleDataCollector:
         
         print(f"  Synthesis: {len(self.data['synthesis'])} characters")
     
+    def _load_original_articles(self) -> None:
+        """Load original parsed articles from JSON file
+        
+        Populates:
+            self.data['original_articles'] with list of parsed articles
+        """
+        file_path = self.output_dir / "01_parsed_articles.json"
+        
+        if not file_path.exists():
+            print(f"Warning: {file_path} not found")
+            self.data['original_articles'] = []
+            return
+            
+        with open(file_path, 'r') as f:
+            self.data['original_articles'] = json.load(f)
+            
+        print(f"  Original articles: {len(self.data['original_articles'])} loaded")
+
     def _load_summary_characteristics(self) -> None:
         """Load summary characteristics CSV file
         
@@ -342,16 +365,29 @@ class ArticleDataCollector:
         """
         entries = []
         extracted = self.data.get('extracted', [])
+        original_articles = {art['title']: art for art in self.data.get('original_articles', [])}
         
         for i, study in enumerate(extracted):
+            # Get original article details for more complete metadata
+            original = original_articles.get(study.get('title'), {})
+            
+            # Merge fields preferring original parse data when available
+            authors = original.get('authors', study.get('authors', 'Unknown'))
+            journal = original.get('journal', study.get('journal', 'Unknown Journal'))
+            volume = original.get('volume', study.get('volume', ''))
+            issue = original.get('issue', study.get('issue', ''))
+            pages = original.get('pages', study.get('pages', ''))
+            doi = original.get('doi', study.get('doi', ''))
+            pmid = original.get('pmid', study.get('pmid', ''))
+            url = original.get('url', study.get('url', ''))
+            year = original.get('year', study.get('year', '0000'))
+            
             # Create unique citation key
-            authors = study.get('authors', 'Unknown')
             if isinstance(authors, list):
                 first_author_last = authors[0].split()[-1] if authors else 'Unknown'
             else:
                 first_author_last = authors.split()[0] if authors else 'Unknown'
                 
-            year = study.get('year', '0000')
             citation_key = f"{first_author_last}{year}{i:02d}".lower()
             
             # Format authors for BibTeX
@@ -363,14 +399,14 @@ class ArticleDataCollector:
             entry = f"""@article{{{citation_key},
   title     = {{{study.get('title', 'Untitled')}}},
   author    = {{{formatted_authors}}},
-  journal   = {{{study.get('journal', 'Unknown Journal')}}},
+  journal   = {{{journal}}},
   year      = {{{year}}},
-  volume    = {{{study.get('volume', '')}}},
-  number    = {{{study.get('issue', '')}}},
-  pages     = {{{study.get('pages', '')}}},
-  doi       = {{{study.get('doi', '')}}},
-  pmid      = {{{study.get('pmid', '')}}},
-  url       = {{{study.get('url', '')}}}
+  volume    = {{{volume}}},
+  number    = {{{issue}}},
+  pages     = {{{pages}}},
+  doi       = {{{doi}}},
+  pmid      = {{{pmid}}},
+  url       = {{{url}}}
 }}"""
             entries.append(entry)
         
