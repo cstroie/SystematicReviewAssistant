@@ -470,7 +470,7 @@ class CDSSLitReviewProcessor:
             
             # Final summary
             elapsed = (datetime.now() - self.start_time).total_seconds()
-            self._log("\n" + "="*70, "HEADER")
+            self._log("="*70, "HEADER")
             self._log("PIPELINE COMPLETE", "HEADER")
             self._log(f"Results saved to: {self.output_dir}", "HEADER")
             self._log(f"Total time: {elapsed:.1f} seconds", "HEADER")
@@ -736,51 +736,58 @@ Return ONLY JSON:
             'total_count': len(extracted_data)
         }
         
-        synthesis_prompt = f"""Generate a thematic synthesis for a systematic review in LaTeX format. The topic is:
+You are writing a thematic synthesis section for a systematic review on 
 "Clinical Decision Support Systems in Medical Imaging/Radiology".
 
 We have analyzed {len(extracted_data)} studies. Here's a sample of the extracted data:
 
 {json.dumps(summary_dict, indent=2)}
 
-Structure the synthesis as a proper LaTeX document with these sections:
+Based on this analysis and typical patterns in this field, provide a comprehensive synthesis with these sections:
+
+
+
+        synthesis_prompt = """You are writing a thematic synthesis section for a systematic review in LaTeX format on "Clinical Decision Support Systems in Medical Imaging/Radiology".
+
+We have analyzed {len(extracted_data)} studies. Here's a sample of the extracted data:
+
+""" + json.dumps(summary_dict, indent=2) + """
+
+Based on this analysis and typical patterns in this field, provide a comprehensive synthesis as a proper LaTeX document with these sections:
 
 \\section*{{Thematic Synthesis}}
 
 \\subsection*{{Study Characteristics}}
-Include: year ranges, study designs, imaging modalities, clinical domains. Format as bullet points.
+Include range of years, study designs, sample sizes, and other relevant characteristics, imaging modalities covered, clinical domains studied. Format as paragraphs.
 
 \\subsection*{{Types of CDSS Systems}}
 - Distribution of AI/ML vs rule-based systems
 - Technology trends over time
 
 \\subsection*{{Clinical Performance}}
-- Range of reported metrics (use \\% for percentages)
+- Range of reported metrics: sensitivity, specificity, AUC (use \\% for percentages)
 - Highlight best/worst performing systems
 - Performance differences across domains
 
 \\subsection*{{Thematic Analysis}}
-\\begin{itemize}
-    \\item Common themes and key findings
-    \\item Important consistencies and contradictions
-\\end{itemize}
+- Common themes across studies
+- Key findings and consistencies
+- Important variations and contradictions
 
 \\subsection*{{Methodological Assessment}}
-\\begin{itemize}
-    \\item Common methodological strengths
-    \\item Prevalent limitations
-    \\item Overall quality trends based on QUADAS-2 assessments
-\\end{itemize}
+- Common methodological strengths
+- Prevalent limitations
+- Overall quality trends based on QUADAS-2 assessments
 
 \\subsection*{{Clinical Implications}}
-- Evidence for clinical utility
-- Implementation barriers
-- Workflow impact findings
+- Evidence for clinical implementation
+- Adoption barriers
+- Impact on clinical workflows
 
 \\subsection*{{Research Gaps and Recommendations}}
 - Underrepresented clinical areas needing research
-- Methodological improvements needed
-- Future research priorities
+- Methodological improvements needed (gaps in study design, reporting)
+- Recommended future research
 
 Include proper LaTeX formatting:
 - Use \\section, \\subsection, \\item
@@ -788,7 +795,10 @@ Include proper LaTeX formatting:
 - Use \\% for percentages
 - No markdown formatting
 - Maintain academic tone
-- Include \\begin{itemize} environments for lists
+- Include \\begin{itemize} environments for lists, if any
+
+Write in clear, structured prose suitable for a systematic review report.
+Use concrete examples from the studies where possible.
 
 Reply ONLY with the LaTeX content - do NOT include markdown formatting."""
         
