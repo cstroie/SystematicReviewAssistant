@@ -334,6 +334,48 @@ class ArticleDataCollector:
             'mean': round(sum(values) / len(values), 3)
         }
 
+    def generate_bibtex(self) -> str:
+        """Generate BibTeX entries for all included studies
+        
+        Returns:
+            String containing complete BibTeX entries
+        """
+        entries = []
+        extracted = self.data.get('extracted', [])
+        
+        for i, study in enumerate(extracted):
+            # Create unique citation key
+            authors = study.get('authors', 'Unknown')
+            if isinstance(authors, list):
+                first_author_last = authors[0].split()[-1] if authors else 'Unknown'
+            else:
+                first_author_last = authors.split()[0] if authors else 'Unknown'
+                
+            year = study.get('year', '0000')
+            citation_key = f"{first_author_last}{year}{i:02d}".lower()
+            
+            # Format authors for BibTeX
+            if isinstance(authors, list):
+                formatted_authors = " and ".join(authors)
+            else:
+                formatted_authors = authors
+            
+            entry = f"""@article{{{citation_key},
+  title     = {{{study.get('title', 'Untitled')}}},
+  author    = {{{formatted_authors}}},
+  journal   = {{{study.get('journal', 'Unknown Journal')}}},
+  year      = {{{year}}},
+  volume    = {{{study.get('volume', '')}}},
+  number    = {{{study.get('issue', '')}}},
+  pages     = {{{study.get('pages', '')}}},
+  doi       = {{{study.get('doi', '')}}},
+  pmid      = {{{study.get('pmid', '')}}},
+  url       = {{{study.get('url', '')}}}
+}}"""
+            entries.append(entry)
+        
+        return "\n\n".join(entries)
+
 
 class LaTeXArticleGenerator:
     """Generates systematic review article in LaTeX format using LLM API
@@ -835,19 +877,28 @@ def generate_article_main(output_dir: str, provider: str = 'anthropic',
     
     # Save article
     output_file = output_dir / 'systematic_review_article.tex'
+    bib_file = output_dir / 'references.bib'
+    
+    # Save LaTeX article
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(article_content)
     
+    # Save BibTeX references
+    bib_content = collector.generate_bibtex()
+    with open(bib_file, 'w', encoding='utf-8') as f:
+        f.write(bib_content)
+    
     print(f"\n✓ Article generated successfully!")
     print(f"  Saved to: {output_file}")
-    print(f"  Size: {len(article_content)} bytes")
+    print(f"  References saved to: {bib_file}")
+    print(f"  Total size: {len(article_content) + len(bib_content)} bytes")
     
     # Try to compile
-    print("\nNote: To compile the LaTeX document:")
-    print(f"  pdflatex {output_file}")
+    print("\nNote: To compile the LaTeX document with references:")
+    print(f"  pdflatex {output_file.name}")
     print(f"  bibtex {output_file.stem}")
-    print(f"  pdflatex {output_file}")
-    print(f"  pdflatex {output_file}")
+    print(f"  pdflatex {output_file.name}")
+    print(f"  pdflatex {output_file.name}")
     
     return output_file
 
