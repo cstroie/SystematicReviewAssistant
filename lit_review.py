@@ -408,36 +408,10 @@ class CDSSLitReviewProcessor:
             extracted_data = self._extract_article_data(included_articles, extraction_file)
             print(f"✓ Extracted data from {len(extracted_data)} articles")
             
-            # Step 4: Assess quality (with cache merging)
+            # Step 4: Assess study quality
             quality_file = self.output_dir / "04_quality_assessment.json"
-            if quality_file.exists():
-                print("\n[STEP 4/6] Loading quality assessment cache...")
-                try:
-                    cached_assessments = self._load_json(quality_file)
-                    cached_pmids = {a['pmid'] for a in cached_assessments if 'pmid' in a}
-                    
-                    # Find articles not in cache
-                    new_articles = [a for a in extracted_data if a['pmid'] not in cached_pmids]
-                    
-                    if new_articles:
-                        print(f"  Found {len(cached_assessments)} cached assessments")
-                        print(f"  Assessing quality for {len(new_articles)} new articles...")
-                        new_included_articles = [a for a in included_articles if a['pmid'] not in cached_pmids]
-                        new_assessments = self._assess_quality(new_articles, new_included_articles)
-                        quality_assessments = cached_assessments + new_assessments
-                    else:
-                        quality_assessments = cached_assessments
-                        print("✓ All included articles already have quality assessments")
-                    
-                except Exception as e:
-                    print(f"Cache error: {str(e)}, re-assessing all", "WARN")
-                    quality_assessments = self._assess_quality(extracted_data, included_articles)
-            else:
-                print("\n[STEP 4/6] Assessing study quality (QUADAS-2)...")
-                quality_assessments = self._assess_quality(extracted_data, included_articles)
-            
-            # Always save updated assessments
-            self._save_json(quality_assessments, quality_file)
+            print("\n[STEP 4/6] Assessing study quality (QUADAS-2)...")
+            quality_assessments = self._assess_quality(included_articles, quality_file)
             print(f"✓ Quality assessment complete for {len(quality_assessments)} studies")
             
             # Step 5: Synthesis
@@ -648,13 +622,32 @@ class CDSSLitReviewProcessor:
         
         return cached_data + results
     
-    def _assess_quality(self, extracted_data: List[Dict], articles: List[Dict]) -> List[Dict]:
-        """Assess study quality using QUADAS-2 framework"""
-        quality_results = []
+    def _assess_quality(self, articles: List[Dict], quality_file: Path) -> List[Dict]:
+        """Assess study quality with caching support"""
+        # Try loading existing quality assessments
+        cached_results = []
+        if quality_file.exists():
+            try:
+                with open(quality_file, 'r', encoding='utf-8') as f:
+                    cached_results = json.load(f)
+                print(f"  Loaded {len(cached_results)} cached quality assessments")
+            except Exception as e:
+                print(f"  Cache load error: {str(e)} - creating new cache")
+        
+        # Build cached pmids set and assess only new articles
+        cached_pmids = {r['pmid'] for r in cached_results}
+        new_articles = [a for a in articles if a['pmid'] not in cached_pmids]
+        
+        if not new_articles:
+            print("✓ All articles already have quality assessments")
+            return cached_results
         
         quadas2_prompt = self._load_prompt('quality_assessment')
         
-        for i, article in enumerate(articles):
+        results = []
+        total_new = len(new_articles)
+        
+        for i, article in enumerate(new_articles):
             prompt = quadas2_prompt.format(
                 pmid=article['pmid'],
                 title=article['title'],
@@ -670,19 +663,27 @@ class CDSSLitReviewProcessor:
                 else:
                     result = json.loads(response_text)
                 
-                quality_results.append(result)
+                results.append(result)
                 
-                if (i + 1) % 5 == 0:
-                    print(f"  Quality assessed {i+1}/{len(articles)} articles...")
+                # Save every 10 items or at end of processing
+                if (i + 1) % 10 == 0 or i == total_new - 1:
+                    all_results = cached_results + results
+                    with open(quality_file, 'w', encoding='utf-8') as f:
+                        json.dump(all_results, f, indent=2)
+                    print(f"  Saved {len(all_results)} quality assessments...")
+                
+                if (i + 1) % 10 == 0:
+                    print(f"  Assessed quality for {i+1}/{total_new} new articles...")
+                    time.sleep(1)  # Rate limiting
                     
             except Exception as e:
                 print(f"Error assessing {article['pmid']}: {str(e)}", "WARN")
-                quality_results.append({
+                results.append({
                     'pmid': article['pmid'],
                     'assessment_error': True
                 })
         
-        return quality_results
+        return cached_results + results
     
     def _perform_synthesis(self, extracted_data: List[Dict]) -> str:
         """Perform thematic synthesis and identify patterns"""
