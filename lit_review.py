@@ -294,8 +294,8 @@ class CDSSLitReviewProcessor:
         
         # Initialize log file
         self.log_file = self.output_dir / "processing_log.txt"
-        self._log(f"Pipeline initialized at {self.start_time}")
-        self._log(f"Using {llm_client.provider} with model {llm_client.model}")
+        print(f"Pipeline initialized at {self.start_time}")
+        print(f"Using {llm_client.provider} with model {llm_client.model}")
     
     def _log(self, message: str, level: str = "INFO"):
         """Log messages to file and optionally console"""
@@ -310,35 +310,35 @@ class CDSSLitReviewProcessor:
         if self.log_verbose:
             print(log_message)
     
-    def run_complete_pipeline(self, pubmed_csv_file: str):
+    def run_complete_pipeline(self, pubmed_file: str):
         """Execute the complete workflow from CSV to synthesis"""
         
-        self._log("="*70, "HEADER")
-        self._log("CDSS LITERATURE REVIEW PROCESSING PIPELINE", "HEADER")
-        self._log("="*70, "HEADER")
+        print("="*70)
+        print("CDSS LITERATURE REVIEW PROCESSING PIPELINE")
+        print("="*70)
         
         try:
             # Step 1: Load from cache or parse PubMed export
             articles_file = self.output_dir / "01_parsed_articles.json"
             if articles_file.exists():
-                self._log("[STEP 1/6] Loading parsed articles from cache...")
+                print("\n[STEP 1/6] Loading parsed articles from cache...")
                 try:
                     articles = self._load_json(articles_file)
-                    self._log(f"✓ Loaded {len(articles)} articles from {articles_file.name}")
+                    print(f"✓ Loaded {len(articles)} articles from {articles_file.name}")
                 except Exception as e:
-                    self._log(f"Cache read error: {str(e)}, re-parsing file", "WARN")
-                    articles = self._parse_pubmed_export(pubmed_csv_file)
+                    print(f"Cache read error: {str(e)}, re-parsing file", "WARN")
+                    articles = self._parse_pubmed_export(pubmed_file)
                     self._save_json(articles, articles_file)
             else:
-                self._log("[STEP 1/6] Parsing PubMed export...")
-                articles = self._parse_pubmed_export(pubmed_csv_file)
+                print("\n[STEP 1/6] Parsing PubMed export...")
+                articles = self._parse_pubmed_export(pubmed_file)
                 self._save_json(articles, articles_file)
-                self._log(f"✓ Parsed {len(articles)} articles from {pubmed_csv_file}")
+                print(f"✓ Parsed {len(articles)} articles from {pubmed_file}")
             
             # Step 2: Screen articles (cache-aware)
             screening_file = self.output_dir / "02_screening_results.json"
             if screening_file.exists():
-                self._log("[STEP 2/6] Loading screening cache...")
+                print("\n[STEP 2/6] Loading screening cache...")
                 try:
                     cached_screening = self._load_json(screening_file)
                     cached_pmids = {r['pmid'] for r in cached_screening}
@@ -347,19 +347,19 @@ class CDSSLitReviewProcessor:
                     new_articles = [a for a in articles if a['pmid'] not in cached_pmids]
                     
                     if new_articles:
-                        self._log(f"  Found {len(cached_screening)} cached decisions")
-                        self._log(f"  Screening {len(new_articles)} new articles...")
+                        print(f"  Found {len(cached_screening)} cached decisions")
+                        print(f"  Screening {len(new_articles)} new articles...")
                         new_screening = self._screen_articles(new_articles)
                         screening_results = cached_screening + new_screening
                     else:
                         screening_results = cached_screening
-                        self._log("✓ All articles already have screening decisions")
+                        print("✓ All articles already have screening decisions")
                     
                 except Exception as e:
-                    self._log(f"Cache error: {str(e)}, re-screening all", "WARN")
+                    print(f"Cache error: {str(e)}, re-screening all", "WARN")
                     screening_results = self._screen_articles(articles)
             else:
-                self._log("[STEP 2/6] Screening titles and abstracts...")
+                print("\n[STEP 2/6] Screening titles and abstracts...")
                 screening_results = self._screen_articles(articles)
             
             # Always save updated screening results
@@ -369,10 +369,10 @@ class CDSSLitReviewProcessor:
             exclude_count = sum(1 for r in screening_results if r['decision'] == 'EXCLUDE')
             uncertain_count = sum(1 for r in screening_results if r['decision'] == 'UNCERTAIN')
             
-            self._log(f"✓ Screening complete:")
-            self._log(f"  - INCLUDE: {include_count}")
-            self._log(f"  - EXCLUDE: {exclude_count}")
-            self._log(f"  - UNCERTAIN: {uncertain_count}")
+            print(f"✓ Screening complete:")
+            print(f"  - INCLUDE: {include_count}")
+            print(f"  - EXCLUDE: {exclude_count}")
+            print(f"  - UNCERTAIN: {uncertain_count}")
             
             # Step 3: Extract data from included articles (with cache merging)
             extraction_file = self.output_dir / "03_extracted_data.json"
@@ -380,11 +380,11 @@ class CDSSLitReviewProcessor:
             included_articles = [a for a in articles if a['pmid'] in included_pmids]
             
             if not included_articles:
-                self._log("ERROR: No articles included after screening. Aborting.", "ERROR")
+                print("ERROR: No articles included after screening. Aborting.", "ERROR")
                 return
                 
             if extraction_file.exists():
-                self._log("[STEP 3/6] Loading extracted data cache...")
+                print("\n[STEP 3/6] Loading extracted data cache...")
                 try:
                     cached_data = self._load_json(extraction_file)
                     cached_pmids = {d['pmid'] for d in cached_data if 'pmid' in d}
@@ -393,29 +393,29 @@ class CDSSLitReviewProcessor:
                     new_articles = [a for a in included_articles if a['pmid'] not in cached_pmids]
                     
                     if new_articles:
-                        self._log(f"  Found {len(cached_data)} cached extractions")
-                        self._log(f"  Extracting data from {len(new_articles)} new articles...")
+                        print(f"  Found {len(cached_data)} cached extractions")
+                        print(f"  Extracting data from {len(new_articles)} new articles...")
                         new_data = self._extract_article_data(new_articles)
                         extracted_data = cached_data + new_data
                     else:
                         extracted_data = cached_data
-                        self._log("✓ All included articles already have extracted data")
+                        print("✓ All included articles already have extracted data")
                     
                 except Exception as e:
-                    self._log(f"Cache error: {str(e)}, re-extracting all", "WARN")
+                    print(f"Cache error: {str(e)}, re-extracting all", "WARN")
                     extracted_data = self._extract_article_data(included_articles)
             else:
-                self._log("[STEP 3/6] Extracting data from included articles...")
+                print("\n[STEP 3/6] Extracting data from included articles...")
                 extracted_data = self._extract_article_data(included_articles)
             
             # Always save updated extracted data
             self._save_json(extracted_data, extraction_file)
-            self._log(f"✓ Extracted data from {len(extracted_data)} articles")
+            print(f"✓ Extracted data from {len(extracted_data)} articles")
             
             # Step 4: Assess quality (with cache merging)
             quality_file = self.output_dir / "04_quality_assessment.json"
             if quality_file.exists():
-                self._log("[STEP 4/6] Loading quality assessment cache...")
+                print("\n[STEP 4/6] Loading quality assessment cache...")
                 try:
                     cached_assessments = self._load_json(quality_file)
                     cached_pmids = {a['pmid'] for a in cached_assessments if 'pmid' in a}
@@ -424,49 +424,49 @@ class CDSSLitReviewProcessor:
                     new_articles = [a for a in extracted_data if a['pmid'] not in cached_pmids]
                     
                     if new_articles:
-                        self._log(f"  Found {len(cached_assessments)} cached assessments")
-                        self._log(f"  Assessing quality for {len(new_articles)} new articles...")
+                        print(f"  Found {len(cached_assessments)} cached assessments")
+                        print(f"  Assessing quality for {len(new_articles)} new articles...")
                         new_included_articles = [a for a in included_articles if a['pmid'] not in cached_pmids]
                         new_assessments = self._assess_quality(new_articles, new_included_articles)
                         quality_assessments = cached_assessments + new_assessments
                     else:
                         quality_assessments = cached_assessments
-                        self._log("✓ All included articles already have quality assessments")
+                        print("✓ All included articles already have quality assessments")
                     
                 except Exception as e:
-                    self._log(f"Cache error: {str(e)}, re-assessing all", "WARN")
+                    print(f"Cache error: {str(e)}, re-assessing all", "WARN")
                     quality_assessments = self._assess_quality(extracted_data, included_articles)
             else:
-                self._log("[STEP 4/6] Assessing study quality (QUADAS-2)...")
+                print("\n[STEP 4/6] Assessing study quality (QUADAS-2)...")
                 quality_assessments = self._assess_quality(extracted_data, included_articles)
             
             # Always save updated assessments
             self._save_json(quality_assessments, quality_file)
-            self._log(f"✓ Quality assessment complete for {len(quality_assessments)} studies")
+            print(f"✓ Quality assessment complete for {len(quality_assessments)} studies")
             
             # Step 5: Synthesis
-            self._log("\n[STEP 5/6] Performing thematic synthesis...")
+            print("\n[STEP 5/6] Performing thematic synthesis...")
             synthesis = self._perform_synthesis(extracted_data)
             synthesis_file = self.output_dir / "05_thematic_synthesis.txt"
             synthesis_file.write_text(synthesis)
-            self._log(f"✓ Synthesis complete - {len(synthesis)} characters written")
+            print(f"✓ Synthesis complete - {len(synthesis)} characters written")
             
             # Step 6: Generate summary table
-            self._log("[STEP 6/6] Generating summary table...")
+            print("\n[STEP 6/6] Generating summary table...")
             self._generate_summary_table(extracted_data)
             
             # Final summary
             elapsed = (datetime.now() - self.start_time).total_seconds()
-            self._log("="*70, "HEADER")
-            self._log("PIPELINE COMPLETE", "HEADER")
-            self._log(f"Results saved to: {self.output_dir}", "HEADER")
-            self._log(f"Total time: {elapsed:.1f} seconds", "HEADER")
-            self._log("="*70, "HEADER")
+            print("="*70)
+            print("PIPELINE COMPLETE")
+            print(f"Results saved to: {self.output_dir}")
+            print(f"Total time: {elapsed:.1f} seconds")
+            print("="*70)
             
         except Exception as e:
-            self._log(f"FATAL ERROR: {str(e)}", "ERROR")
+            print(f"FATAL ERROR: {str(e)}", "ERROR")
             import traceback
-            self._log(traceback.format_exc(), "ERROR")
+            print(traceback.format_exc(), "ERROR")
             raise
     
     def _parse_pubmed_export(self, file_path: str) -> List[Dict]:
@@ -478,14 +478,14 @@ class CDSSLitReviewProcessor:
         try:
             from pubmed_parser import PubMedParser
         except ImportError:
-            self._log("ERROR: pubmed_parser module not found in same directory", "ERROR")
-            self._log("Make sure pubmed_parser.py is in the same folder as this script")
+            print("ERROR: pubmed_parser module not found in same directory", "ERROR")
+            print("Make sure pubmed_parser.py is in the same folder as this script")
             raise
         
         # Parse file with auto-detection
         try:
             articles = PubMedParser.parse(file_path)
-            self._log(f"✓ Parsed {len(articles)} articles from {Path(file_path).name}")
+            print(f"✓ Parsed {len(articles)} articles from {Path(file_path).name}")
             
             if not articles:
                 raise ValueError("No articles found in the file")
@@ -494,7 +494,7 @@ class CDSSLitReviewProcessor:
             return articles
             
         except Exception as e:
-            self._log(f"Error parsing file: {str(e)}", "ERROR")
+            print(f"Error parsing file: {str(e)}", "ERROR")
             raise
     
     def _screen_articles(self, articles: List[Dict]) -> List[Dict]:
@@ -554,11 +554,11 @@ Respond ONLY in this JSON format:
                 results.append(result)
                 
                 if (i + 1) % 10 == 0:
-                    self._log(f"  Screened {i+1}/{len(articles)} articles...")
+                    print(f"  Screened {i+1}/{len(articles)} articles...")
                     time.sleep(1)  # Rate limiting
                     
             except (json.JSONDecodeError, Exception) as e:
-                self._log(f"Error screening {article['pmid']}: {str(e)}", "WARN")
+                print(f"Error screening {article['pmid']}: {str(e)}", "WARN")
                 results.append({
                     'pmid': article['pmid'],
                     'decision': 'UNCERTAIN',
@@ -628,11 +628,11 @@ Extract and return this JSON structure (use null for unavailable data):
                 extracted.append(data)
                 
                 if (i + 1) % 5 == 0:
-                    self._log(f"  Extracted {i+1}/{len(articles)} articles...")
+                    print(f"  Extracted {i+1}/{len(articles)} articles...")
                     time.sleep(1)
                     
             except (json.JSONDecodeError, Exception) as e:
-                self._log(f"Error extracting {article['pmid']}: {str(e)}", "WARN")
+                print(f"Error extracting {article['pmid']}: {str(e)}", "WARN")
                 extracted.append({
                     'pmid': article['pmid'],
                     'title': article['title'],
@@ -702,10 +702,10 @@ Return ONLY JSON:
                 quality_results.append(result)
                 
                 if (i + 1) % 5 == 0:
-                    self._log(f"  Quality assessed {i+1}/{len(articles)} articles...")
+                    print(f"  Quality assessed {i+1}/{len(articles)} articles...")
                     
             except Exception as e:
-                self._log(f"Error assessing {article['pmid']}: {str(e)}", "WARN")
+                print(f"Error assessing {article['pmid']}: {str(e)}", "WARN")
                 quality_results.append({
                     'pmid': article['pmid'],
                     'assessment_error': True
@@ -775,7 +775,7 @@ from the studies where possible."""
             return synthesis_text
             
         except Exception as e:
-            self._log(f"Error performing synthesis: {str(e)}", "ERROR")
+            print(f"Error performing synthesis: {str(e)}", "ERROR")
             return "Error generating synthesis"
     
     def _generate_summary_table(self, extracted_data: List[Dict]):
@@ -826,7 +826,7 @@ from the studies where possible."""
             })
         
         if not rows:
-            self._log("No valid data to create summary table", "WARN")
+            print("No valid data to create summary table", "WARN")
             return
         
         # Try using pandas if available
@@ -835,10 +835,10 @@ from the studies where possible."""
                 df = pd.DataFrame(rows)
                 output_file = self.output_dir / "summary_characteristics_table.csv"
                 df.to_csv(output_file, index=False)
-                self._log(f"Summary table saved ({len(rows)} studies) - CSV format")
+                print(f"Summary table saved ({len(rows)} studies) - CSV format")
                 return
             except Exception as e:
-                self._log(f"Error creating pandas DataFrame: {str(e)}", "WARN")
+                print(f"Error creating pandas DataFrame: {str(e)}", "WARN")
         
         # Fall back to manual CSV creation without pandas
         try:
@@ -854,9 +854,9 @@ from the studies where possible."""
                         values = [str(row.get(h, '')).replace('"', '""') for h in headers]
                         f.write(','.join(f'"{v}"' for v in values) + '\n')
             
-            self._log(f"Summary table saved ({len(rows)} studies) - Manual CSV creation (no pandas)")
+            print(f"Summary table saved ({len(rows)} studies) - Manual CSV creation (no pandas)")
         except Exception as e:
-            self._log(f"Error creating summary table: {str(e)}", "ERROR")
+            print(f"Error creating summary table: {str(e)}", "ERROR")
     
     def _save_json(self, data: any, filepath: Path):
         """Save data as formatted JSON"""
