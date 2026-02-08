@@ -552,7 +552,7 @@ class LaTeXArticleGenerator:
             }
             body = {
                 'model': self.model,
-                'max_tokens': 8000,  # Higher for article generation
+                'max_tokens': 20000,  # Increased for longer articles
                 'messages': [{'role': 'user', 'content': prompt}]
             }
         else:  # OpenAI-compatible
@@ -562,7 +562,7 @@ class LaTeXArticleGenerator:
             }
             body = {
                 'model': self.model,
-                'max_tokens': 8000,
+                'max_tokens': 20000,  # Increased for longer articles
                 'temperature': 0.3,
                 'messages': [{'role': 'user', 'content': prompt}]
             }
@@ -640,7 +640,18 @@ class LaTeXArticleGenerator:
         # Build comprehensive prompt with all data
         prompt = self._build_article_prompt()
         
+        print(f"Prompt size before LLM call: {len(prompt) / 1024:.1f} KB")
+        
+        # Include more of the synthesis content
+        synthesis_content = self.data.get('synthesis', '')
+        if len(synthesis_content) > 0:
+            synthesis_trunc = synthesis_content[:10000]  # Include first 10KB
+            if len(synthesis_content) > 10000:
+                synthesis_trunc += "\n... [truncated]"
+            prompt += f"\n\nAdditional Synthesis Content:\n{synthesis_trunc}"
+        
         print("Making LLM call (this may take several minutes)...")
+        print(f"Final prompt size: {len(prompt) / 1024:.1f} KB")
         article_content = self.call_llm(prompt)
         
         return article_content
@@ -912,9 +923,11 @@ Generate the complete LaTeX document now:
         # Thematic synthesis
         synthesis = self.data.get('synthesis', '')
         if synthesis:
-            lines.append("THEMATIC SYNTHESIS (base for analysis):")
-            lines.append(synthesis[:2000])  # First 2000 chars
-            lines.append("...")
+            lines.append("THEMATIC SYNTHESIS (extended excerpt):")
+            # Include first 6000 characters of synthesis
+            lines.append(synthesis[:6000])
+            if len(synthesis) > 6000:
+                lines.append("... [additional synthesis content available]")
             lines.append("")
         
         return "\n".join(lines)
