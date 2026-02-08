@@ -423,17 +423,22 @@ class ArticleDataCollector:
             else:
                 formatted_authors = authors
             
+            # LaTeX escaping for BibTeX fields (except DOI/PMID/URL which shouldn't need it)
+            title = study.get('title', 'Untitled').replace('&', r'\&').replace('$', r'\$').replace('%', r'\%').replace('#', r'\#')
+            journal_esc = journal.replace('&', r'\&').replace('$', r'\$').replace('%', r'\%').replace('#', r'\#')
+            formatted_authors_esc = formatted_authors.replace('&', r'\&').replace('$', r'\$').replace('%', r'\%').replace('#', r'\#')
+
             entry = f"""@article{{{citation_key},
-  title     = {{{study.get('title', 'Untitled')}}},
-  author    = {{{formatted_authors}}},
-  journal   = {{{journal}}},
+  title     = {{{title}}},
+  author    = {{{formatted_authors_esc}}},
+  journal   = {{{journal_esc}}},
   year      = {{{year}}},
   volume    = {{{volume}}},
   number    = {{{issue}}},
   pages     = {{{pages}}},
-  doi       = {{{doi}}},
-  pmid      = {{{pmid}}},
-  url       = {{{url}}}
+  doi       = {{{doi}}},  # No escaping needed
+  pmid      = {{{pmid}}},  # No escaping needed
+  url       = {{{url}}}   # No escaping needed
 }}"""
             entries.append(entry)
         
@@ -665,7 +670,7 @@ class LaTeXArticleGenerator:
         """
         
         # Format data for prompt
-        data_summary = self._format_data_for_prompt()
+        data_summary = json.dumps(self.data, indent=2)  # Use JSON representation to preserve structure and prevent LaTeX issues
         
         # Get review metadata
         topic = self.data.get('review_topic', {})
@@ -701,6 +706,8 @@ INSTRUCTIONS:
 
    ABSTRACT:
    - Background on {topic_description}
+   - PRESERVE LaTeX commands untouched (e.g. \\cite, \\ref, \\section)
+   - Escape special LaTeX characters: \\&, \\%, \\$, \\#, \\_ 
    - Systematic review objective
    - Methods (search, PRISMA, QUADAS-2)
    - Key results (numbers, performance ranges)
@@ -787,6 +794,8 @@ INSTRUCTIONS:
    - Professional academic tone with moderate stylistic variation
    - Clear, concise writing that favors direct communication over filler phrases
    - Evidence-based (all claims supported by data provided)
+   - Proper LaTeX escaping: use \& for &, \% for %, \$ for $, \# for #
+   - Preserve LaTeX commands like \cite, \ref, \section exactly as generated
    - Critical analysis (explain WHY findings matter)
    - Use jargon strategically - explain technical terms if needed
    - Vary sentence structure to avoid repetitive patterns
