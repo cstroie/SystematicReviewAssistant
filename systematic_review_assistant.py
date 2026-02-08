@@ -1752,10 +1752,9 @@ Supported Providers:
         """
     )
 
-    parser.add_argument('input_file', nargs='?', help='PubMed export file (CSV/XML/MEDLINE/TXT/JSON)')
+    parser.add_argument('workdir', help='Working directory containing pipeline outputs (expects articles.txt for processing)')
     parser.add_argument('--plan', help='Free-text research topic description (generates PubMed query and metadata - requires no input file)')
     parser.add_argument('--download', action='store_true', help='Download PubMed articles matching query in file')
-    parser.add_argument('--workdir', default='output', help='Output directory')
     parser.add_argument('--provider', choices=list(API_CONFIGS.keys()),
                        default='anthropic', help='LLM provider')
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
@@ -1793,6 +1792,11 @@ def main():
 
     args = parser.parse_args()
 
+    # Validate workdir exists if specified
+    if args.workdir and not Path(args.workdir).exists():
+        print(f"Error: Work directory '{args.workdir}' not found")
+        sys.exit(1)
+
     # Handle PubMed download
     if args.download:
         if not args.workdir:
@@ -1827,21 +1831,8 @@ def main():
         downloader.download_medline(pmids, str(output_file))
         print(f"\n✓ Download complete! {len(pmids)} articles saved to {output_file}")
         print("\nYou can now process this file with:")
-        print(f"  python systematic_review_assistant.py {output_file}")
+        print(f"  python systematic_review_assistant.py {args.workdir}")
         sys.exit(0)
-
-    # Validate arguments
-    if args.plan and args.input_file:
-        print("Error: Cannot specify both --plan and input file")
-        sys.exit(1)
-    if not args.plan and not args.input_file:
-        print("Error: Must specify either an input file or --plan")
-        sys.exit(1)
-
-    # Validate workdir exists if specified
-    if args.workdir and not Path(args.workdir).exists():
-        print(f"Error: Work directory '{args.workdir}' not found")
-        sys.exit(1)
 
     # Validate input file exists if required
     if not args.plan:
@@ -1889,9 +1880,9 @@ def main():
         processor.run_complete_pipeline(str(input_path))
 
     except APIKeyError as e:
-        print("\n" + "="*50)
+        print("\n" + "="*70)
         print("API KEY NOT FOUND!")
-        print("="*50)
+        print("="*70)
         print(f"You need to set the environment variable: {e.env_var}")
         print("\nTo set it temporarily for this session:")
         print(f"  export {e.env_var}=\"your-api-key-here\"")
