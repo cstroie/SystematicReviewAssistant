@@ -1752,18 +1752,15 @@ Supported Providers:
         """
     )
 
-    parser.add_argument('--download', help='Download PubMed articles matching query in file')
-    parser.add_argument('--output', help='Output file for downloaded MEDLINE format')
-    parser.add_argument('--workdir', default='output', help='Output directory')
-
     parser.add_argument('input_file', nargs='?', help='PubMed export file (CSV/XML/MEDLINE/TXT/JSON)')
     parser.add_argument('--plan', help='Free-text research topic description (generates PubMed query and metadata - requires no input file)')
+    parser.add_argument('--download', action='store_true', help='Download PubMed articles matching query in file')
+    parser.add_argument('--workdir', default='output', help='Output directory')
     parser.add_argument('--provider', choices=list(API_CONFIGS.keys()),
                        default='anthropic', help='LLM provider')
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
     parser.add_argument('--api-url', help='Custom API URL (overrides provider default)')
     parser.add_argument('--api-key', help='API key (uses env var if not specified)')
-    parser.add_argument('--workdir', default='output', help='Output directory')
     parser.add_argument('--quiet', action='store_true', help='Suppress log output')
 
     return parser
@@ -1799,7 +1796,7 @@ def main():
     # Handle PubMed download
     if args.download:
         if not args.workdir:
-            print("Error: --workdir required with --download")
+            print("Error: --workdir required for download mode")
             sys.exit(1)
         
         # Get query from plan file in working directory
