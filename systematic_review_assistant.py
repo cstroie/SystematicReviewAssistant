@@ -1722,14 +1722,22 @@ class CDSSLitReviewProcessor:
         return cached_results + results
 
     def _load_file(self, filepath: Path) -> Any:
-        """Load data from JSON"""
+        """Load data from JSON or YAML based on file extension"""
         with open(filepath, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            if filepath.suffix.lower() == '.yaml':
+                import yaml
+                return yaml.safe_load(f)
+            else:
+                return json.load(f)
 
     def _save_file(self, data: Any, filepath: Path):
-        """Save data as formatted JSON"""
+        """Save data as JSON or YAML based on file extension"""
         with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+            if filepath.suffix.lower() == '.yaml':
+                import yaml
+                yaml.dump(data, f, sort_keys=False, indent=2)
+            else:
+                json.dump(data, f, indent=2, ensure_ascii=False)
 
 
 def create_parser():
