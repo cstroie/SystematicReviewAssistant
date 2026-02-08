@@ -40,7 +40,8 @@ import urllib.request
 import urllib.error
 import re
 import random
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from pathlib import Path
 import html
 
 MAX_PROMPT_SIZE = 1 * 1024 * 1024  # 1MB
