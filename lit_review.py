@@ -564,14 +564,19 @@ class PubMedQueryGenerator:
                 raise ValueError("No valid JSON object found in LLM response")
             
             try:
+                # Get matched JSON string and unescape HTML entities
+                json_str = json_match.group(1) if json_match.lastindex else json_match.group()
+                clean_json = html.unescape(json_str)
+                
                 # Parse components with validation
-                components = json.loads(json_match.group(1) if json_match.lastindex else json_match.group())
+                components = json.loads(clean_json)
             except json.JSONDecodeError as e:
                 # Add debug information to help diagnose JSON issues
+                clean_json = html.unescape(json_match.group())
                 snippet_start = max(0, e.pos - 50)
-                snippet_end = min(len(json_match.group()), e.pos + 50)
-                json_snippet = json_match.group()[snippet_start:snippet_end]
-                print(f"JSON parsing error: {e.msg}\nNear: {json_snippet}\nFull response start:\n{response_text[:500]}")
+                snippet_end = min(len(clean_json), e.pos + 50)
+                json_snippet = clean_json[snippet_start:snippet_end]
+                print(f"JSON parsing error: {e.msg}\nNear: {json_snippet}\nFull response start:\n{html.unescape(response_text[:500])}")
                 raise
 
             # Validate strict schema
