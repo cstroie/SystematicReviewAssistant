@@ -70,6 +70,14 @@ def sanitize_filename(name: str) -> str:
     cleaned = re.sub(r'[\\/:\*\?"<>\|\s]', '_', name)
     return cleaned[:200]  # Prevent excessively long filenames
 
+def sanitize_error_message(msg: str) -> str:
+    """Sanitize error messages to prevent leaking sensitive information"""
+    # Remove potential paths and API keys
+    msg = re.sub(r'/[\w/.-]+', '[PATH]', msg)  # Paths
+    msg = re.sub(r'\b[A-Za-z0-9]{32,64}\b', '[API_KEY]', msg)  # Long hex strings
+    msg = re.sub(r'\b\d{4,}-\w+\b', '[MODEL_ID]', msg)  # Model IDs
+    return msg
+
 def sanitize_api_input(text: str) -> str:
     """Basic sanitization for text used in API calls"""
     # Remove control characters and limit length
@@ -538,8 +546,9 @@ class PubMedQueryGenerator:
             print(f"✓ Generated review metadata:")
             print(f"  Saved to: {output_path}")
         except Exception as e:
-            print(f"❌ Error generating PubMed components: {str(e)}")
-            raise
+            sanitized_err = sanitize_error_message(str(e))
+            print(f"❌ Error generating PubMed components: {sanitized_err}")
+            raise ValueError("Error generating PubMed components") from None
 
 class CDSSLitReviewProcessor:
     """Main pipeline processor for systematic literature review"""
@@ -779,7 +788,8 @@ class CDSSLitReviewProcessor:
                     raise ValueError("No valid JSON found in response")
                     
             except (json.JSONDecodeError, ValueError, TypeError, Exception) as e:
-                print(f"Error screening {article['pmid']}: {str(e)}", "WARN")
+                sanitized_err = sanitize_error_message(str(e))
+                print(f"Error screening {article['pmid']}: {sanitized_err}", "WARN")
                 results.append({
                     'pmid': article['pmid'],
                     'decision': 'UNCERTAIN',
@@ -878,7 +888,8 @@ class CDSSLitReviewProcessor:
                     raise ValueError("No valid JSON found in response")
                     
             except (json.JSONDecodeError, ValueError, TypeError, Exception) as e:
-                print(f"Error extracting {article['pmid']}: {str(e)}", "WARN")
+                sanitized_err = sanitize_error_message(str(e))
+                print(f"Error extracting {article['pmid']}: {sanitized_err}", "WARN")
                 results.append({
                     'pmid': article['pmid'],
                     'title': article['title'],
@@ -939,7 +950,8 @@ class CDSSLitReviewProcessor:
                 results.append(result)
                     
             except Exception as e:
-                print(f"Error assessing {article['pmid']}: {str(e)}", "WARN")
+                sanitized_err = sanitize_error_message(str(e))
+                print(f"Error assessing {article['pmid']}: {sanitized_err}", "WARN")
                 results.append({
                     'pmid': article['pmid'],
                     'assessment_error': True
@@ -988,7 +1000,8 @@ class CDSSLitReviewProcessor:
             return synthesis_text
             
         except Exception as e:
-            print(f"Error performing synthesis: {str(e)}", "ERROR")
+            sanitized_err = sanitize_error_message(str(e))
+            print(f"Error performing synthesis: {sanitized_err}", "ERROR")
             return "Error generating synthesis"
     
     def _generate_summary_table(self, extracted_data: List[Dict]):
@@ -1051,7 +1064,8 @@ class CDSSLitReviewProcessor:
                 print(f"Summary table saved ({len(rows)} studies) - CSV format")
                 return
             except Exception as e:
-                print(f"Error creating pandas DataFrame: {str(e)}", "WARN")
+                sanitized_err = sanitize_error_message(str(e))
+                print(f"Error creating summary table: {sanitized_err}", "WARN")
         
         # Fall back to manual CSV creation without pandas
         try:
