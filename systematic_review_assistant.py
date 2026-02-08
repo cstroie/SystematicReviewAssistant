@@ -1161,7 +1161,6 @@ class CDSSLitReviewProcessor:
                 print("\n[STEP 1/6] Parsing PubMed export...")
                 articles = self._parse_pubmed_export(pubmed_file)
                 self._save_json(articles, articles_file)
-                print(f"✓ Parsed {len(articles)} articles from {pubmed_file}")
 
             # Step 2: Screen articles (cache-aware)
             screening_file = self.workdir / "02_screening_results.json"
