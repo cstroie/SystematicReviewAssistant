@@ -554,13 +554,25 @@ class PubMedQueryGenerator:
             prompt = self.prompt.format(task_description=safe_task)
             response_text = self.llm.call(prompt)
 
-            # Extract JSON response
-            json_match = re.search(r'\{[\s\S]*\}', response_text)
+            # Attempt multiple JSON extraction patterns
+            json_match = re.search(r'```json\s*({.*?})\s*```', response_text, re.DOTALL)
+            if not json_match:
+                # Fall back to original pattern
+                json_match = re.search(r'\{[\s\S]*\}', response_text)
+            
             if not json_match:
                 raise ValueError("No valid JSON object found in LLM response")
-
-            # Parse components with validation
-            components = json.loads(json_match.group())
+            
+            try:
+                # Parse components with validation
+                components = json.loads(json_match.group(1) if json_match.lastindex else json_match.group())
+            except json.JSONDecodeError as e:
+                # Add debug information to help diagnose JSON issues
+                snippet_start = max(0, e.pos - 50)
+                snippet_end = min(len(json_match.group()), e.pos + 50)
+                json_snippet = json_match.group()[snippet_start:snippet_end]
+                print(f"JSON parsing error: {e.msg}\nNear: {json_snippet}\nFull response start:\n{response_text[:500]}")
+                raise
 
             # Validate strict schema
             self.validate_llm_json_response(
