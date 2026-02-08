@@ -704,11 +704,16 @@ class CDSSLitReviewProcessor:
             print(f"✓ Quality assessment complete for {len(quality_assessments)} studies")
 
             # Step 5: Synthesis
-            print("\n[STEP 5/6] Performing thematic synthesis...")
-            synthesis = self._perform_synthesis(extracted_data)
             synthesis_file = self.workdir / "05_thematic_synthesis.txt"
-            synthesis_file.write_text(synthesis)
-            print(f"✓ Synthesis complete - {len(synthesis)} characters written")
+            if synthesis_file.exists():
+                print("\n[STEP 5/6] Using existing thematic synthesis")
+                synthesis = synthesis_file.read_text(encoding='utf-8')
+                print(f"✓ Loaded {len(synthesis)} characters from existing file")
+            else:
+                print("\n[STEP 5/6] Performing thematic synthesis...")
+                synthesis = self._perform_synthesis(extracted_data)
+                synthesis_file.write_text(synthesis)
+                print(f"✓ Synthesis complete - {len(synthesis)} characters written")
 
             # Step 6: Generate summary table
             print("\n[STEP 6/6] Generating summary table...")
