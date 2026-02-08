@@ -1101,12 +1101,21 @@ class PlanGenerator:
             if missing_screening:
                 raise ValueError(f"Missing screening criteria: {missing_screening}")
 
-            # Save validated data
-            output_path = self.workdir / "00_plan.json"
-            output_path.write_text(json.dumps(components, indent=2))
+            # Save validated data in both JSON and YAML formats
+            output_path_json = self.workdir / "00_plan.json"
+            output_path_yaml = self.workdir / "00_plan.yaml"
+            
+            # Save JSON
+            output_path_json.write_text(json.dumps(components, indent=2))
+            
+            # Save YAML
+            import yaml
+            yaml_output = yaml.dump(components, sort_keys=False, indent=2)
+            output_path_yaml.write_text(yaml_output)
 
             print(f"✓ Generated plan:")
-            print(f"  Saved to: {output_path}")
+            print(f"  Saved to: {output_path_json} (JSON)")
+            print(f"  Saved to: {output_path_yaml} (YAML)")
             print(f"\nPubMed query:\n{components['query']}")
         except Exception as e:
             sanitized_err = sanitize_error_message(str(e))
