@@ -335,8 +335,9 @@ class DirectAPIClient:
             Model response text
         """
         
-        # Prepare request
-        headers = self.headers_fn(self.api_key, self.model)
+        # Prepare request with types
+        headers_dict = self.headers_fn(self.api_key, self.model)
+        headers = {str(k): str(v) for k,v in headers_dict.items()}
         body = self.body_fn(prompt, self.model)
         body_json = json.dumps(body).encode('utf-8')
         
@@ -700,7 +701,7 @@ class CDSSLitReviewProcessor:
             raise
         
         # Sanitize and validate file path with size limit
-        validated_path = validate_file_path(file_path, MAX_INPUT_SIZE)
+        validated_path = validate_file_path(str(file_path), MAX_INPUT_SIZE)
         
         # Parse file with auto-detection
         try:

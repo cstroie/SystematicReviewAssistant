@@ -265,10 +265,11 @@ class PubMedParser:
         # Handle different XML structures
         # Try PubmedArticleSet format first
         for article_elem in root.findall('.//PubmedArticle'):
-            if article_elem is not None:
-                article = PubMedParser._parse_xml_article(article_elem)
-                if article.get('pmid'):
-                    articles.append(article)
+            for elem in root.findall('.//PubmedArticle'):
+                if elem is not None:
+                    article = PubMedParser._parse_xml_article(elem)
+                    if article.get('pmid'):
+                        articles.append(article)
         
         return articles
     
@@ -434,7 +435,8 @@ if __name__ == '__main__':
         try:
             articles = PubMedParser.parse(sys.argv[1])
             if articles:
-                print(f"\nFirst PMID: {articles[0].get('pmid')} - {articles[0].get('title')[:80]}...")
+                if articles:
+                    print(f"\nFirst PMID: {articles[0].get('pmid')} - {articles[0].get('title')[:80]}...")
     
         except Exception as e:
             print(f"Error: {str(e)}")
