@@ -1752,7 +1752,7 @@ Supported Providers:
         """
     )
 
-    parser.add_argument('workdir', default='output', help='Working directory containing pipeline outputs (expects articles.txt for processing)')
+    parser.add_argument('workdir', help='Working directory containing pipeline outputs (expects articles.txt for processing)')
     parser.add_argument('--plan', help='Free-text research topic description (generates PubMed query and metadata - requires no input file)')
     parser.add_argument('--download', action='store_true', help='Download PubMed articles matching query in file')
     parser.add_argument('--provider', choices=list(API_CONFIGS.keys()),
