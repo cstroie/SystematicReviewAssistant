@@ -564,7 +564,7 @@ from pathlib import Path
 from anthropic import Anthropic
 
 class CDSSLitReviewProcessor:
-    def __init__(self, output_dir="lit_review_output"):
+    def __init__(self, output_dir="output"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         self.client = Anthropic()
@@ -789,7 +789,7 @@ if __name__ == "__main__":
 After running the complete pipeline, you'll have:
 
 ```
-lit_review_output/
+output/
 ├── 01_parsed_articles.json          # All articles from PubMed
 ├── 02_screening_results.json        # Title/abstract screening decisions
 ├── 03_extracted_data.json           # Structured data extraction

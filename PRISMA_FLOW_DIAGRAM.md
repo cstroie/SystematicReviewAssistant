@@ -14,15 +14,15 @@ Generates PRISMA 2020 flow diagrams compliant with the official PRISMA 2020 Stat
 ### 1. Run the Pipeline First
 
 ```bash
-python cdss_lit_review_pipeline_v3.py pubmed_export.csv
+python systematic_review_assistant.py pubmed_export.csv
 ```
 
-This creates: `lit_review_output/02_screening_results.json`
+This creates: `output/02_screening_results.json`
 
 ### 2. Generate the Diagram
 
 ```bash
-python prisma_flow_diagram.py lit_review_output/02_screening_results.json
+python prisma_flow_diagram.py output/02_screening_results.json
 ```
 
 ### 3. Use in Your Paper
@@ -76,7 +76,7 @@ The generated diagram follows official PRISMA 2020 format with 4 phases:
 After running the script, you'll get:
 
 ```
-lit_review_output/
+output/
 ├── prisma_flow_diagram.svg      ← Vector (best for papers)
 ├── prisma_flow_diagram.html     ← Interactive web version
 └── 02_screening_results.json    ← (input data)
@@ -135,25 +135,25 @@ convert prisma_flow_diagram.svg diagram.png
 ### Generate Both SVG and HTML
 
 ```bash
-python prisma_flow_diagram.py lit_review_output/02_screening_results.json --format all
+python prisma_flow_diagram.py output/02_screening_results.json --format all
 ```
 
 ### Generate Only SVG
 
 ```bash
-python prisma_flow_diagram.py lit_review_output/02_screening_results.json --format svg
+python prisma_flow_diagram.py output/02_screening_results.json --format svg
 ```
 
 ### Generate Only HTML
 
 ```bash
-python prisma_flow_diagram.py lit_review_output/02_screening_results.json --format html
+python prisma_flow_diagram.py output/02_screening_results.json --format html
 ```
 
 ### Specify Output Directory
 
 ```bash
-python prisma_flow_diagram.py lit_review_output/02_screening_results.json --output-dir ./figures/
+python prisma_flow_diagram.py output/02_screening_results.json --output-dir ./figures/
 ```
 
 ## Understanding the Numbers
@@ -270,10 +270,10 @@ This diagram generator is compliant with **PRISMA 2020** requirements:
 
 ```bash
 # Check the correct path
-ls -la lit_review_output/02_screening_results.json
+ls -la output/02_screening_results.json
 
 # Make sure pipeline has finished
-python cdss_lit_review_pipeline_v3.py pubmed.csv
+python systematic_review_assistant.py pubmed.csv
 ```
 
 ### "JSON parsing error"
@@ -281,10 +281,10 @@ python cdss_lit_review_pipeline_v3.py pubmed.csv
 The screening results file might be corrupted. Check:
 ```bash
 # View the file
-cat lit_review_output/02_screening_results.json
+cat output/02_screening_results.json
 
 # Validate JSON
-python -m json.tool lit_review_output/02_screening_results.json
+python -m json.tool output/02_screening_results.json
 ```
 
 ### "Numbers don't match my manual count"
@@ -338,13 +338,13 @@ with open('prisma_diagram.html', 'w') as f:
 
 ```bash
 # 1. Run literature search
-python cdss_lit_review_pipeline_v3.py pubmed_export.csv
+python systematic_review_assistant.py pubmed_export.csv
 
 # 2. Generate PRISMA diagram
-python prisma_flow_diagram.py lit_review_output/02_screening_results.json --format all
+python prisma_flow_diagram.py output/02_screening_results.json --format all
 
 # 3. View results
-open lit_review_output/prisma_flow_diagram.html
+open output/prisma_flow_diagram.html
 
 # 4. Use in paper
 # - Insert SVG into Word/Google Docs
@@ -375,12 +375,12 @@ If you encounter issues:
 
 1. **Check input file format:**
    ```bash
-   head lit_review_output/02_screening_results.json
+   head output/02_screening_results.json
    ```
 
 2. **Validate JSON:**
    ```bash
-   python -m json.tool lit_review_output/02_screening_results.json > /dev/null && echo "Valid JSON"
+   python -m json.tool output/02_screening_results.json > /dev/null && echo "Valid JSON"
    ```
 
 3. **Check Python version:**

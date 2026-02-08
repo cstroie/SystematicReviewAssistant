@@ -13,25 +13,25 @@ It creates a publication-ready systematic review article (~8000-10000 words) com
 ```bash
 # Export from PubMed, then run pipeline
 export ANTHROPIC_API_KEY="sk-ant-..."
-python cdss_lit_review_pipeline_v3.py pubmed_export.csv
+python systematic_review_assistant.py pubmed_export.csv
 ```
 
-This creates: `lit_review_output/` with 7 output files
+This creates: `output/` with 7 output files
 
 ### Step 2: Generate Article
 
 ```bash
 # Simple
-python generate_latex_article.py lit_review_output/
+python generate_latex_article.py output/
 
 # Or with specific provider
-python generate_latex_article.py lit_review_output/ --provider groq --model mixtral-8x7b-32768
+python generate_latex_article.py output/ --provider groq --model mixtral-8x7b-32768
 ```
 
 ### Step 3: Review & Compile
 
 ```bash
-cd lit_review_output/
+cd output/
 # Edit the LaTeX file (add authors, references, etc.)
 pdflatex systematic_review_article.tex
 bibtex systematic_review_article
@@ -53,7 +53,7 @@ python generate_latex_article.py <output_dir> [options]
 
 ### Required Arguments
 
-- `output_dir` - Directory containing pipeline outputs (e.g., `lit_review_output/`)
+- `output_dir` - Directory containing pipeline outputs (e.g., `output/`)
 
 ### Optional Arguments
 
@@ -77,7 +77,7 @@ python generate_latex_article.py <output_dir> [options]
 #### Using Anthropic (Highest Quality)
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
-python generate_latex_article.py lit_review_output/
+python generate_latex_article.py output/
 ```
 
 **Cost:** ~$3-5  
@@ -87,7 +87,7 @@ python generate_latex_article.py lit_review_output/
 #### Using Groq (Fastest & Cheap)
 ```bash
 export GROQ_API_KEY="..."
-python generate_latex_article.py lit_review_output/ \
+python generate_latex_article.py output/ \
   --provider groq \
   --model mixtral-8x7b-32768
 ```
@@ -99,7 +99,7 @@ python generate_latex_article.py lit_review_output/ \
 #### Using Together.ai (Cheapest)
 ```bash
 export TOGETHER_API_KEY="..."
-python generate_latex_article.py lit_review_output/ \
+python generate_latex_article.py output/ \
   --provider together
 ```
 
@@ -109,7 +109,7 @@ python generate_latex_article.py lit_review_output/ \
 
 #### Using Specific API Key
 ```bash
-python generate_latex_article.py lit_review_output/ \
+python generate_latex_article.py output/ \
   --provider anthropic \
   --api-key sk-ant-xyz...
 ```
@@ -124,10 +124,10 @@ Run as separate script after pipeline completes:
 
 ```bash
 # Terminal 1: Run pipeline
-python cdss_lit_review_pipeline_v3.py pubmed.csv
+python systematic_review_assistant.py pubmed.csv
 
 # Terminal 2 (when done): Generate article
-python generate_latex_article.py lit_review_output/
+python generate_latex_article.py output/
 ```
 
 ### Option 2: Combined Workflow Script
@@ -142,15 +142,15 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 
 # Run pipeline
 echo "Step 1: Running systematic review pipeline..."
-python cdss_lit_review_pipeline_v3.py pubmed_export.csv
+python systematic_review_assistant.py pubmed_export.csv
 
 # Generate article
 echo "Step 2: Generating LaTeX article..."
-python generate_latex_article.py lit_review_output/
+python generate_latex_article.py output/
 
 # Compile LaTeX
 echo "Step 3: Compiling LaTeX to PDF..."
-cd lit_review_output/
+cd output/
 pdflatex systematic_review_article.tex
 bibtex systematic_review_article
 pdflatex systematic_review_article.tex
@@ -355,7 +355,7 @@ The script shows progress:
 [7/7] Assembling LaTeX document... ✓
 
 ARTICLE GENERATION COMPLETE
-Output: lit_review_output/systematic_review_article.tex
+Output: output/systematic_review_article.tex
 Size: ~850,000 bytes (~170 pages)
 ```
 
@@ -383,7 +383,7 @@ Download from https://miktex.org/
 ### Compilation
 
 ```bash
-cd lit_review_output/
+cd output/
 
 # First pass: generate PDF with citations marked
 pdflatex systematic_review_article.tex
@@ -414,23 +414,23 @@ pdflatex systematic_review_article.tex && bibtex systematic_review_article && pd
 # Set environment variable
 export ANTHROPIC_API_KEY="sk-ant-..."
 # Or
-python generate_latex_article.py lit_review_output/ --api-key sk-ant-...
+python generate_latex_article.py output/ --api-key sk-ant-...
 ```
 
 ### "Directory not found"
 ```bash
 # Check directory exists
-ls lit_review_output/
+ls output/
 
 # Check required files
-ls lit_review_output/02_screening_results.json
-ls lit_review_output/03_extracted_data.json
+ls output/02_screening_results.json
+ls output/03_extracted_data.json
 ```
 
 ### "Missing required file"
 Run the pipeline first:
 ```bash
-python cdss_lit_review_pipeline_v3.py pubmed.csv
+python systematic_review_assistant.py pubmed.csv
 ```
 
 ### "Rate limited"

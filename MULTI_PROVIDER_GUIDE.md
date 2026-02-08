@@ -15,7 +15,7 @@ This improved version works with **any OpenAI-compatible API**, giving you flexi
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
-python cdss_lit_review_pipeline_v2.py pubmed.csv
+python systematic_review_assistant.py pubmed.csv
 ```
 
 ### 2. **OpenRouter** (100+ models)
@@ -27,7 +27,7 @@ python cdss_lit_review_pipeline_v2.py pubmed.csv
 
 ```bash
 export OPENROUTER_API_KEY="sk-or-..."
-python cdss_lit_review_pipeline_v2.py pubmed.csv \
+python systematic_review_assistant.py pubmed.csv \
   --provider openrouter \
   --model meta-llama/llama-2-70b-chat-hf
 ```
@@ -41,7 +41,7 @@ python cdss_lit_review_pipeline_v2.py pubmed.csv \
 
 ```bash
 export TOGETHER_API_KEY="..."
-python cdss_lit_review_pipeline_v2.py pubmed.csv \
+python systematic_review_assistant.py pubmed.csv \
   --provider together \
   --model meta-llama/Llama-2-70b-chat-hf
 ```
@@ -55,7 +55,7 @@ python cdss_lit_review_pipeline_v2.py pubmed.csv \
 
 ```bash
 export GROQ_API_KEY="..."
-python cdss_lit_review_pipeline_v2.py pubmed.csv \
+python systematic_review_assistant.py pubmed.csv \
   --provider groq \
   --model mixtral-8x7b-32768
 ```
@@ -68,7 +68,7 @@ python cdss_lit_review_pipeline_v2.py pubmed.csv \
 - **Setup**: Run `ollama serve` first
 
 ```bash
-python cdss_lit_review_pipeline_v2.py pubmed.csv \
+python systematic_review_assistant.py pubmed.csv \
   --provider local \
   --model llama2 \
   --api-url http://localhost:11434/v1
@@ -87,7 +87,7 @@ export ANTHROPIC_API_KEY="sk-ant-xxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 3. Run:
 ```bash
-python cdss_lit_review_pipeline_v2.py pubmed_export.csv
+python systematic_review_assistant.py pubmed_export.csv
 ```
 
 ### Setup OpenRouter (Budget-Friendly)
@@ -105,7 +105,7 @@ curl https://openrouter.ai/api/v1/models \
 ```
 5. Run with your chosen model:
 ```bash
-python cdss_lit_review_pipeline_v2.py pubmed_export.csv \
+python systematic_review_assistant.py pubmed_export.csv \
   --provider openrouter \
   --model meta-llama/llama-2-70b-chat-hf
 ```
@@ -120,7 +120,7 @@ export TOGETHER_API_KEY="xxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 4. Run:
 ```bash
-python cdss_lit_review_pipeline_v2.py pubmed_export.csv \
+python systematic_review_assistant.py pubmed_export.csv \
   --provider together \
   --model meta-llama/Llama-2-70b-chat-hf
 ```
@@ -135,7 +135,7 @@ export GROQ_API_KEY="gsk_xxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 4. Run:
 ```bash
-python cdss_lit_review_pipeline_v2.py pubmed_export.csv \
+python systematic_review_assistant.py pubmed_export.csv \
   --provider groq \
   --model mixtral-8x7b-32768
 ```
@@ -155,7 +155,7 @@ ollama serve
 ```
 4. In another terminal, run:
 ```bash
-python cdss_lit_review_pipeline_v2.py pubmed_export.csv \
+python systematic_review_assistant.py pubmed_export.csv \
   --provider local \
   --model llama2 \
   --api-url http://localhost:11434/v1
@@ -189,7 +189,7 @@ Estimated costs for processing 500 articles:
 If you want to use a different API-compatible service not in the list:
 
 ```bash
-python cdss_lit_review_pipeline_v2.py pubmed.csv \
+python systematic_review_assistant.py pubmed.csv \
   --api-url https://custom-api.example.com/v1 \
   --model your-model-name \
   --api-key your-api-key
@@ -201,7 +201,7 @@ Use a cheap model for screening, expensive model for synthesis:
 
 ```bash
 # First pass: Screening with cheap model
-python cdss_lit_review_pipeline_v2.py pubmed.csv \
+python systematic_review_assistant.py pubmed.csv \
   --provider together \
   --model meta-llama/Llama-2-70b-chat-hf \
   --output-dir results_screening
@@ -209,7 +209,7 @@ python cdss_lit_review_pipeline_v2.py pubmed.csv \
 # Manual review of uncertain cases (edit 02_screening_results.json)
 
 # Second pass: Extraction/synthesis with better model
-python cdss_lit_review_pipeline_v2.py filtered_included.csv \
+python systematic_review_assistant.py filtered_included.csv \
   --provider anthropic \
   --model claude-opus-4-5-20251101 \
   --output-dir results_extraction
@@ -236,7 +236,7 @@ export GROQ_API_KEY="..."
 Load and run:
 ```bash
 source .env.openrouter
-python cdss_lit_review_pipeline_v2.py pubmed.csv --provider openrouter
+python systematic_review_assistant.py pubmed.csv --provider openrouter
 ```
 
 ---
@@ -246,7 +246,7 @@ python cdss_lit_review_pipeline_v2.py pubmed.csv --provider openrouter
 ### Want Best Quality (Academic Publication)
 ```bash
 # Use Claude Opus (most capable)
-python cdss_lit_review_pipeline_v2.py pubmed.csv \
+python systematic_review_assistant.py pubmed.csv \
   --provider anthropic \
   --model claude-opus-4-5-20251101
 ```
@@ -254,7 +254,7 @@ python cdss_lit_review_pipeline_v2.py pubmed.csv \
 ### Want Best Balance (Quality + Cost)
 ```bash
 # Use Llama 2 70B via OpenRouter
-python cdss_lit_review_pipeline_v2.py pubmed.csv \
+python systematic_review_assistant.py pubmed.csv \
   --provider openrouter \
   --model meta-llama/llama-2-70b-chat-hf
 ```
@@ -262,7 +262,7 @@ python cdss_lit_review_pipeline_v2.py pubmed.csv \
 ### Want Cheapest
 ```bash
 # Use Together.ai with Llama 2
-python cdss_lit_review_pipeline_v2.py pubmed.csv \
+python systematic_review_assistant.py pubmed.csv \
   --provider together \
   --model meta-llama/Llama-2-70b-chat-hf
 ```
@@ -270,7 +270,7 @@ python cdss_lit_review_pipeline_v2.py pubmed.csv \
 ### Want Fastest
 ```bash
 # Use Groq with Mixtral
-python cdss_lit_review_pipeline_v2.py pubmed.csv \
+python systematic_review_assistant.py pubmed.csv \
   --provider groq \
   --model mixtral-8x7b-32768
 ```
@@ -278,7 +278,7 @@ python cdss_lit_review_pipeline_v2.py pubmed.csv \
 ### Want No Costs
 ```bash
 # Use local Ollama with Mistral (lightweight)
-python cdss_lit_review_pipeline_v2.py pubmed.csv \
+python systematic_review_assistant.py pubmed.csv \
   --provider local \
   --model mistral \
   --api-url http://localhost:11434/v1
@@ -314,7 +314,7 @@ ollama serve
 curl http://localhost:11434/api/tags
 
 # Terminal 3: Run pipeline
-python cdss_lit_review_pipeline_v2.py pubmed.csv --provider local --model llama2
+python systematic_review_assistant.py pubmed.csv --provider local --model llama2
 ```
 
 ### "Rate limit exceeded"
@@ -370,7 +370,7 @@ OUTPUT_DIR="results"
 # Step 1: Screening (use cheap model)
 echo "Step 1: Screening with Together.ai..."
 export TOGETHER_API_KEY="..."
-python cdss_lit_review_pipeline_v2.py "$PUBMED_CSV" \
+python systematic_review_assistant.py "$PUBMED_CSV" \
   --provider together \
   --model meta-llama/Llama-2-70b-chat-hf \
   --output-dir "$OUTPUT_DIR/screening"
@@ -380,7 +380,7 @@ python cdss_lit_review_pipeline_v2.py "$PUBMED_CSV" \
 # Step 2: Extraction/Synthesis (use better model)
 echo "Step 2: Extraction with Anthropic..."
 export ANTHROPIC_API_KEY="..."
-python cdss_lit_review_pipeline_v2.py included_articles.csv \
+python systematic_review_assistant.py included_articles.csv \
   --provider anthropic \
   --model claude-opus-4-5-20251101 \
   --output-dir "$OUTPUT_DIR/extraction"
@@ -437,7 +437,7 @@ echo "Pipeline complete!"
 
 ### General LLM Usage
 
-- Check the original detailed guide: `llm_lit_review_workflow.md`
+- Check the original detailed guide: `WORKFLOW.md`
 - Review the QUICKSTART: `QUICKSTART.md`
 
 Good luck with your systematic review! 🎯

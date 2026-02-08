@@ -18,7 +18,7 @@ A tool for automating systematic literature reviews using PubMed exports and LLM
 2. Configure your API keys (see `DIRECT_API_SETUP.md`)
 3. Run a review:  
    ```bash
-   python lit_review.py pubmed_export.csv
+   python systematic_review_assistant.py pubmed_export.csv
    ```
 
 ## Documentation
@@ -30,7 +30,7 @@ A tool for automating systematic literature reviews using PubMed exports and LLM
 
 ## Output Files
 
-Results are saved in `lit_review_output/` with timestamps:
+Results are saved in `output/` with timestamps:
 - `screened_articles.json`
 - `extracted_data.json`
 - `quality_assessments.json`

@@ -111,7 +111,7 @@ AND
 
 2. **Run through pipeline:**
    ```bash
-   python cdss_lit_review_pipeline_v3.py pubmed_export.csv
+   python systematic_review_assistant.py pubmed_export.csv
    ```
 
 3. **Review outputs:**
@@ -208,9 +208,9 @@ NOT (adult*[tiab] OR geriatric*[tiab] OR elderly[tiab])
 ```
 your_project/
 ├── pubmed_export.csv (your export from PubMed)
-├── cdss_lit_review_pipeline_v3.py (pipeline script)
+├── systematic_review_assistant.py (pipeline script)
 ├── pubmed_parser.py (format handler)
-└── lit_review_output/ (results)
+└── output/ (results)
     ├── 00_articles_cache.json
     ├── 01_parsed_articles.json
     ├── 02_screening_results.json

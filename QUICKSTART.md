@@ -51,7 +51,7 @@ AND
 ### Run the full pipeline
 
 ```bash
-python cdss_lit_review_pipeline.py pubmed_export.csv output_folder/
+python systematic_review_assistant.py pubmed_export.csv output_folder/
 ```
 
 ### What you'll see
@@ -149,7 +149,7 @@ print(f"Agreement (Cohen's kappa): {kappa:.3f}")
 
 ### Adjust screening criteria
 
-Edit the screening prompt in `cdss_lit_review_pipeline.py` (around line 150):
+Edit the screening prompt in `systematic_review_assistant.py` (around line 150):
 
 ```python
 INCLUSION CRITERIA:
@@ -287,7 +287,7 @@ sensitivity compared to "replacement systems" (Stand-alone diagnostic)...
 
 ## Support & Further Help
 
-- **Detailed guide**: See `llm_lit_review_workflow.md` for complete technical details
+- **Detailed guide**: See `WORKFLOW.md` for complete technical details
 - **Claude docs**: https://docs.anthropic.com
 - **PRISMA guidelines**: http://www.prisma-statement.org/
 - **PubMed tutorials**: https://www.ncbi.nlm.nih.gov/books/NBK53841/

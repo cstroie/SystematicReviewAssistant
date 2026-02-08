@@ -521,7 +521,7 @@ def main():
         print("  python prisma_flow_diagram.py <screening_results.json> --format all")
         print("\nFormats: svg (default), html, png, all")
         print("\nExample:")
-        print("  python prisma_flow_diagram.py lit_review_output/02_screening_results.json --format all")
+        print("  python prisma_flow_diagram.py output/02_screening_results.json --format all")
         sys.exit(1)
     
     results_file = sys.argv[1]

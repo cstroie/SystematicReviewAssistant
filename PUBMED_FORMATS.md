@@ -133,28 +133,28 @@ curl -s "https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pubmed/?query=CDSS+radiology&f
 
 ### With CSV
 ```bash
-python cdss_lit_review_pipeline_v3.py pubmed_results.csv
+python systematic_review_assistant.py pubmed_results.csv
 ```
 
 ### With MEDLINE Format
 ```bash
-python cdss_lit_review_pipeline_v3.py pubmed_results.txt
+python systematic_review_assistant.py pubmed_results.txt
 ```
 
 ### With XML
 ```bash
-python cdss_lit_review_pipeline_v3.py pubmed_results.xml
+python systematic_review_assistant.py pubmed_results.xml
 ```
 
 ### With JSON
 ```bash
-python cdss_lit_review_pipeline_v3.py pubmed_results.json
+python systematic_review_assistant.py pubmed_results.json
 ```
 
 ### Force a Specific Format (if auto-detection fails)
 ```bash
-python cdss_lit_review_pipeline_v3.py unknown_format.txt --format medline
-python cdss_lit_review_pipeline_v3.py unknown_format.txt --format csv
+python systematic_review_assistant.py unknown_format.txt --format medline
+python systematic_review_assistant.py unknown_format.txt --format csv
 ```
 
 ## Format Comparison
@@ -208,7 +208,7 @@ The pipeline automatically detects format by:
 head -20 pubmed_results.txt
 
 # Try forcing a specific format
-python cdss_lit_review_pipeline_v3.py pubmed_results.txt --format medline
+python systematic_review_assistant.py pubmed_results.txt --format medline
 ```
 
 ### "No articles found"
@@ -221,7 +221,7 @@ file pubmed_results.txt   # Check file type
 ### "Wrong format detected"
 ```bash
 # If auto-detection fails, specify format explicitly
-python cdss_lit_review_pipeline_v3.py mystery_file.txt --format xml
+python systematic_review_assistant.py mystery_file.txt --format xml
 ```
 
 ## MEDLINE Format Field Reference
@@ -281,14 +281,14 @@ IS  - ISSN
 ### 1. Choose CSV for Simplicity
 ```bash
 # Fastest export, smallest file, easiest to verify
-python cdss_lit_review_pipeline_v3.py results.csv
+python systematic_review_assistant.py results.csv
 ```
 
 ### 2. Use MEDLINE for Complete Data
 ```bash
 # Official PubMed format, includes all metadata
 # Use if you need MeSH terms, publication types, etc.
-python cdss_lit_review_pipeline_v3.py results.txt
+python systematic_review_assistant.py results.txt
 ```
 
 ### 3. Store Original Export
@@ -297,7 +297,7 @@ python cdss_lit_review_pipeline_v3.py results.txt
 cp pubmed_results.csv pubmed_results_backup.csv
 
 # Clear cache if you modify the export
-rm lit_review_output/00_articles_cache.json
+rm output/00_articles_cache.json
 ```
 
 ### 4. Automate Large Searches
@@ -308,7 +308,7 @@ curl -s "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&te
   > cdss_radiology.txt
 
 # Process with pipeline
-python cdss_lit_review_pipeline_v3.py cdss_radiology.txt
+python systematic_review_assistant.py cdss_radiology.txt
 ```
 
 ## Troubleshooting
@@ -316,7 +316,7 @@ python cdss_lit_review_pipeline_v3.py cdss_radiology.txt
 ### Issue: "Detected format: medline" but file is CSV
 **Solution**: Check file for special characters, remove BOM, or specify format:
 ```bash
-python cdss_lit_review_pipeline_v3.py file.txt --format csv
+python systematic_review_assistant.py file.txt --format csv
 ```
 
 ### Issue: XML file not parsing
@@ -340,11 +340,11 @@ python -c "import json; json.load(open('file.json'))" # Validate JSON
 
 2. Run pipeline
    ```bash
-   python cdss_lit_review_pipeline_v3.py export.csv
+   python systematic_review_assistant.py export.csv
    ```
 
 3. Pipeline auto-detects format and processes
 
-4. Results in `lit_review_output/`
+4. Results in `output/`
 
 No configuration needed - just run it! 🚀
