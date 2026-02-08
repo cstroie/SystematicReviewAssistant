@@ -12,9 +12,8 @@ Based on this analysis and typical patterns in this field, provide a comprehensi
    - Imaging modalities covered
    - Clinical domains studied
 
-2. TYPES OF CDSS SYSTEMS
-   - Distribution by type (AI/ML vs rule-based)
-   - Technology trends over time
+2. ANALYSIS
+{analysis}
 
 3. CLINICAL PERFORMANCE
    - Range of reported metrics (sensitivity, specificity, AUC)

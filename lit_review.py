@@ -590,13 +590,13 @@ class PubMedQueryGenerator:
             # Validate strict schema
             validate_llm_json_response(
                 components,
-                required_keys=['query', 'topic', 'title', 'screening', 'synthesis_section'],
+                required_keys=['query', 'topic', 'title', 'screening', 'synthesis'],
                 key_types={
                     'query': str,
                     'topic': str,
                     'title': str,
                     'screening': dict,
-                    'synthesis_section': str
+                    'synthesis': list
                 }
             )
 
@@ -1046,8 +1046,8 @@ class CDSSLitReviewProcessor:
             topic_data = json.load(f)
         
         # Get dynamic section 2 template
-        section2_template = topic_data.get('synthesis_section', 
-            "  - Distribution by type\n  - Technology trends\n  - Implementation characteristics")
+        section2_template = topic_data.get('synthesis', 
+            ["Distribution by type", "Technology trends", "Implementation characteristics"])
         
         # Build synthesis prompt with dynamic section
         synthesis_template = self._load_prompt('synthesis')
