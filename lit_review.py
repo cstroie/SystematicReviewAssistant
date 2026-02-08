@@ -1079,11 +1079,6 @@ class CDSSLitReviewProcessor:
             print(f"Summary table saved ({len(rows)} studies) - Manual CSV creation (no pandas)")
         except Exception as e:
             print(f"Error creating summary table: {str(e)}", "ERROR")
-    
-    def _save_json(self, data: Any, filepath: Path):
-        """Save data as formatted JSON"""
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
 
     def _process_with_caching(self, cache_file: Path, all_items: List[Dict], 
                             item_key: str, process_fn: callable, 
@@ -1145,6 +1140,11 @@ class CDSSLitReviewProcessor:
         """Load data from JSON"""
         with open(filepath, 'r', encoding='utf-8') as f:
             return json.load(f)
+    
+    def _save_json(self, data: Any, filepath: Path):
+        """Save data as formatted JSON"""
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
 
 
 def create_parser():
