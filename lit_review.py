@@ -1106,20 +1106,28 @@ class CDSSLitReviewProcessor:
             else:
                 sensitivity = specificity = auc = accuracy = ''
 
-            rows.append({
+            # Create base row with standard fields
+            row = {
                 'PMID': item.get('pmid', ''),
                 'Year': item.get('year', ''),
                 'Study Design': item.get('study_design', ''),
                 'Clinical Domain': item.get('clinical_domain', ''),
                 'Imaging Modality': modality_str,
-                'CDSS Type': item.get('cdss_type', ''),
                 'Sample Size (N)': n_patients,
                 'Sensitivity': sensitivity,
                 'Specificity': specificity,
                 'AUC': auc,
                 'Accuracy': accuracy,
                 'Main Findings': str(item.get('main_findings', ''))[:100]
-            })
+            }
+
+            # Add any fields from the 'extract' section
+            if 'extract' in item and isinstance(item['extract'], dict):
+                for field_name, field_value in item['extract'].items():
+                    safe_field_name = sanitize_filename(str(field_name))
+                    row[safe_field_name] = str(field_value)
+
+            rows.append(row)
 
         if not rows:
             print("No valid data to create summary table")
@@ -1142,13 +1150,15 @@ class CDSSLitReviewProcessor:
             output_file = self.workdir / "summary_characteristics_table.csv"
             with open(output_file, 'w', encoding='utf-8', newline='') as f:
                 if rows:
+                    # Collect all headers from all rows
+                    all_headers = sorted({key for row in rows for key in row.keys()})
+                    
                     # Write header
-                    headers = list(rows[0].keys())
-                    f.write(','.join(f'"{h}"' for h in headers) + '\n')
+                    f.write(','.join(f'"{h}"' for h in all_headers) + '\n')
 
                     # Write rows
                     for row in rows:
-                        values = [str(row.get(h, '')).replace('"', '""') for h in headers]
+                        values = [str(row.get(h, '')).replace('"', '""') for h in all_headers]
                         f.write(','.join(f'"{v}"' for v in values) + '\n')
 
             print(f"Summary table saved ({len(rows)} studies) - Manual CSV creation (no pandas)")
