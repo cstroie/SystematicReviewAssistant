@@ -62,4 +62,7 @@ Example valid JSON response:
   }}
 }}
 
+5. "synthesis_section" - Markdown-formatted bullet points for the "TYPES OF SYSTEMS" section using the fields from "extract". Example:
+   "synthesis_section": "  - Distribution by {field1}\n  - Trends in {field2} over time\n  - Clinical impact of {field3}"
+
 Respond ONLY with valid JSON in this structure. Do not include markdown formatting.

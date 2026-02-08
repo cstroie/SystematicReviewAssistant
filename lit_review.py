@@ -590,12 +590,13 @@ class PubMedQueryGenerator:
             # Validate strict schema
             validate_llm_json_response(
                 components,
-                required_keys=['query', 'topic', 'title', 'screening'],
+                required_keys=['query', 'topic', 'title', 'screening', 'synthesis_section'],
                 key_types={
                     'query': str,
                     'topic': str,
                     'title': str,
-                    'screening': dict
+                    'screening': dict,
+                    'synthesis_section': str
                 }
             )
 
@@ -1039,8 +1040,23 @@ class CDSSLitReviewProcessor:
             'total_count': len(extracted_data)
         }
 
+        # Load review template
+        topic_file = self.workdir / "00_review_topic.json"
+        with open(topic_file, 'r', encoding='utf-8') as f:
+            topic_data = json.load(f)
+        
+        # Get dynamic section 2 template
+        section2_template = topic_data.get('synthesis_section', 
+            "  - Distribution by type\n  - Technology trends\n  - Implementation characteristics")
+        
+        # Build synthesis prompt with dynamic section
         synthesis_template = self._load_prompt('synthesis')
-        synthesis_prompt = synthesis_template.format(
+        updated_template = synthesis_template.replace(
+            "2. TYPES OF CDSS SYSTEMS\n   - Distribution by type (AI/ML vs rule-based)\n   - Technology trends over time",
+            f"2. TYPES OF SYSTEMS\n{section2_template}"
+        )
+        
+        synthesis_prompt = updated_template.format(
             topic=topic,
             total_studies=len(extracted_data),
             data_sample=json.dumps(summary_dict, indent=2)
