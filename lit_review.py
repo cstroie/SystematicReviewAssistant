@@ -361,9 +361,12 @@ class PubMedQueryGenerator:
         prompt_path = Path(__file__).parent / 'prompts' / f'{safe_name}.txt'
         try:
             # Double-check path safety
+            prompt_path = validate_file_path(prompt_path, MAX_PROMPT_SIZE)
+                
             if not prompt_path.resolve().relative_to(Path(__file__).parent.resolve()):
                 raise ValueError(f"Attempted path traversal in prompt name: {name}")
                 
+            # Read with size validation
             return prompt_path.read_text(encoding='utf-8').strip()
         except IOError as e:
             raise ValueError(f"Failed to load prompt '{safe_name}': {str(e)}") from e
@@ -560,12 +563,8 @@ class CDSSLitReviewProcessor:
             print("Make sure pubmed_parser.py is in the same folder as this script")
             raise
         
-        # Sanitize and validate file path
-        validated_path = Path(file_path).resolve()
-        if not validated_path.exists():
-            raise FileNotFoundError(f"PubMed export file not found: {file_path}")
-        if not validated_path.is_file():
-            raise ValueError(f"Path is not a regular file: {file_path}")
+        # Sanitize and validate file path with size limit
+        validated_path = validate_file_path(file_path, MAX_INPUT_SIZE)
         
         # Parse file with auto-detection
         try:
