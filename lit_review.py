@@ -986,12 +986,26 @@ class CDSSLitReviewProcessor:
 
             try:
                 response_text = self.llm.call(prompt)
-                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-                result = json.loads(json_match.group()) if json_match else json.loads(response_text)
+                
+                # Attempt multiple JSON extraction patterns
+                json_match = re.search(r'```json\s*({.*?})\s*```', response_text, re.DOTALL)
+                if not json_match:
+                    json_match = re.search(r'\{[\s\S]*\}', response_text)
+
+                if not json_match:
+                    raise ValueError("No valid JSON found in LLM response")
+
+                # Get matched JSON string and unescape HTML entities
+                json_str = json_match.group(1) if json_match.lastindex else json_match.group()
+                clean_json = html.unescape(json_str)
+
+                # Parse and validate response
+                result = json.loads(clean_json)
                 return result
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Quality assessment failed for PMID {article['pmid']}: {sanitized_err}")
+                print(f"Response snippet: {response_text[:300]}")
                 return {
                     'pmid': article['pmid'],
                     'assessment_error': sanitized_err[:200]
