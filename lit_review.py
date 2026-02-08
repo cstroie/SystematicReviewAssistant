@@ -389,26 +389,27 @@ class DirectAPIClient:
                     continue
                 
                 # Non-retryable error
-                raise ValueError(f"API error {status_code}: {error_body}")
+                raise ValueError(f"API error {status_code}: Please check your request and try again")
             
             except urllib.error.URLError as e:
                 if attempt < max_retries - 1:
                     backoff = 2 ** attempt
                     wait_time = min(backoff + random.uniform(0, 1), 10)
-                    print(f"  Connection error: {e.reason}. Waiting {wait_time:.1f}s before retry #{attempt+1}...")
+                    print(f"  Connection error: {sanitize_error_message(str(e.reason))}. Waiting {wait_time:.1f}s before retry #{attempt+1}...")
                     time.sleep(wait_time)
                     continue
-                raise ValueError(f"Connection error: {e.reason}")
+                raise ValueError("Connection error: Could not reach API endpoint")
             
             except Exception as e:
+                sanitized_msg = sanitize_error_message(str(e))
                 if attempt < max_retries - 1:
                     wait_time = 1 + random.uniform(0, 1)
-                    print(f"  Error: {str(e)}. Waiting {wait_time:.1f}s before retry #{attempt+1}...")
+                    print(f"  Error: {sanitized_msg}. Waiting {wait_time:.1f}s before retry #{attempt+1}...")
                     time.sleep(wait_time)
                     continue
-                raise ValueError(f"Error calling API: {str(e)}")
+                raise ValueError(f"API call failed: {sanitized_msg}")
         
-        raise ValueError(f"Failed after {max_retries} retries")
+        raise ValueError(f"Failed after {max_retries} attempts")
 
     def validate_api_response(self, content: str) -> str:
         """Validate and sanitize API response for security"""
