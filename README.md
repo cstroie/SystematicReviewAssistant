@@ -1,4 +1,4 @@
-# Systematic Literature Review Tool
+# Systematic Review Assistant
 
 A tool for automating systematic literature reviews using PubMed exports and LLM processing.
 
