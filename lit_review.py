@@ -902,50 +902,60 @@ class CDSSLitReviewProcessor:
 
             try:
                 response_text = self.llm.call(prompt)
-                try:
-                    # Attempt multiple JSON extraction patterns
-                    json_match = re.search(r'```json\s*({.*?})\s*```', response_text, re.DOTALL)
-                    if not json_match:
-                        json_match = re.search(r'\{[\s\S]*\}', response_text)
-                    
-                    if not json_match:
-                        raise ValueError("No valid JSON found in LLM response")
+            except Exception as e:
+                sanitized_err = sanitize_error_message(str(e))
+                print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
+                print(f"Response snippet: {response_text[:300]}")
+                return {
+                    'pmid': article['pmid'],
+                    'title': article['title'],
+                    'extraction_error': sanitized_err[:200]
+                }
 
-                    # Get matched JSON string and unescape HTML entities
-                    json_str = json_match.group(1) if json_match.lastindex else json_match.group()
-                    clean_json = html.unescape(json_str)
-                    
-                    # Parse JSON response
-                    data = json.loads(clean_json)
-                    
-                    # Validate the structure
-                    validate_llm_json_response(
-                        data,
-                        required_keys=['pmid'],
-                        key_types={
-                            'pmid': str,
-                            'title': str,
-                            'year': (str, int),
-                            'study_design': str,
-                            'clinical_domain': str,
-                            'imaging_modality': (str, list),
-                            'cdss_type': str,
-                            'sample_size': (dict, int),
-                            'key_metrics': dict,
-                            'main_findings': str
-                        }
-                    )
-                    
-                    return data
-                except Exception as e:
-                    sanitized_err = sanitize_error_message(str(e))
-                    print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
-                    print(f"Response snippet: {response_text[:300]}")
-                    return {
-                        'pmid': article['pmid'],
-                        'title': article['title'],
-                        'extraction_error': sanitized_err[:200]
+            try:
+                # Attempt multiple JSON extraction patterns
+                json_match = re.search(r'```json\s*({.*?})\s*```', response_text, re.DOTALL)
+                if not json_match:
+                    json_match = re.search(r'\{[\s\S]*\}', response_text)
+                
+                if not json_match:
+                    raise ValueError("No valid JSON found in LLM response")
+
+                # Get matched JSON string and unescape HTML entities
+                json_str = json_match.group(1) if json_match.lastindex else json_match.group()
+                clean_json = html.unescape(json_str)
+                
+                # Parse JSON response
+                data = json.loads(clean_json)
+                
+                # Validate the structure
+                validate_llm_json_response(
+                    data,
+                    required_keys=['pmid'],
+                    key_types={
+                        'pmid': str,
+                        'title': str,
+                        'year': (str, int),
+                        'study_design': str,
+                        'clinical_domain': str,
+                        'imaging_modality': (str, list),
+                        'cdss_type': str,
+                        'sample_size': (dict, int),
+                        'key_metrics': dict,
+                        'main_findings': str
                     }
+                )
+                
+                return data
+            except Exception as e:
+                sanitized_err = sanitize_error_message(str(e))
+                print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
+                print(f"Response snippet: {response_text[:300]}")
+                return {
+                    'pmid': article['pmid'],
+                    'title': article['title'],
+                    'extraction_error': sanitized_err[:200]
+                }
 
         return self._process_with_caching(
             cache_file=extraction_file,
