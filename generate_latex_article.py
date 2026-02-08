@@ -692,18 +692,18 @@ INSTRUCTIONS:
 2. CONTENT REQUIREMENTS:
 
    ABSTRACT:
-   - Background on CDSS in pediatric radiology
+   - Background on {topic_description}
    - Systematic review objective
    - Methods (search, PRISMA, QUADAS-2)
    - Key results (numbers, performance ranges)
-   - Conclusions with clinical implications
+   - Conclusions with implications
 
    INTRODUCTION:
-   - Evolution of CDSS from rule-based to AI/ML
-   - Why pediatric radiology is unique
-   - Clinical challenges in pediatric imaging
-   - Current landscape and gaps
-   - Explicit research questions (5)
+   - Current state of research in {topic_description}
+   - Key challenges in the field
+   - Gaps in existing literature
+   - Current landscape and deficiencies
+   - Explicit research questions
 
    METHODS:
    - PubMed search strategy (exact query)
