@@ -67,6 +67,7 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 import html
 from datetime import datetime
+import urllib.parse
 
 try:
     import pandas as pd
@@ -285,6 +286,79 @@ class APIKeyError(Exception):
     def __init__(self, env_var):
         super().__init__()
         self.env_var = env_var
+
+
+class PubMedDownloader:
+    """Download PubMed articles in MEDLINE format using NCBI E-utilities"""
+    
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key
+        self.base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
+    
+    def download_medline(self, pmids: List[str], output_file: str, batch_size: int = 200) -> None:
+        """
+        Download PubMed articles in MEDLINE format
+        
+        Args:
+            pmids: List of PubMed IDs to download
+            output_file: Path to save MEDLINE file
+            batch_size: Number of PMIDs per request (max 200)
+        """
+        # Split into batches
+        batches = [pmids[i:i + batch_size] for i in range(0, len(pmids), batch_size)]
+        
+        with open(output_file, 'w', encoding='utf-8') as f:
+            for i, batch in enumerate(batches):
+                print(f"Downloading batch {i+1}/{len(batches)} ({len(batch)} PMIDs)...")
+                self._download_batch(batch, f)
+                time.sleep(0.5)  # Rate limiting
+        
+        print(f"✓ Downloaded {len(pmids)} articles to {output_file}")
+    
+    def _download_batch(self, pmids: List[str], file_handle) -> None:
+        """Download a single batch of PMIDs"""
+        pmid_str = ",".join(pmids)
+        
+        params = {
+            'db': 'pubmed',
+            'id': pmid_str,
+            'rettype': 'medline',
+            'retmode': 'text'
+        }
+        
+        if self.api_key:
+            params['api_key'] = self.api_key
+        
+        # Build URL
+        query = urllib.parse.urlencode(params)
+        url = f"{self.base_url}/efetch.fcgi?{query}"
+        
+        try:
+            with urllib.request.urlopen(url) as response:
+                content = response.read().decode('utf-8')
+                file_handle.write(content)
+        except urllib.error.HTTPError as e:
+            print(f"Error downloading batch: {e}")
+            raise
+    
+    def search_pubmed(self, query: str, retmax: int = 10000) -> List[str]:
+        """Search PubMed and return list of PMIDs"""
+        params = {
+            'db': 'pubmed',
+            'term': query,
+            'retmax': retmax,
+            'retmode': 'json'
+        }
+        
+        if self.api_key:
+            params['api_key'] = self.api_key
+        
+        query = urllib.parse.urlencode(params)
+        url = f"{self.base_url}/esearch.fcgi?{query}"
+        
+        with urllib.request.urlopen(url) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            return data['esearchresult']['idlist']
 
 
 class DirectAPIClient:
@@ -1666,6 +1740,9 @@ Examples:
   # Local Ollama model (http://localhost:11434):
   %(prog)s pubmed.xml --provider local --model llama2
 
+  # Download PubMed articles (requires NCBI API key):
+  %(prog)s --download pubmed_query.txt --output pubmed_medline.txt
+
 Supported Providers:
   anthropic   - Anthropic Claude (default)
   openrouter  - OpenRouter (100+ models)
@@ -1674,6 +1751,9 @@ Supported Providers:
   local       - Local models (Ollama/vLLM)
         """
     )
+
+    parser.add_argument('--download', help='Download PubMed articles matching query in file')
+    parser.add_argument('--output', help='Output file for downloaded MEDLINE format')
 
     parser.add_argument('input_file', nargs='?', help='PubMed export file (CSV/XML/MEDLINE/TXT/JSON) (required when not using --task)')
     parser.add_argument('--task', help='Free-text research topic description (generates PubMed query and metadata - requires no input file)')
@@ -1714,6 +1794,39 @@ def main():
         sys.exit(0)
 
     args = parser.parse_args()
+
+    # Handle PubMed download
+    if args.download:
+        if not args.output:
+            print("Error: --output required with --download")
+            sys.exit(1)
+        
+        if not Path(args.download).exists():
+            print(f"Error: Query file '{args.download}' not found")
+            sys.exit(1)
+        
+        # Read query from file
+        with open(args.download, 'r', encoding='utf-8') as f:
+            query = f.read().strip()
+        
+        if not query:
+            print("Error: Query file is empty")
+            sys.exit(1)
+        
+        # Download articles
+        print(f"Downloading PubMed articles for query: {query[:100]}...")
+        downloader = PubMedDownloader(api_key=os.getenv('NCBI_API_KEY'))
+        pmids = downloader.search_pubmed(query)
+        
+        if not pmids:
+            print("No articles found for this query")
+            sys.exit(1)
+        
+        downloader.download_medline(pmids, args.output)
+        print(f"\n✓ Download complete! {len(pmids)} articles saved to {args.output}")
+        print("\nYou can now process this file with:")
+        print(f"  python systematic_review_assistant.py {args.output}")
+        sys.exit(0)
 
     # Validate arguments
     if args.task and args.input_file:
