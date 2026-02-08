@@ -70,7 +70,9 @@ class PubMedParser:
                     return 'csv'
                 else:
                     return 'medline'  # Default to MEDLINE for unknown text
-        except Exception:
+        except Exception as e:
+            sanitized_err = sanitize_error_message(str(e))
+            print(f"Warning: Error detecting format ({sanitized_err}), defaulting to MEDLINE")
             return 'medline'  # Default guess
     
     @staticmethod
@@ -90,7 +92,9 @@ class PubMedParser:
                     return 'csv'
                 else:
                     return 'medline'  # Default
-        except Exception:
+        except Exception as e:
+            sanitized_err = sanitize_error_message(str(e))
+            print(f"Warning: Content detection error ({sanitized_err}), defaulting to MEDLINE")
             return 'medline'
     
     @staticmethod
@@ -434,5 +438,6 @@ if __name__ == '__main__':
                 print(f"\nFirst PMID: {articles[0].get('pmid')} - {articles[0].get('title')[:80]}...")
     
         except Exception as e:
-            print(f"Error: {str(e)}")
+            sanitized_err = sanitize_error_message(str(e))
+            print(f"Error: {sanitized_err}")
             sys.exit(1)

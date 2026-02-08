@@ -549,7 +549,7 @@ class PubMedQueryGenerator:
         except Exception as e:
             sanitized_err = sanitize_error_message(str(e))
             print(f"❌ Error generating PubMed components: {sanitized_err}")
-            raise ValueError("Error generating PubMed components") from None
+            raise ValueError(f"PubMed query generation failed: {sanitized_err}") from None
 
 class CDSSLitReviewProcessor:
     """Main pipeline processor for systematic literature review"""
@@ -790,12 +790,12 @@ class CDSSLitReviewProcessor:
                     
             except (json.JSONDecodeError, ValueError, TypeError, Exception) as e:
                 sanitized_err = sanitize_error_message(str(e))
-                print(f"Error screening {article['pmid']}: {sanitized_err}", "WARN")
+                print(f"Screening failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
                 results.append({
                     'pmid': article['pmid'],
                     'decision': 'UNCERTAIN',
                     'confidence': 0.0,
-                    'reasoning': 'Processing error',
+                    'reasoning': f'Processing error: {sanitized_err[:100]}',
                     'key_terms': []
                 })
             
@@ -890,11 +890,11 @@ class CDSSLitReviewProcessor:
                     
             except (json.JSONDecodeError, ValueError, TypeError, Exception) as e:
                 sanitized_err = sanitize_error_message(str(e))
-                print(f"Error extracting {article['pmid']}: {sanitized_err}", "WARN")
+                print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
                 results.append({
                     'pmid': article['pmid'],
                     'title': article['title'],
-                    'extraction_error': True
+                    'extraction_error': sanitized_err[:200]  # Truncate long errors
                 })
                         
             # Save every 10 items or at end of processing
@@ -952,10 +952,10 @@ class CDSSLitReviewProcessor:
                     
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
-                print(f"Error assessing {article['pmid']}: {sanitized_err}", "WARN")
+                print(f"Quality assessment failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
                 results.append({
                     'pmid': article['pmid'],
-                    'assessment_error': True
+                    'assessment_error': sanitized_err[:200]  # Truncate long errors
                 })
             
             # Save every 10 items or at end of processing
