@@ -1797,23 +1797,23 @@ def main():
 
     # Handle PubMed download
     if args.download:
-        if not args.output:
-            print("Error: --output required with --download")
+        # Get query from plan file in working directory
+        plan_file = Path(args.download) / "00_plan.json"
+        if not plan_file.exists():
+            print(f"Error: Plan file '{plan_file}' not found in working directory")
             sys.exit(1)
         
-        if not Path(args.download).exists():
-            print(f"Error: Query file '{args.download}' not found")
-            sys.exit(1)
+        # Read query from plan file
+        with open(plan_file, 'r', encoding='utf-8') as f:
+            plan_data = json.load(f)
         
-        # Read query from file
-        with open(args.download, 'r', encoding='utf-8') as f:
-            query = f.read().strip()
-        
+        query = plan_data.get('query', '')
         if not query:
-            print("Error: Query file is empty")
+            print("Error: No PubMed query found in plan file")
             sys.exit(1)
         
-        # Download articles
+        # Download articles to working directory
+        output_file = Path(args.download) / "articles.txt"
         print(f"Downloading PubMed articles for query: {query[:100]}...")
         downloader = PubMedDownloader(api_key=os.getenv('NCBI_API_KEY'))
         pmids = downloader.search_pubmed(query)
@@ -1822,10 +1822,10 @@ def main():
             print("No articles found for this query")
             sys.exit(1)
         
-        downloader.download_medline(pmids, args.output)
-        print(f"\n✓ Download complete! {len(pmids)} articles saved to {args.output}")
+        downloader.download_medline(pmids, str(output_file))
+        print(f"\n✓ Download complete! {len(pmids)} articles saved to {output_file}")
         print("\nYou can now process this file with:")
-        print(f"  python systematic_review_assistant.py {args.output}")
+        print(f"  python systematic_review_assistant.py {output_file}")
         sys.exit(0)
 
     # Validate arguments
