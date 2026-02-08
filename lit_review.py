@@ -28,6 +28,11 @@ Usage:
 
     # Using local Ollama
     python lit_review.py pubmed_export.csv --provider local --model llama2
+
+Project: SystematicReviewAssistant
+Author: Costin Stroie <costinstroie@eridu.eu.org>
+GitHub: https://github.com/cstroie/SystematicReviewAssistant
+Year: 2026
 """
 
 import json

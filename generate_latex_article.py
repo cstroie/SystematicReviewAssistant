@@ -15,6 +15,11 @@ Usage:
     python generate_latex_article.py output_dir
     python generate_latex_article.py output_dir --provider anthropic
     python generate_latex_article.py output_dir --model claude-opus-4-5-20251101
+
+Project: SystematicReviewAssistant
+Author: Costin Stroie <costinstroie@eridu.eu.org>
+GitHub: https://github.com/cstroie/SystematicReviewAssistant
+Year: 2026
 """
 
 import json

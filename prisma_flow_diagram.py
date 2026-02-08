@@ -13,6 +13,11 @@ Usage:
     python prisma_flow_diagram.py screening_results.json
     python prisma_flow_diagram.py screening_results.json --format png
     python prisma_flow_diagram.py screening_results.json --format all
+
+Project: SystematicReviewAssistant
+Author: Costin Stroie <costinstroie@eridu.eu.org>
+GitHub: https://github.com/cstroie/SystematicReviewAssistant
+Year: 2026
 """
 
 import json

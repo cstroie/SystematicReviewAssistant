@@ -3,6 +3,11 @@ Multi-format PubMed export parser
 Supports: MEDLINE (.txt), CSV (.csv), XML (.xml), JSON (.json)
 
 This module handles automatic format detection and parsing of PubMed exports.
+
+Project: SystematicReviewAssistant
+Author: Costin Stroie <costinstroie@eridu.eu.org>
+GitHub: https://github.com/cstroie/SystematicReviewAssistant
+Year: 2026
 """
 
 import json
