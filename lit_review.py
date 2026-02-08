@@ -39,6 +39,7 @@ import argparse
 import urllib.request
 import urllib.error
 import re
+from typing import Dict, Any
 
 def sanitize_filename(name: str) -> str:
     """Sanitize filename to prevent path traversal"""
@@ -325,6 +326,31 @@ class PubMedQueryGenerator:
         except IOError as e:
             raise ValueError(f"Failed to load prompt '{safe_name}': {str(e)}") from e
     
+    def validate_llm_json_response(self, json_data: Dict[str, Any], required_keys: list,
+                                 key_types: Dict[str, type]) -> Dict[str, Any]:
+        """Validate structure and content of LLM JSON response"""
+        # Check required keys
+        missing_keys = [key for key in required_keys if key not in json_data]
+        if missing_keys:
+            raise ValueError(f"Missing required keys: {missing_keys}")
+        
+        # Check types
+        type_mismatches = []
+        for key, expected_type in key_types.items():
+            if key in json_data and not isinstance(json_data[key], expected_type):
+                actual_type = type(json_data[key])
+                type_mismatches.append(f"{key}: {actual_type.__name__} instead of {expected_type.__name__}")
+        
+        if type_mismatches:
+            raise TypeError(f"Type mismatches:\n" + "\n".join(type_mismatches))
+            
+        # Check for empty values
+        empty_fields = [key for key in required_keys if json_data.get(key) in ['', None]]
+        if empty_fields:
+            raise ValueError(f"Empty values: {empty_fields}")
+        
+        return json_data
+
     def generate(self, task_description: str):
         """Generate and save PubMed query components"""
         try:
@@ -334,18 +360,35 @@ class PubMedQueryGenerator:
             response_text = self.llm.call(prompt)
             
             # Extract JSON response
-            json_match = re.search(r'{.*}', response_text, re.DOTALL)
+            json_match = re.search(r'{(?:[^{}]|(?R))*}', response_text, re.DOTALL)
             if not json_match:
-                raise ValueError("No JSON found in LLM response")
+                raise ValueError("No valid JSON object found in LLM response")
+            
+            # Parse components with validation
             components = json.loads(json_match.group())
             
-            # Validate components
-            required_keys = ['query', 'topic', 'title', 'screening']
-            if not all(key in components for key in required_keys):
-                missing = [key for key in required_keys if key not in components]
-                raise ValueError(f"Missing required keys in response: {missing}")
-                        
-            # Save as single JSON file
+            # Validate strict schema
+            self.validate_llm_json_response(
+                components,
+                required_keys=['query', 'topic', 'title', 'screening'],
+                key_types={
+                    'query': str,
+                    'topic': str,
+                    'title': str,
+                    'screening': dict
+                }
+            )
+            
+            # Validate screening object
+            if not isinstance(components['screening'], dict):
+                raise TypeError("Screening criteria must be a JSON object")
+                
+            screening_reqs = {'inclusion', 'exclusion'}
+            missing_screening = screening_reqs - set(components['screening'].keys())
+            if missing_screening:
+                raise ValueError(f"Missing screening criteria: {missing_screening}")
+            
+            # Save validated data
             output_path = self.output_dir / "00_review_topic.json"
             output_path.write_text(json.dumps(components, indent=2))
             
@@ -567,14 +610,36 @@ class CDSSLitReviewProcessor:
                 
                 # Extract JSON from response
                 json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                # Extract and validate JSON
+                json_match = re.search(r'{(?:[^{}]|(?R))*}', response_text, re.DOTALL)
                 if json_match:
                     result = json.loads(json_match.group())
-                else:
-                    result = json.loads(response_text)
-                
-                results.append(result)
+                    # Validate screening response structure
+                    self.validate_llm_json_response(
+                        result,
+                        required_keys=['pmid', 'decision', 'confidence', 'reasoning'],
+                        key_types={
+                            'pmid': str,
+                            'decision': str,
+                            'confidence': (float, int),
+                            'reasoning': str,
+                            'key_terms': list
+                        }
+                    )
                     
-            except (json.JSONDecodeError, Exception) as e:
+                    # Validate decision value
+                    if result['decision'] not in ['INCLUDE', 'EXCLUDE', 'UNCERTAIN']:
+                        raise ValueError(f"Invalid decision value: {result['decision']}")
+                    
+                    # Validate confidence range
+                    if not (0 <= result['confidence'] <= 1):
+                        raise ValueError(f"Confidence {result['confidence']} out of [0-1] range")
+                
+                    results.append(result)
+                else:
+                    raise ValueError("No valid JSON found in response")
+                    
+            except (json.JSONDecodeError, ValueError, TypeError, Exception) as e:
                 print(f"Error screening {article['pmid']}: {str(e)}", "WARN")
                 results.append({
                     'pmid': article['pmid'],
@@ -646,15 +711,34 @@ class CDSSLitReviewProcessor:
                 response_text = self.llm.call(prompt)
                 
                 # Extract JSON
-                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                # Extract and validate JSON
+                json_match = re.search(r'{(?:[^{}]|(?R))*}', response_text, re.DOTALL)
                 if json_match:
                     data = json.loads(json_match.group())
-                else:
-                    data = json.loads(response_text)
-                
-                results.append(data)
                     
-            except (json.JSONDecodeError, Exception) as e:
+                    # Validate extraction structure
+                    self.validate_llm_json_response(
+                        data,
+                        required_keys=['pmid'],
+                        key_types={
+                            'pmid': str,
+                            'title': str,
+                            'year': (str, int),
+                            'study_design': str,
+                            'clinical_domain': str,
+                            'imaging_modality': (str, list),
+                            'cdss_type': str,
+                            'sample_size': (dict, int),
+                            'key_metrics': dict,
+                            'main_findings': str
+                        }
+                    )
+                    
+                    results.append(data)
+                else:
+                    raise ValueError("No valid JSON found in response")
+                    
+            except (json.JSONDecodeError, ValueError, TypeError, Exception) as e:
                 print(f"Error extracting {article['pmid']}: {str(e)}", "WARN")
                 results.append({
                     'pmid': article['pmid'],
