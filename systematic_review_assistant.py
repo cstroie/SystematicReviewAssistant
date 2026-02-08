@@ -54,6 +54,7 @@ Usage:
 """
 
 import json
+import yaml
 import csv
 import time
 import sys
@@ -1109,7 +1110,6 @@ class PlanGenerator:
             output_path_json.write_text(json.dumps(components, indent=2))
             
             # Save YAML
-            import yaml
             yaml_output = yaml.dump(components, sort_keys=False, indent=2)
             output_path_yaml.write_text(yaml_output)
 
