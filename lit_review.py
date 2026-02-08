@@ -54,7 +54,19 @@ MAX_PROMPT_SIZE = 1 * 1024 * 1024  # 1MB
 MAX_INPUT_SIZE = 10 * 1024 * 1024  # 10MB
 
 def validate_file_path(path: str, max_size: Optional[int] = None) -> Path:
-    """Validate and normalize file path to prevent directory traversal"""
+    """
+    Validate and normalize file path to prevent directory traversal
+    
+    Args:
+        path: Input file path to validate
+        max_size: Optional maximum file size in bytes
+    
+    Returns:
+        Normalized Path object
+        
+    Raises:
+        ValueError: If path doesn't exist, is directory, or exceeds max_size
+    """
     path_obj = Path(path).resolve()
     
     if not path_obj.exists():
@@ -71,7 +83,18 @@ def validate_file_path(path: str, max_size: Optional[int] = None) -> Path:
     return path_obj
 
 def sanitize_filename(name: str) -> str:
-    """Sanitize filename to prevent path traversal"""
+    """
+    Sanitize filename to prevent path traversal and injection attacks
+    
+    Args:
+        name: Input filename to sanitize
+        
+    Returns:
+        Safe filename with dangerous characters replaced and length limited
+    
+    Removes all path separators and special characters then truncates to 
+    200 characters to prevent excessively long filenames.
+    """
     # Remove any path separators and other dangerous characters
     cleaned = re.sub(r'[\\/:\*\?"<>\|\s]', '_', name)
     return cleaned[:200]  # Prevent excessively long filenames
@@ -222,14 +245,31 @@ API_CONFIGS = {
 
 # Custom exceptions
 class APIKeyError(Exception):
-    """Custom exception for missing API keys"""
+    """
+    Custom exception for missing API keys
+    
+    Attributes:
+        env_var: Name of environment variable that should contain API key
+    """
     def __init__(self, env_var):
         super().__init__()
         self.env_var = env_var
 
 
 class DirectAPIClient:
-    """Direct HTTP client for any OpenAI-compatible API (no external packages)"""
+    """
+    Direct HTTP client for OpenAI-compatible APIs without external dependencies
+    
+    Features:
+    - Supports multiple providers (Anthropic, OpenRouter, Together, Groq, local)
+    - Handles rate limiting and retries
+    - Securely processes API responses
+    - Automatic configuration from API_CONFIGS
+    
+    Usage:
+        client = DirectAPIClient(provider='anthropic')
+        response = client.call("Hello world")
+    """
     
     def __init__(self, provider: str = 'anthropic', model: Optional[str] = None,
                  api_url: Optional[str] = None, api_key: Optional[str] = None,
@@ -330,7 +370,12 @@ class DirectAPIClient:
         print(f"  Rate limit: {max_requests} requests per {rate_period} seconds")
 
     def _enforce_rate_limit(self):
-        """Enforce token bucket rate limiting"""
+        """
+        Enforce token bucket rate limiting
+        
+        Maintains sliding window of request times and sleeps when 
+        max_requests per rate_period is exceeded.
+        """
         now = time.time()
         
         # Remove request timestamps older than our rate period
@@ -474,11 +519,43 @@ class DirectAPIClient:
 
 
 class CDSSLitReviewProcessor:
-    """Main pipeline processor for systematic literature review"""
+    """
+    Main pipeline processor for systematic literature review workflow
+    
+    Handles complete processing pipeline:
+    1. PubMed export parsing
+    2. Article screening
+    3. Data extraction
+    4. Quality assessment
+    5. Thematic synthesis
+    6. Summary generation
+    
+    Features:
+    - File-based caching between steps
+    - Validation of LLM outputs
+    - Error handling and recovery
+    
+    Attributes:
+        llm: Configured DirectAPIClient instance
+        output_dir: Directory for output files
+        log_verbose: Enable debug logging
+        start_time: Pipeline start timestamp
+    """
     
 
 class PubMedQueryGenerator:
-    """Generates PubMed query and review metadata from free-text task description"""
+    """
+    Generates PubMed query and review metadata from free-text description
+    
+    Uses LLM to generate:
+    - PubMed search query string
+    - Systematic review metadata (title, topic, inclusion/exclusion criteria)
+    
+    Attributes:
+        llm_client: Configured DirectAPIClient instance
+        output_dir: Path for generated files
+        prompt: Loaded prompt template text
+    """
     
     def __init__(self, llm_client: DirectAPIClient, output_dir: Path):
         self.llm = llm_client
@@ -666,7 +743,20 @@ class CDSSLitReviewProcessor:
         """
         Parse PubMed export file (auto-detects format)
         
-        Supports: CSV, MEDLINE (.txt), XML, JSON
+        Args:
+            file_path: Path to PubMed export file
+            
+        Returns:
+            List of article dictionaries with parsed metadata
+            
+        Raises:
+            ValueError: If no articles found or invalid format detected
+        
+        Supports:
+        - CSV (PubMed default format)
+        - MEDLINE (.txt with PMID tags)
+        - XML (PubMed XML format)
+        - JSON (PubMed JSON format)
         """
         try:
             from pubmed_parser import PubMedParser
@@ -1000,6 +1090,13 @@ class CDSSLitReviewProcessor:
                             cache_label: str) -> List[Dict]:
         """
         Generic processing with caching support
+        
+        Implements memoization pattern with disk persistence:
+        1. Load existing cached results
+        2. Identify new items needing processing
+        3. Process new items in batches
+        4. Combine with cached results
+        5. Persist combined results
         
         Args:
             cache_file: Path to cache file
