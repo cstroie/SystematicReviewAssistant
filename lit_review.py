@@ -943,12 +943,12 @@ class CDSSLitReviewProcessor:
                     key_types={
                         'pmid': str,
                         'title': str,
-                        'year': (str, int),
+                        'year': (str, int, type(None)),  # Allow null/None values
                         'study_design': str,
                         'clinical_domain': str,
                         'imaging_modality': (str, list),
                         'cdss_type': str,
-                        'sample_size': (dict, int),
+                        'sample_size': (dict, int, type(None)),  # Also allow null/None
                         'key_metrics': dict,
                         'main_findings': str
                     }
