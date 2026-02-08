@@ -805,55 +805,66 @@ class CDSSLitReviewProcessor:
 
             try:
                 response_text = self.llm.call(prompt)
-                try:
-                    # Attempt multiple JSON extraction patterns
-                    json_match = re.search(r'```json\s*({.*?})\s*```', response_text, re.DOTALL)
-                    if not json_match:
-                        json_match = re.search(r'\{[\s\S]*\}', response_text)
-                    
-                    if not json_match:
-                        raise ValueError("No valid JSON found in LLM response")
-                    
-                    # Get matched JSON string and unescape HTML entities
-                    json_str = json_match.group(1) if json_match.lastindex else json_match.group()
-                    clean_json = html.unescape(json_str)
-                    
-                    # Parse JSON response
-                    result = json.loads(clean_json)
-                    
-                    # Validate the structure
-                    validate_llm_json_response(
-                        result,
-                        required_keys=['pmid', 'decision', 'confidence', 'reasoning'],
-                        key_types={
-                            'pmid': str,
-                            'decision': str,
-                            'confidence': (float, int),
-                            'reasoning': str,
-                            'key_terms': list
-                        }
-                    )
-                    
-                    # Validate decision value
-                    if result['decision'] not in ['INCLUDE', 'EXCLUDE', 'UNCERTAIN']:
-                        raise ValueError(f"Invalid decision value: {result['decision']}")
-                        
-                    # Validate confidence range
-                    if not (0 <= result['confidence'] <= 1):
-                        raise ValueError(f"Confidence {result['confidence']} out of range")
-                        
-                    return result
-                except Exception as e:
-                    sanitized_err = sanitize_error_message(str(e))
-                    print(f"Screening error for PMID {article['pmid']}: {sanitized_err}")
-                    print(f"Response snippet: {response_text[:300]}")
-                    return {
-                        'pmid': article['pmid'],
-                        'decision': 'UNCERTAIN',
-                        'confidence': 0.0,
-                        'reasoning': f'Processing error: {sanitized_err[:100]}',
-                        'key_terms': []
+            except Exception as e:
+                sanitized_err = sanitize_error_message(str(e))
+                print(f"Screening failed for PMID {article['pmid']}: {sanitized_err}")
+                return {
+                    'pmid': article['pmid'],
+                    'decision': 'UNCERTAIN',
+                    'confidence': 0.0,
+                    'reasoning': f'Processing error: {sanitized_err[:100]}',
+                    'key_terms': []
+                }
+
+            try:
+                # Attempt multiple JSON extraction patterns
+                json_match = re.search(r'```json\s*({.*?})\s*```', response_text, re.DOTALL)
+                if not json_match:
+                    json_match = re.search(r'\{[\s\S]*\}', response_text)
+                
+                if not json_match:
+                    raise ValueError("No valid JSON found in LLM response")
+                
+                # Get matched JSON string and unescape HTML entities
+                json_str = json_match.group(1) if json_match.lastindex else json_match.group()
+                clean_json = html.unescape(json_str)
+                
+                # Parse JSON response
+                result = json.loads(clean_json)
+                
+                # Validate the structure
+                validate_llm_json_response(
+                    result,
+                    required_keys=['pmid', 'decision', 'confidence', 'reasoning'],
+                    key_types={
+                        'pmid': str,
+                        'decision': str,
+                        'confidence': (float, int),
+                        'reasoning': str,
+                        'key_terms': list
                     }
+                )
+                
+                # Validate decision value
+                if result['decision'] not in ['INCLUDE', 'EXCLUDE', 'UNCERTAIN']:
+                    raise ValueError(f"Invalid decision value: {result['decision']}")
+                    
+                # Validate confidence range
+                if not (0 <= result['confidence'] <= 1):
+                    raise ValueError(f"Confidence {result['confidence']} out of range")
+                    
+                return result
+            except Exception as e:
+                sanitized_err = sanitize_error_message(str(e))
+                print(f"Screening error for PMID {article['pmid']}: {sanitized_err}")
+                print(f"Response snippet: {response_text[:300]}")
+                return {
+                    'pmid': article['pmid'],
+                    'decision': 'UNCERTAIN',
+                    'confidence': 0.0,
+                    'reasoning': f'Processing error: {sanitized_err[:100]}',
+                    'key_terms': []
+                }
 
         return self._process_with_caching(
             cache_file=screening_file,
