@@ -1006,9 +1006,9 @@ class CDSSLitReviewProcessor:
     """
 
 
-class PubMedQueryGenerator:
+class PlanGenerator:
     """
-    Generates PubMed query and review metadata from free-text description
+    Generates plan from free-text description
 
     Uses LLM to generate:
     - PubMed search query string
@@ -1024,7 +1024,7 @@ class PubMedQueryGenerator:
         self.llm = llm_client
         self.workdir = workdir
         self.workdir.mkdir(exist_ok=True)
-        self.prompt = self._load_prompt('pubmed_query_gen')
+        self.prompt = self._load_prompt('plan_generator')
 
     def _load_prompt(self, name: str) -> str:
         """Load prompt template from prompts directory safely"""
@@ -1046,12 +1046,12 @@ class PubMedQueryGenerator:
             raise ValueError(f"Failed to load prompt '{safe_name}': {str(e)}") from e
 
 
-    def generate(self, task_description: str):
-        """Generate and save PubMed query components"""
+    def generate(self, plan: str):
+        """Generate and save plan components"""
         try:
             # Sanitize user input
-            safe_task = sanitize_api_input(task_description)
-            prompt = self.prompt.format(task_description=safe_task)
+            safe_plan = sanitize_api_input(plan)
+            prompt = self.prompt.format(plan=safe_plan)
             response_text = self.llm.call(prompt)
 
             # Attempt multiple JSON extraction patterns
@@ -1102,16 +1102,16 @@ class PubMedQueryGenerator:
                 raise ValueError(f"Missing screening criteria: {missing_screening}")
 
             # Save validated data
-            output_path = self.workdir / "00_review_topic.json"
+            output_path = self.workdir / "00_plan.json"
             output_path.write_text(json.dumps(components, indent=2))
 
-            print(f"✓ Generated review metadata:")
+            print(f"✓ Generated plan:")
             print(f"  Saved to: {output_path}")
-            print(f"\nGenerated PubMed query:\n{components['query']}")
+            print(f"\nPubMed query:\n{components['query']}")
         except Exception as e:
             sanitized_err = sanitize_error_message(str(e))
-            print(f"❌ Error generating PubMed components: {sanitized_err}")
-            raise ValueError(f"PubMed query generation failed: {sanitized_err}") from None
+            print(f"❌ Error generating plan: {sanitized_err}")
+            raise ValueError(f"Plan generation failed: {sanitized_err}") from None
 
 
 class CDSSLitReviewProcessor:
@@ -1267,9 +1267,9 @@ class CDSSLitReviewProcessor:
     def _screen_articles(self, articles: List[Dict], screening_file: Path) -> List[Dict]:
         """Screen articles for inclusion with caching support"""
         # Load screening criteria from generated metadata
-        topic_file = self.workdir / "00_review_topic.json"
+        topic_file = self.workdir / "00_plan.json"
         if not topic_file.exists():
-            raise ValueError(f"Review topic file {topic_file.name} not found - run with --task first")
+            raise ValueError(f"Review topic file {topic_file.name} not found - run with --plan first")
 
         with open(topic_file, 'r', encoding='utf-8') as f:
             topic_data = json.load(f)
@@ -1378,7 +1378,7 @@ class CDSSLitReviewProcessor:
     def _extract_article_data(self, articles: List[Dict], extraction_file: Path) -> List[Dict]:
         """Extract article data with caching support"""
         # Load extract fields template
-        topic_file = self.workdir / "00_review_topic.json"
+        topic_file = self.workdir / "00_plan.json"
         extract_json = "{}"  # Default empty template
         if topic_file.exists():
             try:
@@ -1516,9 +1516,9 @@ class CDSSLitReviewProcessor:
         """Perform thematic synthesis and identify patterns"""
 
         # Load review topic from metadata
-        topic_file = self.workdir / "00_review_topic.json"
+        topic_file = self.workdir / "00_plan.json"
         if not topic_file.exists():
-            raise ValueError(f"Review topic file {topic_file.name} not found - run with --task first")
+            raise ValueError(f"Review topic file {topic_file.name} not found - run with --plan first")
 
         with open(topic_file, 'r', encoding='utf-8') as f:
             topic_data = json.load(f)
@@ -1533,7 +1533,7 @@ class CDSSLitReviewProcessor:
         }
 
         # Load review template
-        topic_file = self.workdir / "00_review_topic.json"
+        topic_file = self.workdir / "00_plan.json"
         with open(topic_file, 'r', encoding='utf-8') as f:
             topic_data = json.load(f)
         
@@ -1755,8 +1755,8 @@ Supported Providers:
     parser.add_argument('--download', help='Download PubMed articles matching query in file')
     parser.add_argument('--output', help='Output file for downloaded MEDLINE format')
 
-    parser.add_argument('input_file', nargs='?', help='PubMed export file (CSV/XML/MEDLINE/TXT/JSON) (required when not using --task)')
-    parser.add_argument('--task', help='Free-text research topic description (generates PubMed query and metadata - requires no input file)')
+    parser.add_argument('input_file', nargs='?', help='PubMed export file (CSV/XML/MEDLINE/TXT/JSON)')
+    parser.add_argument('--plan', help='Free-text research topic description (generates PubMed query and metadata - requires no input file)')
     parser.add_argument('--provider', choices=list(API_CONFIGS.keys()),
                        default='anthropic', help='LLM provider')
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
@@ -1829,15 +1829,15 @@ def main():
         sys.exit(0)
 
     # Validate arguments
-    if args.task and args.input_file:
-        print("Error: Cannot specify both --task and input file")
+    if args.plan and args.input_file:
+        print("Error: Cannot specify both --plan and input file")
         sys.exit(1)
-    if not args.task and not args.input_file:
-        print("Error: Must specify either an input file or --task")
+    if not args.plan and not args.input_file:
+        print("Error: Must specify either an input file or --plan")
         sys.exit(1)
 
     # Validate input file exists if required
-    if not args.task and not Path(args.input_file).exists():
+    if not args.plan and not Path(args.input_file).exists():
         print(f"Error: Input file '{args.input_file}' not found")
         sys.exit(1)
 
@@ -1857,17 +1857,17 @@ def main():
             api_key=args.api_key
         )
 
-        # Generate PubMed query components if task description provided
+        # Generate plan components if plan description provided
         workdir = Path(args.workdir)
-        if args.task:
+        if args.plan:
             print("\n" + "="*70)
-            print("GENERATING PUBMED QUERY COMPONENTS")
+            print("GENERATING PLAN COMPONENTS FROM PLAN DESCRIPTION")
             print("="*70)
             workdir.mkdir(exist_ok=True, parents=True)
-            generator = PubMedQueryGenerator(llm_client, workdir)
-            generator.generate(args.task)
-            print("\n✓ PubMed query generation complete\n")
-            return  # Stop after generating query components
+            generator = PlanGenerator(llm_client, workdir)
+            generator.generate(args.plan)
+            print("\n✓ Plan generation complete\n")
+            return  # Stop after generating plan components
 
         # Run full pipeline
         print(f"\nStarting full pipeline...\n")
