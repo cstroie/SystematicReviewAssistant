@@ -12,6 +12,17 @@ from typing import List, Dict, Optional
 import re
 
 
+def validate_file_path(path: str) -> Path:
+    """Validate and normalize file path to prevent directory traversal"""
+    path_obj = Path(path).resolve()
+    
+    if not path_obj.exists():
+        raise ValueError(f"File does not exist: {path}")
+    if path_obj.is_dir():
+        raise ValueError(f"Path is a directory: {path}")
+    
+    return path_obj
+
 class PubMedParser:
     """Parse multiple PubMed export formats"""
     
@@ -76,7 +87,7 @@ class PubMedParser:
     @staticmethod
     def parse(file_path: str, format_hint: Optional[str] = None) -> List[Dict]:
         """
-        Parse PubMed export file in any supported format
+        Parse PubMed export file in any supported format with security validation
         
         Args:
             file_path: Path to the export file
@@ -85,8 +96,11 @@ class PubMedParser:
         Returns:
             List of article dictionaries with standard fields
         """
+        # Validate file path before processing
+        validated_path = validate_file_path(file_path)
+        
         # Detect format if not provided
-        file_format = format_hint or PubMedParser.detect_format(file_path)
+        file_format = format_hint or PubMedParser.detect_format(validated_path)
         
         if file_format == 'csv':
             return PubMedParser.parse_csv(file_path)
@@ -102,9 +116,10 @@ class PubMedParser:
     @staticmethod
     def parse_csv(file_path: str) -> List[Dict]:
         """Parse PubMed CSV export"""
+        validated_path = validate_file_path(file_path)
         articles = []
         
-        with open(file_path, 'r', encoding='utf-8-sig') as f:
+        with open(validated_path, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 article = {
@@ -136,12 +151,13 @@ class PubMedParser:
         AD  - Author Address
         SO  - Journal Citation
         """
+        validated_path = validate_file_path(file_path)
         articles = []
         current_article = {}
         current_field = None
         current_value = []
         
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+        with open(validated_path, 'r', encoding='utf-8', errors='ignore') as f:
             for line in f:
                 # Check if this is a new field line (starts with tag and dash)
                 field_match = re.match(r'^([A-Z]+)\s*-\s*(.*)', line.rstrip())
@@ -225,13 +241,14 @@ class PubMedParser:
         
         Requires xml module (from stdlib in Python 3.2+)
         """
+        validated_path = validate_file_path(file_path)
         try:
             import xml.etree.ElementTree as ET
         except ImportError:
             raise ImportError("XML parsing requires Python 3.2+")
         
         articles = []
-        tree = ET.parse(file_path)
+        tree = ET.parse(validated_path)
         root = tree.getroot()
         
         # Handle different XML structures
@@ -308,7 +325,8 @@ class PubMedParser:
         
         Expected structure from NCBI API
         """
-        with open(file_path, 'r', encoding='utf-8') as f:
+        validated_path = validate_file_path(file_path)
+        with open(validated_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
         articles = []
