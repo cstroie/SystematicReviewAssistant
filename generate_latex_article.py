@@ -718,7 +718,7 @@ INSTRUCTIONS:
    RESULTS:
    - Study selection numbers with percentages
    - Study characteristics (Table 1 reference)
-   - CDSS types and distribution
+   - Intervention types and distribution (related to {topic_description})
    - Breakdown by modality (CT, MRI, US, etc.)
    - Breakdown by clinical domain
    - Performance metrics (sensitivity, specificity, AUC) with ranges
@@ -749,8 +749,8 @@ INSTRUCTIONS:
    - Organizational barriers (cost, workflow, institutional factors)
    - Human factors (skepticism, trust, job concerns)
    - Healthcare system factors (regulation, liability, reimbursement)
-   - Regulatory frameworks for CDSS validation (FDA, CE Mark, etc.)
-   - Pediatric-specific challenges and opportunities
+   - Regulatory frameworks
+   - Specific challenges and opportunities
    - Case studies highlighting novel implementation approaches
    - Future research priorities with original proposals
    - Clinical practice implications addressing real-world constraints
@@ -820,7 +820,7 @@ INSTRUCTIONS:
    - Table 4: Studies by clinical domain
    - Figure 1: PRISMA flow diagram (describe)
    - Figure 2: Study distribution over time
-   - Figure 3: CDSS types distribution
+   - Figure 3: Distribution of intervention types
 
 IMPORTANT:
 - Include all provided data meaningfully
