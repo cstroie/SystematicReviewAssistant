@@ -228,7 +228,7 @@ class DirectAPIClient:
         if self.provider not in API_CONFIGS:
             raise ValueError(f"Unknown provider: {provider}. Choose from: {list(API_CONFIGS.keys())}")
         
-        config = API_CONFIGS[self.provider]
+        config: Dict = API_CONFIGS[self.provider]
         
         # Get API endpoint
         self.base_url = api_url or config['base_url']
@@ -274,7 +274,7 @@ class DirectAPIClient:
         self.timeout = timeout
         self.max_requests = max_requests
         self.rate_period = rate_period
-        self.request_times = []
+        self.request_times: List[float] = []
         
         if self.provider not in API_CONFIGS:
             raise ValueError(f"Unknown provider: {provider}. Choose from: {list(API_CONFIGS.keys())}")
@@ -450,6 +450,34 @@ class DirectAPIClient:
         return sanitized
 
 
+class CDSSLitReviewProcessor:
+    """Main pipeline processor for systematic literature review"""
+    
+    def validate_llm_json_response(self, json_data: Dict[str, Any], required_keys: list,
+                                 key_types: Dict[str, type]) -> Dict[str, Any]:
+        """Validate structure and content of LLM JSON response"""
+        # Check required keys
+        missing_keys = [key for key in required_keys if key not in json_data]
+        if missing_keys:
+            raise ValueError(f"Missing required keys: {missing_keys}")
+        
+        # Check types
+        type_mismatches = []
+        for key, expected_type in key_types.items():
+            if key in json_data and not isinstance(json_data[key], expected_type):
+                actual_type = type(json_data[key])
+                type_mismatches.append(f"{key}: {actual_type.__name__} instead of {expected_type.__name__}")
+        
+        if type_mismatches:
+            raise TypeError(f"Type mismatches:\n" + "\n".join(type_mismatches))
+            
+        # Check for empty values
+        empty_fields = [key for key in required_keys if json_data.get(key) in ['', None]]
+        if empty_fields:
+            raise ValueError(f"Empty values: {empty_fields}")
+        
+        return json_data
+
 class PubMedQueryGenerator:
     """Generates PubMed query and review metadata from free-text task description"""
     
@@ -468,7 +496,7 @@ class PubMedQueryGenerator:
         prompt_path = Path(__file__).parent / 'prompts' / f'{safe_name}.txt'
         try:
             # Double-check path safety
-            prompt_path = validate_file_path(prompt_path, MAX_PROMPT_SIZE)
+            prompt_path = validate_file_path(str(prompt_path), MAX_PROMPT_SIZE)
                 
             if not prompt_path.resolve().relative_to(Path(__file__).parent.resolve()):
                 raise ValueError(f"Attempted path traversal in prompt name: {name}")
@@ -1086,12 +1114,12 @@ class CDSSLitReviewProcessor:
         except Exception as e:
             print(f"Error creating summary table: {str(e)}", "ERROR")
     
-    def _save_json(self, data: any, filepath: Path):
+    def _save_json(self, data: Any, filepath: Path):
         """Save data as formatted JSON"""
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
-    def _load_json(self, filepath: Path) -> any:
+    def _load_json(self, filepath: Path) -> Any:
         """Load data from JSON"""
         with open(filepath, 'r', encoding='utf-8') as f:
             return json.load(f)

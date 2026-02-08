@@ -111,7 +111,7 @@ class PubMedParser:
         validated_path = validate_file_path(file_path)
         
         # Detect format if not provided
-        file_format = format_hint or PubMedParser.detect_format(validated_path)
+        file_format = format_hint or PubMedParser.detect_format(str(validated_path))
         
         if file_format == 'csv':
             return PubMedParser.parse_csv(file_path)
@@ -164,7 +164,7 @@ class PubMedParser:
         """
         validated_path = validate_file_path(file_path)
         articles = []
-        current_article = {}
+        current_article: Dict[str, str] = {}
         current_field = None
         current_value = []
         
@@ -265,9 +265,10 @@ class PubMedParser:
         # Handle different XML structures
         # Try PubmedArticleSet format first
         for article_elem in root.findall('.//PubmedArticle'):
-            article = PubMedParser._parse_xml_article(article_elem)
-            if article.get('pmid'):
-                articles.append(article)
+            if article_elem is not None:
+                article = PubMedParser._parse_xml_article(article_elem)
+                if article.get('pmid'):
+                    articles.append(article)
         
         return articles
     
