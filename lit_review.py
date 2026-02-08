@@ -38,6 +38,19 @@ import os
 import argparse
 import urllib.request
 import urllib.error
+import re
+
+def sanitize_filename(name: str) -> str:
+    """Sanitize filename to prevent path traversal"""
+    # Remove any path separators and other dangerous characters
+    cleaned = re.sub(r'[\\/:\*\?"<>\|\s]', '_', name)
+    return cleaned[:200]  # Prevent excessively long filenames
+
+def sanitize_api_input(text: str) -> str:
+    """Basic sanitization for text used in API calls"""
+    # Remove control characters and limit length
+    sanitized = re.sub(r'[\x00-\x1F\x7F]', '', text)
+    return sanitized[:10000]  # Limit to reasonable length
 
 class APIKeyError(Exception):
     """Custom exception for missing API keys"""
@@ -297,18 +310,27 @@ class PubMedQueryGenerator:
         self.prompt = self._load_prompt('pubmed_query_gen')
     
     def _load_prompt(self, name: str) -> str:
-        """Load prompt template from prompts directory"""
-        prompt_path = Path(__file__).parent / 'prompts' / f'{name}.txt'
+        """Load prompt template from prompts directory safely"""
+        safe_name = sanitize_filename(name)
+        if safe_name != name:
+            raise ValueError(f"Invalid prompt name: {name}")
+            
+        prompt_path = Path(__file__).parent / 'prompts' / f'{safe_name}.txt'
         try:
+            # Double-check path safety
+            if not prompt_path.resolve().relative_to(Path(__file__).parent.resolve()):
+                raise ValueError(f"Attempted path traversal in prompt name: {name}")
+                
             return prompt_path.read_text(encoding='utf-8').strip()
         except IOError as e:
-            raise ValueError(f"Failed to load prompt '{name}': {str(e)}") from e
+            raise ValueError(f"Failed to load prompt '{safe_name}': {str(e)}") from e
     
     def generate(self, task_description: str):
         """Generate and save PubMed query components"""
         try:
-            # Call LLM to generate components
-            prompt = self.prompt.format(task_description=task_description)
+            # Sanitize user input
+            safe_task = sanitize_api_input(task_description)
+            prompt = self.prompt.format(task_description=safe_task)
             response_text = self.llm.call(prompt)
             
             # Extract JSON response
@@ -453,9 +475,16 @@ class CDSSLitReviewProcessor:
             print("Make sure pubmed_parser.py is in the same folder as this script")
             raise
         
+        # Sanitize and validate file path
+        validated_path = Path(file_path).resolve()
+        if not validated_path.exists():
+            raise FileNotFoundError(f"PubMed export file not found: {file_path}")
+        if not validated_path.is_file():
+            raise ValueError(f"Path is not a regular file: {file_path}")
+        
         # Parse file with auto-detection
         try:
-            articles = PubMedParser.parse(file_path)
+            articles = PubMedParser.parse(str(validated_path))
             print(f"✓ Parsed {len(articles)} articles from {Path(file_path).name}")
             
             if not articles:
@@ -520,13 +549,17 @@ class CDSSLitReviewProcessor:
         total_new = len(new_articles)
         
         for i, article in enumerate(new_articles):
+            # Sanitize article fields for API
+            safe_title = sanitize_api_input(article.get('title', ''))
+            safe_abstract = sanitize_api_input(article.get('abstract', ''))
+            
             prompt = screening_prompt.format(
-                topic=topic,
-                inclusion=inclusion_str,
-                exclusion=exclusion_str,
-                pmid=article['pmid'],
-                title=article['title'],
-                abstract=article['abstract']
+                topic=sanitize_api_input(topic),
+                inclusion=sanitize_api_input(inclusion_str),
+                exclusion=sanitize_api_input(exclusion_str),
+                pmid=article['pmid'],  # PMID is numeric so safe
+                title=safe_title,
+                abstract=safe_abstract
             )
             
             try:
@@ -598,11 +631,15 @@ class CDSSLitReviewProcessor:
 
         for i, article in enumerate(new_articles):
             # Format prompt with article data and extraction template
+            # Sanitize article fields
+            safe_title = sanitize_api_input(article.get('title', ''))
+            safe_abstract = sanitize_api_input(article.get('abstract', ''))
+            
             prompt = extraction_prompt.format(
-                extract=extract_json,
+                extract=sanitize_api_input(extract_json),
                 pmid=article['pmid'],
-                title=article['title'],
-                abstract=article['abstract']
+                title=safe_title,
+                abstract=safe_abstract
             )
             
             try:
