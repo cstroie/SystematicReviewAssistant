@@ -71,8 +71,7 @@ class PubMedParser:
                 else:
                     return 'medline'  # Default to MEDLINE for unknown text
         except Exception as e:
-            sanitized_err = sanitize_error_message(str(e))
-            print(f"Warning: Error detecting format ({sanitized_err}), defaulting to MEDLINE")
+            print(f"Warning: Error detecting format - {str(e)} - defaulting to MEDLINE")
             return 'medline'  # Default guess
     
     @staticmethod
@@ -93,8 +92,7 @@ class PubMedParser:
                 else:
                     return 'medline'  # Default
         except Exception as e:
-            sanitized_err = sanitize_error_message(str(e))
-            print(f"Warning: Content detection error ({sanitized_err}), defaulting to MEDLINE")
+            print(f"Warning: Content detection error - {str(e)} - defaulting to MEDLINE")
             return 'medline'
     
     @staticmethod
@@ -438,6 +436,5 @@ if __name__ == '__main__':
                 print(f"\nFirst PMID: {articles[0].get('pmid')} - {articles[0].get('title')[:80]}...")
     
         except Exception as e:
-            sanitized_err = sanitize_error_message(str(e))
-            print(f"Error: {sanitized_err}")
+            print(f"Error: {str(e)}")
             sys.exit(1)
