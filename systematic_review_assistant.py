@@ -1160,16 +1160,16 @@ class CDSSLitReviewProcessor:
             if articles_file.exists():
                 print("\n[STEP 1/6] Loading parsed articles from cache...")
                 try:
-                    articles = self._load_json(articles_file)
+                    articles = self._load_file(articles_file)
                     print(f"✓ Loaded {len(articles)} articles from {articles_file.name}")
                 except Exception as e:
                     print(f"Cache read error: {str(e)}, re-parsing file")
                     articles = self._parse_pubmed_export(pubmed_file)
-                    self._save_json(articles, articles_file)
+                    self._save_file(articles, articles_file)
             else:
                 print("\n[STEP 1/6] Parsing PubMed export...")
                 articles = self._parse_pubmed_export(pubmed_file)
-                self._save_json(articles, articles_file)
+                self._save_file(articles, articles_file)
 
             # Step 2: Screen articles (cache-aware)
             screening_file = self.workdir / "02_screening_results.json"
@@ -1692,7 +1692,7 @@ class CDSSLitReviewProcessor:
         cached_results = []
         if cache_file.exists():
             try:
-                cached_results = self._load_json(cache_file)
+                cached_results = self._load_file(cache_file)
                 print(f"  Loaded {len(cached_results)} cached {cache_label}")
             except Exception as e:
                 print(f"  Cache load error: {str(e)} - creating new cache")
@@ -1715,18 +1715,18 @@ class CDSSLitReviewProcessor:
             # Save periodically
             if (i + 1) % 10 == 0 or i == total_new - 1:
                 all_results = cached_results + results
-                self._save_json(all_results, cache_file)
+                self._save_file(all_results, cache_file)
                 print(f"  Saved {len(all_results)} {cache_label}...")
                 time.sleep(1)  # Rate limiting
 
         return cached_results + results
 
-    def _load_json(self, filepath: Path) -> Any:
+    def _load_file(self, filepath: Path) -> Any:
         """Load data from JSON"""
         with open(filepath, 'r', encoding='utf-8') as f:
             return json.load(f)
 
-    def _save_json(self, data: Any, filepath: Path):
+    def _save_file(self, data: Any, filepath: Path):
         """Save data as formatted JSON"""
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
