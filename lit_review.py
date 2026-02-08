@@ -40,6 +40,7 @@ import urllib.request
 import urllib.error
 import re
 from typing import Dict, Any
+import html
 
 def sanitize_filename(name: str) -> str:
     """Sanitize filename to prevent path traversal"""
@@ -260,7 +261,10 @@ class DirectAPIClient:
                     if not result:
                         raise ValueError("Empty response from API")
                     
-                    return result
+                    # Validate and sanitize response for security
+                    validated_result = self.validate_api_response(result)
+                    
+                    return validated_result
                 
             except urllib.error.HTTPError as e:
                 error_body = e.read().decode('utf-8')
@@ -299,6 +303,44 @@ class DirectAPIClient:
                 raise ValueError(f"Error calling API: {str(e)}")
         
         raise ValueError("Failed after all retries")
+
+    def validate_api_response(self, content: str) -> str:
+        """Validate and sanitize API response for security"""
+        # Check for suspicious HTML patterns
+        html_patterns = [
+            r'<script.*?>',   # Script tags
+            r'on\w+\s*=',     # HTML event handlers
+            r'javascript:',    # JS protocols
+            r'<\s*iframe\b',   # IFrames
+            r'<\s*link\b',     # Link tags
+            r'<\s*meta\b',     # Meta tags
+            r'/\*\*/.*?/\*\*/' # Obfuscated patterns
+        ]
+        
+        # Check for high-risk patterns first
+        dangerous_count = 0
+        for pattern in html_patterns:
+            if re.search(pattern, content, re.IGNORECASE | re.DOTALL):
+                dangerous_count += 1
+        
+        # If number of dangerous patterns exceeds threshold
+        max_suspicious_patterns = 3
+        if dangerous_count > max_suspicious_patterns:
+            raise ValueError(f"API response contains {dangerous_count} dangerous patterns - potential injection attack detected")
+        
+        # Escape HTML special characters
+        sanitized = html.escape(content)
+        
+        # Remove any remaining problematic patterns
+        sanitized = re.sub(r'(\&\#(\d{1,3}\;)|\&\#x([0-9a-f]{1,4})\;)', '', sanitized)  # Remove HTML entities
+        sanitized = re.sub(r'%[0-9a-f]{2}', '', sanitized, flags=re.IGNORECASE)        # Remove URL encoding
+        sanitized = re.sub(r'\\u[0-9a-f]{4}', '', sanitized, flags=re.IGNORECASE)       # Remove unicode escapes
+        
+        # Log if significant changes were made
+        if len(sanitized) < (len(content) * 0.9):  # More than 10% reduction
+            print("WARN: Significant content sanitization was applied to API response")
+        
+        return sanitized
 
 
 class PubMedQueryGenerator:
