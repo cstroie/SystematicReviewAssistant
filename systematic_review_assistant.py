@@ -1844,9 +1844,11 @@ def main():
         sys.exit(1)
 
     # Validate input file exists if required
-    if not args.plan and not Path(args.input_file).exists():
-        print(f"Error: Input file '{args.input_file}' not found")
-        sys.exit(1)
+    if not args.plan:
+        input_path = Path(args.workdir) / "articles.txt"
+        if not input_path.exists():
+            print(f"Error: Input file '{input_path}' not found in work directory")
+            sys.exit(1)
 
     # Show provider info if requested
     if args.provider not in API_CONFIGS:
@@ -1883,7 +1885,8 @@ def main():
             workdir=args.workdir,
             log_verbose=not args.quiet
         )
-        processor.run_complete_pipeline(args.input_file)
+        input_path = Path(args.workdir) / "articles.txt"
+        processor.run_complete_pipeline(str(input_path))
 
     except APIKeyError as e:
         print("\n" + "="*50)
