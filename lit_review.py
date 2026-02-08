@@ -590,13 +590,13 @@ class PubMedQueryGenerator:
             # Validate strict schema
             validate_llm_json_response(
                 components,
-                required_keys=['query', 'topic', 'title', 'screening', 'synthesis'],
+                required_keys=['query', 'topic', 'title', 'screening', 'analysis'],
                 key_types={
                     'query': str,
                     'topic': str,
                     'title': str,
                     'screening': dict,
-                    'synthesis': list
+                    'analysis': list
                 }
             )
 
@@ -1050,15 +1050,15 @@ class CDSSLitReviewProcessor:
         with open(topic_file, 'r', encoding='utf-8') as f:
             topic_data = json.load(f)
         
-        # Validate and prepare synthesis bullets
-        if 'synthesis' not in topic_data:
-            raise ValueError("Missing required 'synthesis' field in review metadata")
+        # Validate and prepare analysis bullets
+        if 'analysis' not in topic_data:
+            raise ValueError("Missing required 'analysis' field in review metadata")
         
-        synthesis_bullets = topic_data['synthesis']
-        if not isinstance(synthesis_bullets, list) or len(synthesis_bullets) == 0:
-            raise ValueError("'synthesis' field must be a non-empty list of bullet points")
+        analysis_bullets = topic_data['analysis']
+        if not isinstance(analysis_bullets, list) or len(analysis_bullets) == 0:
+            raise ValueError("'analysis' field must be a non-empty list of bullet points")
         
-        analysis_bullets = '\n'.join(f'   - {bullet}' for bullet in synthesis_bullets)
+        analysis_bullets = '\n'.join(f'   - {bullet}' for bullet in analysis_bullets)
         
         # Build synthesis prompt
         synthesis_template = self._load_prompt('synthesis')
