@@ -904,7 +904,7 @@ class CDSSLitReviewProcessor:
                 response_text = self.llm.call(prompt)
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
-                print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
+                print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}")
                 print(f"Response snippet: {response_text[:300]}")
                 return {
                     'pmid': article['pmid'],
@@ -949,7 +949,7 @@ class CDSSLitReviewProcessor:
                 return data
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
-                print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
+                print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}")
                 print(f"Response snippet: {response_text[:300]}")
                 return {
                     'pmid': article['pmid'],
@@ -983,7 +983,7 @@ class CDSSLitReviewProcessor:
                 return result
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
-                print(f"Quality assessment failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
+                print(f"Quality assessment failed for PMID {article['pmid']}: {sanitized_err}")
                 return {
                     'pmid': article['pmid'],
                     'assessment_error': sanitized_err[:200]
@@ -1082,7 +1082,7 @@ class CDSSLitReviewProcessor:
             })
 
         if not rows:
-            print("No valid data to create summary table", "WARN")
+            print("No valid data to create summary table")
             return
 
         # Try using pandas if available
@@ -1095,7 +1095,7 @@ class CDSSLitReviewProcessor:
                 return
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
-                print(f"Error creating summary table: {sanitized_err}", "WARN")
+                print(f"Error creating summary table: {sanitized_err}")
 
         # Fall back to manual CSV creation without pandas
         try:
