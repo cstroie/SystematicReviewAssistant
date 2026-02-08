@@ -788,7 +788,7 @@ class CDSSLitReviewProcessor:
 
             try:
                 response_text = self.llm.call(prompt)
-                json_match = re.search(r'{(?:[^{}]|(?R))*}', response_text, re.DOTALL)
+                json_match = re.search(r'\{[\s\S]*\}', response_text)
                 if json_match:
                     result = json.loads(json_match.group())
                     validate_llm_json_response(
