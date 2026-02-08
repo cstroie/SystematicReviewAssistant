@@ -50,8 +50,8 @@ try:
 except ImportError:
     pd = None
 
-MAX_PROMPT_SIZE = 1 * 1024 * 1024  # 1MB
-MAX_INPUT_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_PROMPT_SIZE =  1 * 1024 * 1024  #  1MB
+MAX_INPUT_SIZE  = 50 * 1024 * 1024  # 50MB
 
 def validate_file_path(path: str, max_size: Optional[int] = None) -> Path:
     """
@@ -580,7 +580,7 @@ class PubMedQueryGenerator:
                 raise
 
             # Validate strict schema
-            self.validate_llm_json_response(
+            validate_llm_json_response(
                 components,
                 required_keys=['query', 'topic', 'title', 'screening'],
                 key_types={
@@ -827,7 +827,7 @@ class CDSSLitReviewProcessor:
                 raise ValueError("No valid JSON found")
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
-                print(f"Screening failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
+                print(f"Screening failed for PMID {article['pmid']}: {sanitized_err}")
                 return {
                     'pmid': article['pmid'],
                     'decision': 'UNCERTAIN',
