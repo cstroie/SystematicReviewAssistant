@@ -78,6 +78,31 @@ def sanitize_error_message(msg: str) -> str:
     msg = re.sub(r'\b\d{4,}-\w+\b', '[MODEL_ID]', msg)  # Model IDs
     return msg
 
+def validate_llm_json_response(json_data: Dict[str, Any], required_keys: list,
+                             key_types: Dict[str, type]) -> Dict[str, Any]:
+    """Validate structure and content of LLM JSON response"""
+    # Check required keys
+    missing_keys = [key for key in required_keys if key not in json_data]
+    if missing_keys:
+        raise ValueError(f"Missing required keys: {missing_keys}")
+    
+    # Check types
+    type_mismatches = []
+    for key, expected_type in key_types.items():
+        if key in json_data and not isinstance(json_data[key], expected_type):
+            actual_type = type(json_data[key])
+            type_mismatches.append(f"{key}: {actual_type.__name__} instead of {expected_type.__name__}")
+    
+    if type_mismatches:
+        raise TypeError(f"Type mismatches:\n" + "\n".join(type_mismatches))
+        
+    # Check for empty values
+    empty_fields = [key for key in required_keys if json_data.get(key) in ['', None]]
+    if empty_fields:
+        raise ValueError(f"Empty values: {empty_fields}")
+    
+    return json_data
+
 def sanitize_api_input(text: str) -> str:
     """Basic sanitization for text used in API calls"""
     # Remove control characters and limit length
@@ -454,30 +479,6 @@ class DirectAPIClient:
 class CDSSLitReviewProcessor:
     """Main pipeline processor for systematic literature review"""
     
-    def validate_llm_json_response(self, json_data: Dict[str, Any], required_keys: list,
-                                 key_types: Dict[str, type]) -> Dict[str, Any]:
-        """Validate structure and content of LLM JSON response"""
-        # Check required keys
-        missing_keys = [key for key in required_keys if key not in json_data]
-        if missing_keys:
-            raise ValueError(f"Missing required keys: {missing_keys}")
-        
-        # Check types
-        type_mismatches = []
-        for key, expected_type in key_types.items():
-            if key in json_data and not isinstance(json_data[key], expected_type):
-                actual_type = type(json_data[key])
-                type_mismatches.append(f"{key}: {actual_type.__name__} instead of {expected_type.__name__}")
-        
-        if type_mismatches:
-            raise TypeError(f"Type mismatches:\n" + "\n".join(type_mismatches))
-            
-        # Check for empty values
-        empty_fields = [key for key in required_keys if json_data.get(key) in ['', None]]
-        if empty_fields:
-            raise ValueError(f"Empty values: {empty_fields}")
-        
-        return json_data
 
 class PubMedQueryGenerator:
     """Generates PubMed query and review metadata from free-text task description"""
@@ -793,7 +794,7 @@ class CDSSLitReviewProcessor:
                 if json_match:
                     result = json.loads(json_match.group())
                     # Validate screening response structure
-                    self.validate_llm_json_response(
+                    validate_llm_json_response(
                         result,
                         required_keys=['pmid', 'decision', 'confidence', 'reasoning'],
                         key_types={
@@ -896,7 +897,7 @@ class CDSSLitReviewProcessor:
                     data = json.loads(json_match.group())
                     
                     # Validate extraction structure
-                    self.validate_llm_json_response(
+                    validate_llm_json_response(
                         data,
                         required_keys=['pmid'],
                         key_types={
