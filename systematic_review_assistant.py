@@ -1818,8 +1818,15 @@ def main():
             print("Error: No PubMed query found in plan file")
             sys.exit(1)
         
-        # Download articles to working directory
+        # Check if articles.txt already exists
         output_file = Path(args.workdir) / "articles.txt"
+        if output_file.exists():
+            print(f"✓ Articles file already exists: {output_file}")
+            print("You can now process this file with:")
+            print(f"  python systematic_review_assistant.py {args.workdir}")
+            sys.exit(0)
+        
+        # Download articles to working directory
         print(f"Downloading PubMed articles for query: {query[:100]}...")
         downloader = PubMedDownloader(api_key=os.getenv('NCBI_API_KEY'))
         pmids = downloader.search_pubmed(query)
