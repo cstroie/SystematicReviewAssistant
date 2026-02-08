@@ -500,7 +500,7 @@ class CDSSLitReviewProcessor:
 
     Attributes:
         llm: Configured DirectAPIClient instance
-        output_dir: Directory for output files
+        workdir: Working directory for output files
         log_verbose: Enable debug logging
         start_time: Pipeline start timestamp
     """
@@ -516,14 +516,14 @@ class PubMedQueryGenerator:
 
     Attributes:
         llm_client: Configured DirectAPIClient instance
-        output_dir: Path for generated files
+        workdir: Path for generated files
         prompt: Loaded prompt template text
     """
 
-    def __init__(self, llm_client: DirectAPIClient, output_dir: Path):
+    def __init__(self, llm_client: DirectAPIClient, workdir: Path):
         self.llm = llm_client
-        self.output_dir = output_dir
-        self.output_dir.mkdir(exist_ok=True)
+        self.workdir = workdir
+        self.workdir.mkdir(exist_ok=True)
         self.prompt = self._load_prompt('pubmed_query_gen')
 
     def _load_prompt(self, name: str) -> str:
@@ -601,7 +601,7 @@ class PubMedQueryGenerator:
                 raise ValueError(f"Missing screening criteria: {missing_screening}")
 
             # Save validated data
-            output_path = self.output_dir / "00_review_topic.json"
+            output_path = self.workdir / "00_review_topic.json"
             output_path.write_text(json.dumps(components, indent=2))
 
             print(f"✓ Generated review metadata:")
@@ -615,12 +615,12 @@ class PubMedQueryGenerator:
 class CDSSLitReviewProcessor:
     """Main pipeline processor for systematic literature review"""
 
-    def __init__(self, llm_client: DirectAPIClient, output_dir: str = "lit_review_output",
+    def __init__(self, llm_client: DirectAPIClient, workdir: str = "output",
                  log_verbose: bool = True):
         """Initialize processor with LLM client"""
         self.llm = llm_client
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(exist_ok=True)
+        self.workdir = Path(workdir)
+        self.workdir.mkdir(exist_ok=True)
         self.log_verbose = log_verbose
         self.start_time = datetime.now()
 
@@ -645,7 +645,7 @@ class CDSSLitReviewProcessor:
 
         try:
             # Step 1: Load from cache or parse PubMed export
-            articles_file = self.output_dir / "01_parsed_articles.json"
+            articles_file = self.workdir / "01_parsed_articles.json"
             if articles_file.exists():
                 print("\n[STEP 1/6] Loading parsed articles from cache...")
                 try:
@@ -662,7 +662,7 @@ class CDSSLitReviewProcessor:
                 print(f"✓ Parsed {len(articles)} articles from {pubmed_file}")
 
             # Step 2: Screen articles (cache-aware)
-            screening_file = self.output_dir / "02_screening_results.json"
+            screening_file = self.workdir / "02_screening_results.json"
             print("\n[STEP 2/6] Screening titles and abstracts...")
             screening_results = self._screen_articles(articles, screening_file)
 
@@ -676,7 +676,7 @@ class CDSSLitReviewProcessor:
             print(f"  - UNCERTAIN: {uncertain_count}")
 
             # Step 3: Extract data from included articles
-            extraction_file = self.output_dir / "03_extracted_data.json"
+            extraction_file = self.workdir / "03_extracted_data.json"
             included_pmids = {r['pmid'] for r in screening_results if r['decision'] == 'INCLUDE'}
             included_articles = [a for a in articles if a['pmid'] in included_pmids]
 
@@ -689,7 +689,7 @@ class CDSSLitReviewProcessor:
             print(f"✓ Extracted data from {len(extracted_data)} articles")
 
             # Step 4: Assess study quality
-            quality_file = self.output_dir / "04_quality_assessment.json"
+            quality_file = self.workdir / "04_quality_assessment.json"
             print("\n[STEP 4/6] Assessing study quality (QUADAS-2)...")
             quality_assessments = self._assess_quality(included_articles, quality_file)
             print(f"✓ Quality assessment complete for {len(quality_assessments)} studies")
@@ -697,7 +697,7 @@ class CDSSLitReviewProcessor:
             # Step 5: Synthesis
             print("\n[STEP 5/6] Performing thematic synthesis...")
             synthesis = self._perform_synthesis(extracted_data)
-            synthesis_file = self.output_dir / "05_thematic_synthesis.txt"
+            synthesis_file = self.workdir / "05_thematic_synthesis.txt"
             synthesis_file.write_text(synthesis)
             print(f"✓ Synthesis complete - {len(synthesis)} characters written")
 
@@ -709,7 +709,7 @@ class CDSSLitReviewProcessor:
             elapsed = (datetime.now() - self.start_time).total_seconds()
             print("="*70)
             print("PIPELINE COMPLETE")
-            print(f"Results saved to: {self.output_dir}")
+            print(f"Results saved to: {self.workdir}")
             print(f"Total time: {elapsed:.1f} seconds")
             print("="*70)
 
@@ -766,7 +766,7 @@ class CDSSLitReviewProcessor:
     def _screen_articles(self, articles: List[Dict], screening_file: Path) -> List[Dict]:
         """Screen articles for inclusion with caching support"""
         # Load screening criteria from generated metadata
-        topic_file = self.output_dir / "00_review_topic.json"
+        topic_file = self.workdir / "00_review_topic.json"
         if not topic_file.exists():
             raise ValueError(f"Review topic file {topic_file.name} not found - run with --task first")
 
@@ -877,7 +877,7 @@ class CDSSLitReviewProcessor:
     def _extract_article_data(self, articles: List[Dict], extraction_file: Path) -> List[Dict]:
         """Extract article data with caching support"""
         # Load extract fields template
-        topic_file = self.output_dir / "00_review_topic.json"
+        topic_file = self.workdir / "00_review_topic.json"
         extract_json = "{}"  # Default empty template
         if topic_file.exists():
             try:
@@ -976,7 +976,7 @@ class CDSSLitReviewProcessor:
         """Perform thematic synthesis and identify patterns"""
 
         # Load review topic from metadata
-        topic_file = self.output_dir / "00_review_topic.json"
+        topic_file = self.workdir / "00_review_topic.json"
         if not topic_file.exists():
             raise ValueError(f"Review topic file {topic_file.name} not found - run with --task first")
 
@@ -1064,7 +1064,7 @@ class CDSSLitReviewProcessor:
         if pd is not None:
             try:
                 df = pd.DataFrame(rows)
-                output_file = self.output_dir / "summary_characteristics_table.csv"
+                output_file = self.workdir / "summary_characteristics_table.csv"
                 df.to_csv(output_file, index=False)
                 print(f"Summary table saved ({len(rows)} studies) - CSV format")
                 return
@@ -1074,7 +1074,7 @@ class CDSSLitReviewProcessor:
 
         # Fall back to manual CSV creation without pandas
         try:
-            output_file = self.output_dir / "summary_characteristics_table.csv"
+            output_file = self.workdir / "summary_characteristics_table.csv"
             with open(output_file, 'w', encoding='utf-8', newline='') as f:
                 if rows:
                     # Write header
@@ -1189,7 +1189,7 @@ Supported Providers:
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
     parser.add_argument('--api-url', help='Custom API URL (overrides provider default)')
     parser.add_argument('--api-key', help='API key (uses env var if not specified)')
-    parser.add_argument('--output-dir', default='lit_review_output', help='Output directory')
+    parser.add_argument('--workdir', default='output', help='Output directory')
     parser.add_argument('--quiet', action='store_true', help='Suppress log output')
 
     return parser
@@ -1252,13 +1252,13 @@ def main():
         )
 
         # Generate PubMed query components if task description provided
-        output_dir = Path(args.output_dir)
+        workdir = Path(args.workdir)
         if args.task:
             print("\n" + "="*70)
             print("GENERATING PUBMED QUERY COMPONENTS")
             print("="*70)
-            output_dir.mkdir(exist_ok=True, parents=True)
-            generator = PubMedQueryGenerator(llm_client, output_dir)
+            workdir.mkdir(exist_ok=True, parents=True)
+            generator = PubMedQueryGenerator(llm_client, workdir)
             generator.generate(args.task)
             print("\n✓ PubMed query generation complete\n")
             return  # Stop after generating query components
@@ -1267,7 +1267,7 @@ def main():
         print(f"\nStarting full pipeline...\n")
         processor = CDSSLitReviewProcessor(
             llm_client=llm_client,
-            output_dir=args.output_dir,
+            workdir=args.workdir,
             log_verbose=not args.quiet
         )
         processor.run_complete_pipeline(args.input_file)
