@@ -118,9 +118,17 @@ def validate_llm_json_response(json_data: Dict[str, Any], required_keys: list,
     # Check types
     type_mismatches = []
     for key, expected_type in key_types.items():
-        if key in json_data and not isinstance(json_data[key], expected_type):
-            actual_type = type(json_data[key])
-            type_mismatches.append(f"{key}: {actual_type.__name__} instead of {expected_type.__name__}")
+        if key in json_data:
+            # Handle tuple of allowed types
+            if isinstance(expected_type, tuple):
+                if not isinstance(json_data[key], expected_type):
+                    type_names = [t.__name__ for t in expected_type]
+                    actual_type = type(json_data[key])
+                    type_mismatches.append(f"{key}: {actual_type.__name__} instead of {' or '.join(type_names)}")
+            else:
+                if not isinstance(json_data[key], expected_type):
+                    actual_type = type(json_data[key])
+                    type_mismatches.append(f"{key}: {actual_type.__name__} instead of {expected_type.__name__}")
 
     if type_mismatches:
         raise TypeError(f"Type mismatches:\n" + "\n".join(type_mismatches))
