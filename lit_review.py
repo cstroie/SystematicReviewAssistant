@@ -615,6 +615,7 @@ class PubMedQueryGenerator:
 
             print(f"✓ Generated review metadata:")
             print(f"  Saved to: {output_path}")
+            print(f"\nGenerated PubMed query:\n{components['query']}")
         except Exception as e:
             sanitized_err = sanitize_error_message(str(e))
             print(f"❌ Error generating PubMed components: {sanitized_err}")
