@@ -35,22 +35,22 @@ Key features:
 Usage:
     # Using Anthropic (default)
     export ANTHROPIC_API_KEY="sk-ant-..."
-    python systematic_review_assistant.py pubmed_export.csv
+    python systematic_review_assistant.py --provider anthropic --model claude-2
 
     # Using OpenRouter
     export OPENROUTER_API_KEY="sk-or-..."
-    python systematic_review_assistant.py pubmed_export.csv --provider openrouter --model meta-llama/llama-2-70b-chat-hf
+    python systematic_review_assistant.py --provider openrouter --model meta-llama/llama-2-70b-chat-hf
 
     # Using Together.ai
     export TOGETHER_API_KEY="..."
-    python systematic_review_assistant.py pubmed_export.csv --provider together --model meta-llama/Llama-2-70b-chat-hf
+    python systematic_review_assistant.py --provider together --model meta-llama/Llama-2-70b-chat-hf
 
     # Using Groq
     export GROQ_API_KEY="..."
-    python systematic_review_assistant.py pubmed_export.csv --provider groq --model mixtral-8x7b-32768
+    python systematic_review_assistant.py --provider groq --model mixtral-8x7b-32768
 
     # Using local Ollama
-    python systematic_review_assistant.py pubmed_export.csv --provider local --model llama2
+    python systematic_review_assistant.py --provider local --model llama2
 """
 
 import json
@@ -376,7 +376,7 @@ class DirectAPIClient:
         response = client.call("Hello world")
     """
 
-    def __init__(self, provider: str = 'anthropic', model: Optional[str] = None,
+    def __init__(self, provider: str = 'openrouter', model: Optional[str] = None,
                  api_url: Optional[str] = None, api_key: Optional[str] = None,
                  timeout: int = 30, max_requests: int = 60, rate_period: int = 60):
         """
@@ -1732,16 +1732,16 @@ def create_parser():
         epilog="""
 Examples:
   # Basic usage with Anthropic Claude (needs API key):
-  %(prog)s pubmed_results.csv
+  %(prog)s --provider anthropic --model claude-2
 
   # Use OpenRouter's LLaMA 2 (specify model):
-  %(prog)s pubmed.txt --provider openrouter --model meta-llama/llama-2-70b-chat-hf
+  %(prog)s --provider openrouter --model meta-llama/llama-2-70b-chat-hf
 
   # Local Ollama model (http://localhost:11434):
-  %(prog)s pubmed.xml --provider local --model llama2
+  %(prog)s --provider local --model llama2
 
   # Download PubMed articles (requires NCBI API key):
-  %(prog)s --download pubmed_query.txt --output pubmed_medline.txt
+  %(prog)s --download
 
 Supported Providers:
   anthropic   - Anthropic Claude (default)
@@ -1752,11 +1752,11 @@ Supported Providers:
         """
     )
 
-    parser.add_argument('workdir', help='Working directory containing pipeline outputs (expects articles.txt for processing)')
+    parser.add_argument('workdir', default='output', help='Working directory containing pipeline outputs (expects articles.txt for processing)')
     parser.add_argument('--plan', help='Free-text research topic description (generates PubMed query and metadata - requires no input file)')
     parser.add_argument('--download', action='store_true', help='Download PubMed articles matching query in file')
     parser.add_argument('--provider', choices=list(API_CONFIGS.keys()),
-                       default='anthropic', help='LLM provider')
+                       default='openrouter', help='LLM provider')
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
     parser.add_argument('--api-url', help='Custom API URL (overrides provider default)')
     parser.add_argument('--api-key', help='API key (uses env var if not specified)')
