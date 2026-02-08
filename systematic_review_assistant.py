@@ -1725,7 +1725,6 @@ class CDSSLitReviewProcessor:
         """Load data from JSON or YAML based on file extension"""
         with open(filepath, 'r', encoding='utf-8') as f:
             if filepath.suffix.lower() == '.yaml':
-                import yaml
                 return yaml.safe_load(f)
             else:
                 return json.load(f)
@@ -1734,7 +1733,6 @@ class CDSSLitReviewProcessor:
         """Save data as JSON or YAML based on file extension"""
         with open(filepath, 'w', encoding='utf-8') as f:
             if filepath.suffix.lower() == '.yaml':
-                import yaml
                 yaml.dump(data, f, sort_keys=False, indent=2)
             else:
                 json.dump(data, f, indent=2, ensure_ascii=False)
