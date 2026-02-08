@@ -508,30 +508,6 @@ class PubMedQueryGenerator:
         except IOError as e:
             raise ValueError(f"Failed to load prompt '{safe_name}': {str(e)}") from e
     
-    def validate_llm_json_response(self, json_data: Dict[str, Any], required_keys: list,
-                                 key_types: Dict[str, type]) -> Dict[str, Any]:
-        """Validate structure and content of LLM JSON response"""
-        # Check required keys
-        missing_keys = [key for key in required_keys if key not in json_data]
-        if missing_keys:
-            raise ValueError(f"Missing required keys: {missing_keys}")
-        
-        # Check types
-        type_mismatches = []
-        for key, expected_type in key_types.items():
-            if key in json_data and not isinstance(json_data[key], expected_type):
-                actual_type = type(json_data[key])
-                type_mismatches.append(f"{key}: {actual_type.__name__} instead of {expected_type.__name__}")
-        
-        if type_mismatches:
-            raise TypeError(f"Type mismatches:\n" + "\n".join(type_mismatches))
-            
-        # Check for empty values
-        empty_fields = [key for key in required_keys if json_data.get(key) in ['', None]]
-        if empty_fields:
-            raise ValueError(f"Empty values: {empty_fields}")
-        
-        return json_data
 
     def generate(self, task_description: str):
         """Generate and save PubMed query components"""
@@ -721,34 +697,13 @@ class CDSSLitReviewProcessor:
     
     def _screen_articles(self, articles: List[Dict], screening_file: Path) -> List[Dict]:
         """Screen articles for inclusion with caching support"""
-        # Try loading existing screening results
-        cached_results = []
-        if screening_file.exists():
-            try:
-                with open(screening_file, 'r', encoding='utf-8') as f:
-                    cached_results = json.load(f)
-                print(f"  Loaded {len(cached_results)} cached screening decisions")
-            except Exception as e:
-                print(f"  Cache load error: {str(e)} - creating new cache")
-        
-        # Build cached pmids set and screen only new articles
-        cached_pmids = {r['pmid'] for r in cached_results}
-        new_articles = [a for a in articles if a['pmid'] not in cached_pmids]
-        
-        if not new_articles:
-            print("✓ All articles already have screening decisions")
-            return cached_results
-        
         # Load screening criteria from generated metadata
         topic_file = self.output_dir / "00_review_topic.json"
         if not topic_file.exists():
             raise ValueError(f"Review topic file {topic_file.name} not found - run with --task first")
             
-        try:
-            with open(topic_file, 'r', encoding='utf-8') as f:
-                topic_data = json.load(f)
-        except Exception as e:
-            raise ValueError(f"Error loading review topic: {str(e)}") from e
+        with open(topic_file, 'r', encoding='utf-8') as f:
+            topic_data = json.load(f)
         
         # Validate required screening criteria
         screening = topic_data.get('screening', {})
@@ -764,14 +719,10 @@ class CDSSLitReviewProcessor:
         inclusion_str = "\n- ".join([""] + inclusion)
         exclusion_str = "\n- ".join([""] + exclusion)
         topic = topic_data['topic']
-        
         screening_prompt = self._load_prompt('screening')
         
-        results = []
-        total_new = len(new_articles)
-        
-        for i, article in enumerate(new_articles):
-            # Sanitize article fields for API
+        def process_article(article):
+            # Sanitize article fields
             safe_title = sanitize_api_input(article.get('title', ''))
             safe_abstract = sanitize_api_input(article.get('abstract', ''))
             
@@ -786,14 +737,9 @@ class CDSSLitReviewProcessor:
             
             try:
                 response_text = self.llm.call(prompt)
-                
-                # Extract JSON from response
-                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-                # Extract and validate JSON
                 json_match = re.search(r'{(?:[^{}]|(?R))*}', response_text, re.DOTALL)
                 if json_match:
                     result = json.loads(json_match.group())
-                    # Validate screening response structure
                     validate_llm_json_response(
                         result,
                         required_keys=['pmid', 'decision', 'confidence', 'reasoning'],
@@ -805,64 +751,34 @@ class CDSSLitReviewProcessor:
                             'key_terms': list
                         }
                     )
-                    
-                    # Validate decision value
                     if result['decision'] not in ['INCLUDE', 'EXCLUDE', 'UNCERTAIN']:
                         raise ValueError(f"Invalid decision value: {result['decision']}")
-                    
-                    # Validate confidence range
                     if not (0 <= result['confidence'] <= 1):
-                        raise ValueError(f"Confidence {result['confidence']} out of [0-1] range")
-                
-                    results.append(result)
-                else:
-                    raise ValueError("No valid JSON found in response")
-                    
-            except (json.JSONDecodeError, ValueError, TypeError, Exception) as e:
+                        raise ValueError(f"Confidence {result['confidence']} out of range")
+                    return result
+                raise ValueError("No valid JSON found")
+            except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Screening failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
-                results.append({
+                return {
                     'pmid': article['pmid'],
                     'decision': 'UNCERTAIN',
                     'confidence': 0.0,
                     'reasoning': f'Processing error: {sanitized_err[:100]}',
                     'key_terms': []
-                })
-            
-            # Save every 10 items or at end of processing
-            if (i + 1) % 10 == 0 or i == total_new - 1:
-                all_results = cached_results + results
-                with open(screening_file, 'w', encoding='utf-8') as f:
-                    json.dump(all_results, f, indent=2)
-                print(f"  Saved {len(all_results)} screening results...")
-                time.sleep(1)  # Rate limiting
-        
-        return cached_results + results
+                }
+
+        return self._process_with_caching(
+            cache_file=screening_file,
+            all_items=articles,
+            item_key='pmid',
+            process_fn=process_article,
+            cache_label='screening decisions'
+        )
     
     def _extract_article_data(self, articles: List[Dict], extraction_file: Path) -> List[Dict]:
         """Extract article data with caching support"""
-        # Try loading existing extracted data
-        cached_data = []
-        if extraction_file.exists():
-            try:
-                with open(extraction_file, 'r', encoding='utf-8') as f:
-                    cached_data = json.load(f)
-                print(f"  Loaded {len(cached_data)} cached extracted records")
-            except Exception as e:
-                print(f"  Cache load error: {str(e)} - creating new cache")
-
-        # Build cached pmids set and extract only new articles
-        cached_pmids = {d['pmid'] for d in cached_data if 'pmid' in d}
-        new_articles = [a for a in articles if a['pmid'] not in cached_pmids]
-
-        if not new_articles:
-            print("✓ All articles already have extracted data")
-            return cached_data
-        
-        extraction_prompt = self._load_prompt('extraction')
-        results = []
-        total_new = len(new_articles)
-
+        # Load extract fields template
         topic_file = self.output_dir / "00_review_topic.json"
         extract_json = "{}"  # Default empty template
         if topic_file.exists():
@@ -873,13 +789,12 @@ class CDSSLitReviewProcessor:
                 extract_json = json.dumps(extract, indent=2)
             except Exception as e:
                 print(f"Error loading extract fields: {str(e)} - using empty template")
-
-        for i, article in enumerate(new_articles):
-            # Format prompt with article data and extraction template
-            # Sanitize article fields
+        
+        extraction_prompt = self._load_prompt('extraction')
+        
+        def process_article(article):
             safe_title = sanitize_api_input(article.get('title', ''))
             safe_abstract = sanitize_api_input(article.get('abstract', ''))
-            
             prompt = extraction_prompt.format(
                 extract=sanitize_api_input(extract_json),
                 pmid=article['pmid'],
@@ -889,14 +804,9 @@ class CDSSLitReviewProcessor:
             
             try:
                 response_text = self.llm.call(prompt)
-                
-                # Extract JSON
-                # Extract and validate JSON
                 json_match = re.search(r'{(?:[^{}]|(?R))*}', response_text, re.DOTALL)
                 if json_match:
                     data = json.loads(json_match.group())
-                    
-                    # Validate extraction structure
                     validate_llm_json_response(
                         data,
                         required_keys=['pmid'],
@@ -913,56 +823,30 @@ class CDSSLitReviewProcessor:
                             'main_findings': str
                         }
                     )
-                    
-                    results.append(data)
-                else:
-                    raise ValueError("No valid JSON found in response")
-                    
-            except (json.JSONDecodeError, ValueError, TypeError, Exception) as e:
+                    return data
+                raise ValueError("No valid JSON found")
+            except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
-                results.append({
+                return {
                     'pmid': article['pmid'],
                     'title': article['title'],
-                    'extraction_error': sanitized_err[:200]  # Truncate long errors
-                })
-                        
-            # Save every 10 items or at end of processing
-            if (i + 1) % 10 == 0 or i == total_new - 1:
-                all_results = cached_data + results
-                with open(extraction_file, 'w', encoding='utf-8') as f:
-                    json.dump(all_results, f, indent=2)
-                print(f"  Saved {len(all_results)} extracted records...")
-                time.sleep(1)  # Rate limiting
+                    'extraction_error': sanitized_err[:200]
+                }
 
-        return cached_data + results
+        return self._process_with_caching(
+            cache_file=extraction_file,
+            all_items=articles,
+            item_key='pmid',
+            process_fn=process_article,
+            cache_label='extracted records'
+        )
     
     def _assess_quality(self, articles: List[Dict], quality_file: Path) -> List[Dict]:
         """Assess study quality with caching support"""
-        # Try loading existing quality assessments
-        cached_results = []
-        if quality_file.exists():
-            try:
-                with open(quality_file, 'r', encoding='utf-8') as f:
-                    cached_results = json.load(f)
-                print(f"  Loaded {len(cached_results)} cached quality assessments")
-            except Exception as e:
-                print(f"  Cache load error: {str(e)} - creating new cache")
-        
-        # Build cached pmids set and assess only new articles
-        cached_pmids = {r['pmid'] for r in cached_results}
-        new_articles = [a for a in articles if a['pmid'] not in cached_pmids]
-        
-        if not new_articles:
-            print("✓ All articles already have quality assessments")
-            return cached_results
-        
         quadas2_prompt = self._load_prompt('quality_assessment')
         
-        results = []
-        total_new = len(new_articles)
-        
-        for i, article in enumerate(new_articles):
+        def process_article(article):
             prompt = quadas2_prompt.format(
                 pmid=article['pmid'],
                 title=article['title'],
@@ -971,32 +855,24 @@ class CDSSLitReviewProcessor:
             
             try:
                 response_text = self.llm.call(prompt)
-                
                 json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-                if json_match:
-                    result = json.loads(json_match.group())
-                else:
-                    result = json.loads(response_text)
-                
-                results.append(result)
-                    
+                result = json.loads(json_match.group()) if json_match else json.loads(response_text)
+                return result
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Quality assessment failed for PMID {article['pmid']}: {sanitized_err}", "WARN")
-                results.append({
+                return {
                     'pmid': article['pmid'],
-                    'assessment_error': sanitized_err[:200]  # Truncate long errors
-                })
-            
-            # Save every 10 items or at end of processing
-            if (i + 1) % 10 == 0 or i == total_new - 1:
-                all_results = cached_results + results
-                with open(quality_file, 'w', encoding='utf-8') as f:
-                    json.dump(all_results, f, indent=2)
-                print(f"  Saved {len(all_results)} quality assessments...")
-                time.sleep(1)  # Rate limiting
-        
-        return cached_results + results
+                    'assessment_error': sanitized_err[:200]
+                }
+
+        return self._process_with_caching(
+            cache_file=quality_file,
+            all_items=articles,
+            item_key='pmid',
+            process_fn=process_article,
+            cache_label='quality assessments'
+        )
     
     def _perform_synthesis(self, extracted_data: List[Dict]) -> str:
         """Perform thematic synthesis and identify patterns"""
@@ -1120,6 +996,55 @@ class CDSSLitReviewProcessor:
         """Save data as formatted JSON"""
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
+
+    def _process_with_caching(self, cache_file: Path, all_items: List[Dict], 
+                            item_key: str, process_fn: callable, 
+                            cache_label: str) -> List[Dict]:
+        """
+        Generic processing with caching support
+        
+        Args:
+            cache_file: Path to cache file
+            all_items: Complete list of items to process
+            item_key: Unique identifier key in items
+            process_fn: Function to process individual items
+            cache_label: Human-readable label for cache type
+        
+        Returns:
+            Combined list of cached and new results
+        """
+        # Try loading existing cache
+        cached_results = []
+        if cache_file.exists():
+            try:
+                cached_results = self._load_json(cache_file)
+                print(f"  Loaded {len(cached_results)} cached {cache_label}")
+            except Exception as e:
+                print(f"  Cache load error: {str(e)} - creating new cache")
+
+        # Get new items not in cache
+        cached_ids = {item[item_key] for item in cached_results if item_key in item}
+        new_items = [item for item in all_items if item[item_key] not in cached_ids]
+        
+        if not new_items:
+            print(f"✓ All items already have {cache_label}")
+            return cached_results
+        
+        results = []
+        total_new = len(new_items)
+        
+        for i, item in enumerate(new_items):
+            result = process_fn(item)
+            results.append(result)
+            
+            # Save periodically
+            if (i + 1) % 10 == 0 or i == total_new - 1:
+                all_results = cached_results + results
+                self._save_json(all_results, cache_file)
+                print(f"  Saved {len(all_results)} {cache_label}...")
+                time.sleep(1)  # Rate limiting
+        
+        return cached_results + results
 
     def _load_json(self, filepath: Path) -> Any:
         """Load data from JSON"""
