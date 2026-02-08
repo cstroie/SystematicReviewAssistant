@@ -33,6 +33,8 @@ Project: SystematicReviewAssistant
 Author: Costin Stroie <costinstroie@eridu.eu.org>
 GitHub: https://github.com/cstroie/SystematicReviewAssistant
 Year: 2026
+
+License: GPL-3.0-or-later
 """
 
 import json
