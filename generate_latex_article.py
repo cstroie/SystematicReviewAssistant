@@ -250,7 +250,7 @@ class ArticleDataCollector:
             'year_range': self._get_year_range(extracted),
             'modalities': self._get_modalities(extracted),
             'domains': self._get_domains(extracted),
-            'cdss_types': self._get_cdss_types(extracted),
+            'extract_fields': self._get_extract_fields(extracted),
             'study_designs': self._get_study_designs(extracted),
             'sample_sizes': self._get_sample_size_stats(extracted),
             'performance_metrics': self._get_performance_metrics(extracted),
@@ -285,13 +285,25 @@ class ArticleDataCollector:
                 domains[domain] = domains.get(domain, 0) + 1
         return dict(sorted(domains.items(), key=lambda x: x[1], reverse=True))
     
-    def _get_cdss_types(self, data: List[Dict]) -> Dict[str, int]:
-        types = {}
-        for d in data:
-            cdss_type = d.get('cdss_type', 'Unknown')
-            if cdss_type:
-                types[cdss_type] = types.get(cdss_type, 0) + 1
-        return dict(sorted(types.items(), key=lambda x: x[1], reverse=True))
+    def _get_extract_fields(self, data: List[Dict]) -> Dict[str, Dict[str, int]]:
+        """Get statistics for all extract fields"""
+        extract_fields = {}
+        topic = self.data.get('review_topic', {})
+        extract_config = topic.get('extract', {})
+        
+        for field in extract_config.keys():
+            field_values = {}
+            for d in data:
+                # Handle both top-level and extract section fields
+                value = d.get('extract', {}).get(field) or d.get(field, 'Unknown')
+                if isinstance(value, list):
+                    for v in value:
+                        field_values[v] = field_values.get(v, 0) + 1
+                else:
+                    field_values[value] = field_values.get(value, 0) + 1
+            extract_fields[field] = dict(sorted(field_values.items(), key=lambda x: x[1], reverse=True))
+            
+        return extract_fields
     
     def _get_study_designs(self, data: List[Dict]) -> Dict[str, int]:
         designs = {}
@@ -635,8 +647,14 @@ class LaTeXArticleGenerator:
         # Format data for prompt
         data_summary = self._format_data_for_prompt()
         
+        # Get review metadata
+        topic = self.data.get('review_topic', {})
+        review_title = topic.get('title', 'Systematic Review')
+        topic_description = topic.get('topic', 'the research topic')
+        analysis_points = topic.get('analysis', [])
+        
         prompt = f"""
-ROLE: You are an expert academic researcher writing an original, insightful systematic review article on clinical decision support systems in pediatric radiology.
+ROLE: You are an expert academic researcher writing an original, insightful systematic review article on {topic_description}.
 
 TASK: Generate a complete, publication-ready LaTeX academic article with fresh perspectives and critical analysis based on systematic review data and PRISMA 2020 framework.
 
@@ -648,13 +666,14 @@ INSTRUCTIONS:
 
 1. ARTICLE STRUCTURE (in this exact order):
    - Complete LaTeX document with proper preamble
-   - Title: "Clinical Decision Support Systems in Pediatric Medical Imaging: A Systematic Review of Implementations, Proposals, and User Experiences"
+   - Title: "{review_title}"
    - Abstract (250-300 words)
-   - Introduction (1000-1200 words) with background, justification, and 5 research questions
+   - Introduction (1000-1200 words) with background, justification, and research questions
    - Methods (1000-1500 words) with detailed protocol, search strategy, selection criteria, data extraction, quality assessment
-   - Results (1500-2500 words) with study characteristics, CDSS types, diagnostic accuracy, implementation status, quality assessment
-   - Thematic Synthesis (1500-2000 words) analyzing major themes with quantitative and qualitative data
-   - Discussion (1500-2000 words) interpreting findings, addressing implementation barriers, pediatric considerations
+   - Results (1500-2500 words) with study characteristics, intervention types, diagnostic accuracy, implementation status, quality assessment
+   - Thematic Synthesis (1500-2000 words) analyzing major themes with quantitative and qualitative data based on these analysis points:
+      {chr(10).join(f'     - {point}' for point in analysis_points)}
+   - Discussion (1500-2000 words) interpreting findings, addressing implementation barriers and domain-specific considerations
    - Conclusions (300-400 words) with actionable recommendations
    - References in proper format
 
@@ -757,6 +776,8 @@ INSTRUCTIONS:
    - Transparency about limitations and research paradoxes
    - Actionable recommendations with practical implementation guidance
    - PRISMA 2020 compliant
+   - Focus analysis on these key aspects defined in the review:
+     {chr(10).join(f'     - {field}: {desc}' for field, desc in topic.get('extract', {}).items())}
 
 4. LATEX FORMATTING (XeLaTeX compatible):
    - \\documentclass[12pt]{{article}}
