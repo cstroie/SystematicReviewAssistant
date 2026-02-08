@@ -1754,6 +1754,7 @@ Supported Providers:
 
     parser.add_argument('--download', help='Download PubMed articles matching query in file')
     parser.add_argument('--output', help='Output file for downloaded MEDLINE format')
+    parser.add_argument('--workdir', default='output', help='Output directory')
 
     parser.add_argument('input_file', nargs='?', help='PubMed export file (CSV/XML/MEDLINE/TXT/JSON)')
     parser.add_argument('--plan', help='Free-text research topic description (generates PubMed query and metadata - requires no input file)')
@@ -1797,8 +1798,12 @@ def main():
 
     # Handle PubMed download
     if args.download:
+        if not args.workdir:
+            print("Error: --workdir required with --download")
+            sys.exit(1)
+        
         # Get query from plan file in working directory
-        plan_file = Path(args.download) / "00_plan.json"
+        plan_file = Path(args.workdir) / "00_plan.json"
         if not plan_file.exists():
             print(f"Error: Plan file '{plan_file}' not found in working directory")
             sys.exit(1)
@@ -1813,7 +1818,7 @@ def main():
             sys.exit(1)
         
         # Download articles to working directory
-        output_file = Path(args.download) / "articles.txt"
+        output_file = Path(args.workdir) / "articles.txt"
         print(f"Downloading PubMed articles for query: {query[:100]}...")
         downloader = PubMedDownloader(api_key=os.getenv('NCBI_API_KEY'))
         pmids = downloader.search_pubmed(query)
@@ -1834,6 +1839,11 @@ def main():
         sys.exit(1)
     if not args.plan and not args.input_file:
         print("Error: Must specify either an input file or --plan")
+        sys.exit(1)
+
+    # Validate workdir exists if specified
+    if args.workdir and not Path(args.workdir).exists():
+        print(f"Error: Work directory '{args.workdir}' not found")
         sys.exit(1)
 
     # Validate input file exists if required
