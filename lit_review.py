@@ -555,7 +555,7 @@ class PubMedQueryGenerator:
             response_text = self.llm.call(prompt)
 
             # Extract JSON response
-            json_match = re.search(r'{(?:[^{}]|(?R))*}', response_text, re.DOTALL)
+            json_match = re.search(r'\{[\s\S]*\}', response_text)
             if not json_match:
                 raise ValueError("No valid JSON object found in LLM response")
 
@@ -855,7 +855,7 @@ class CDSSLitReviewProcessor:
 
             try:
                 response_text = self.llm.call(prompt)
-                json_match = re.search(r'{(?:[^{}]|(?R))*}', response_text, re.DOTALL)
+                json_match = re.search(r'\{[\s\S]*\}', response_text)
                 if json_match:
                     data = json.loads(json_match.group())
                     validate_llm_json_response(
