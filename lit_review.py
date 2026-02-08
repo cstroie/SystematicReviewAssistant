@@ -225,6 +225,74 @@ class DirectAPIClient:
         print(f"  Model: {self.model}")
         print(f"  API Endpoint: {self.full_url}")
     
+    def __init__(self, provider: str = 'anthropic', model: Optional[str] = None,
+                 api_url: Optional[str] = None, api_key: Optional[str] = None,
+                 timeout: int = 30, max_requests: int = 60, rate_period: int = 60):
+        """
+        Initialize API client
+        
+        Args:
+            provider: 'anthropic', 'openrouter', 'together', 'local', 'groq'
+            model: Model name (uses provider default if not specified)
+            api_url: Custom API URL (overrides provider default)
+            api_key: API key (uses env var if not specified)
+            timeout: Request timeout in seconds
+            max_requests: Max requests per rate_period
+            rate_period: Time period (seconds) for rate limiting
+        """
+        self.provider = provider.lower()
+        self.timeout = timeout
+        self.max_requests = max_requests
+        self.rate_period = rate_period
+        self.request_times = []
+        
+        if self.provider not in API_CONFIGS:
+            raise ValueError(f"Unknown provider: {provider}. Choose from: {list(API_CONFIGS.keys())}")
+        
+        config = API_CONFIGS[self.provider]
+        
+        # Get API endpoint
+        self.base_url = api_url or config['base_url']
+        self.endpoint = config['endpoint']
+        self.full_url = self.base_url.rstrip('/') + self.endpoint
+        
+        # Get model
+        self.model = model or config['default_model']
+        
+        # Get API key
+        if config['api_key_env']:
+            self.api_key = api_key or os.getenv(config['api_key_env'])
+            if not self.api_key and provider != 'local':
+                raise APIKeyError(config['api_key_env'])
+        else:
+            self.api_key = None  # Local models don't need a key
+        
+        # Store config functions
+        self.headers_fn = config['headers_fn']
+        self.body_fn = config['body_fn']
+        self.response_fn = config['response_fn']
+        
+        print(f"✓ Initialized {config['description']}")
+        print(f"  Model: {self.model}")
+        print(f"  API Endpoint: {self.full_url}")
+        print(f"  Rate limit: {max_requests} requests per {rate_period} seconds")
+
+    def _enforce_rate_limit(self):
+        """Enforce token bucket rate limiting"""
+        now = time.time()
+        
+        # Remove request timestamps older than our rate period
+        self.request_times = [t for t in self.request_times if now - t < self.rate_period]
+        
+        if len(self.request_times) >= self.max_requests:
+            oldest_request = self.request_times[0]
+            wait_time = self.rate_period - (now - oldest_request)
+            if wait_time > 0:
+                print(f"  Rate limit exceeded. Waiting {wait_time:.1f}s...")
+                time.sleep(wait_time)
+        
+        self.request_times.append(time.time())
+
     def call(self, prompt: str, max_retries: int = 3) -> str:
         """
         Call LLM API with direct HTTP request
@@ -245,6 +313,9 @@ class DirectAPIClient:
         # Retry loop
         for attempt in range(max_retries):
             try:
+                # Enforce rate limiting
+                self._enforce_rate_limit()
+                
                 # Create request
                 req = urllib.request.Request(
                     self.full_url,
@@ -268,41 +339,46 @@ class DirectAPIClient:
                 
             except urllib.error.HTTPError as e:
                 error_body = e.read().decode('utf-8')
+                status_code = e.code
                 
                 # Check for rate limiting
-                if e.code == 429:
-                    wait_time = 5 * (attempt + 1)
-                    print(f"  Rate limited. Waiting {wait_time}s before retry...")
+                if status_code == 429:
+                    backoff = 2 ** attempt
+                    jitter = 1 + random.random()
+                    wait_time = min(backoff * jitter, 30)  # Cap at 30s
+                    print(f"  Rate limited (HTTP 429). Waiting {wait_time:.1f}s before retry #{attempt+1}...")
                     time.sleep(wait_time)
                     continue
                 
                 # Check for other retryable errors
-                if e.code in [500, 502, 503, 504]:
-                    wait_time = 2 * (attempt + 1)
-                    print(f"  Server error ({e.code}). Waiting {wait_time}s before retry...")
+                if status_code in [408, 500, 502, 503, 504]:
+                    backoff = 2 ** attempt
+                    wait_time = min(backoff + random.uniform(0, 1), 10)  # Cap at 10s
+                    print(f"  Server error ({status_code}). Waiting {wait_time:.1f}s before retry #{attempt+1}...")
                     time.sleep(wait_time)
                     continue
                 
                 # Non-retryable error
-                raise ValueError(f"API error {e.code}: {error_body}")
+                raise ValueError(f"API error {status_code}: {error_body}")
             
             except urllib.error.URLError as e:
                 if attempt < max_retries - 1:
-                    wait_time = 2 * (attempt + 1)
-                    print(f"  Connection error: {e.reason}. Waiting {wait_time}s before retry...")
+                    backoff = 2 ** attempt
+                    wait_time = min(backoff + random.uniform(0, 1), 10)
+                    print(f"  Connection error: {e.reason}. Waiting {wait_time:.1f}s before retry #{attempt+1}...")
                     time.sleep(wait_time)
                     continue
                 raise ValueError(f"Connection error: {e.reason}")
             
             except Exception as e:
                 if attempt < max_retries - 1:
-                    wait_time = 2
-                    print(f"  Error: {str(e)}. Waiting {wait_time}s before retry...")
+                    wait_time = 1 + random.uniform(0, 1)
+                    print(f"  Error: {str(e)}. Waiting {wait_time:.1f}s before retry #{attempt+1}...")
                     time.sleep(wait_time)
                     continue
                 raise ValueError(f"Error calling API: {str(e)}")
         
-        raise ValueError("Failed after all retries")
+        raise ValueError(f"Failed after {max_retries} retries")
 
     def validate_api_response(self, content: str) -> str:
         """Validate and sanitize API response for security"""
