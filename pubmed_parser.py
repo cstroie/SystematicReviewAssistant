@@ -165,8 +165,8 @@ class PubMedParser:
         validated_path = validate_file_path(file_path)
         articles = []
         current_article: Dict[str, str] = {}
-        current_field = None
-        current_value = []
+        current_field: Optional[str] = None
+        current_value: List[str] = []
         
         with open(validated_path, 'r', encoding='utf-8', errors='ignore') as f:
             for line in f:
