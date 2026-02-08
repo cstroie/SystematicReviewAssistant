@@ -40,9 +40,15 @@ import urllib.request
 import urllib.error
 import re
 import random
-from typing import Dict, Any, Optional
+from typing import List, Dict, Any, Optional
 from pathlib import Path
 import html
+from datetime import datetime
+
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 
 MAX_PROMPT_SIZE = 1 * 1024 * 1024  # 1MB
 MAX_INPUT_SIZE = 10 * 1024 * 1024  # 10MB
@@ -108,22 +114,6 @@ def sanitize_api_input(text: str) -> str:
     # Remove control characters and limit length
     sanitized = re.sub(r'[\x00-\x1F\x7F]', '', text)
     return sanitized[:10000]  # Limit to reasonable length
-
-class APIKeyError(Exception):
-    """Custom exception for missing API keys"""
-    def __init__(self, env_var):
-        super().__init__()
-        self.env_var = env_var
-from pathlib import Path
-from datetime import datetime
-import os
-from typing import List, Dict, Optional
-import re
-
-try:
-    import pandas as pd
-except ImportError:
-    pd = None
 
 
 # API Configuration for different providers
@@ -229,6 +219,13 @@ API_CONFIGS = {
         'response_fn': lambda resp: resp.get('choices', [{}])[0].get('message', {}).get('content', '')
     }
 }
+
+# Custom exceptions
+class APIKeyError(Exception):
+    """Custom exception for missing API keys"""
+    def __init__(self, env_var):
+        super().__init__()
+        self.env_var = env_var
 
 
 class DirectAPIClient:
@@ -557,6 +554,7 @@ class PubMedQueryGenerator:
             print(f"❌ Error generating PubMed components: {sanitized_err}")
             raise ValueError(f"PubMed query generation failed: {sanitized_err}") from None
 
+
 class CDSSLitReviewProcessor:
     """Main pipeline processor for systematic literature review"""
     
@@ -597,7 +595,7 @@ class CDSSLitReviewProcessor:
                     articles = self._load_json(articles_file)
                     print(f"✓ Loaded {len(articles)} articles from {articles_file.name}")
                 except Exception as e:
-                    print(f"Cache read error: {str(e)}, re-parsing file", "WARN")
+                    print(f"Cache read error: {str(e)}, re-parsing file")
                     articles = self._parse_pubmed_export(pubmed_file)
                     self._save_json(articles, articles_file)
             else:
