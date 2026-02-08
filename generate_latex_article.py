@@ -868,9 +868,14 @@ Generate the complete LaTeX document now:
         for domain, count in stats.get('domains', {}).items():
             lines.append(f"    - {domain}: {count}")
         
-        lines.append("  CDSS types:")
-        for ctype, count in stats.get('cdss_types', {}).items():
-            lines.append(f"    - {ctype}: {count}")
+        # Display extract fields statistics
+        extract_fields = stats.get('extract_fields', {})
+        if extract_fields:
+            lines.append("  Extract Fields:")
+            for field_name, field_stats in extract_fields.items():
+                lines.append(f"    {field_name}:")
+                for value, count in field_stats.items():
+                    lines.append(f"      - {value}: {count}")
         
         lines.append("  Study designs:")
         for design, count in stats.get('study_designs', {}).items():
