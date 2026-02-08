@@ -12,22 +12,22 @@ Key features:
 Usage:
     # Using Anthropic (default)
     export ANTHROPIC_API_KEY="sk-ant-..."
-    python cdss_lit_review_pipeline_v3.py pubmed_export.csv
+    python lit_review.py pubmed_export.csv
 
     # Using OpenRouter
     export OPENROUTER_API_KEY="sk-or-..."
-    python cdss_lit_review_pipeline_v3.py pubmed_export.csv --provider openrouter --model meta-llama/llama-2-70b-chat-hf
+    python lit_review.py pubmed_export.csv --provider openrouter --model meta-llama/llama-2-70b-chat-hf
 
     # Using Together.ai
     export TOGETHER_API_KEY="..."
-    python cdss_lit_review_pipeline_v3.py pubmed_export.csv --provider together --model meta-llama/Llama-2-70b-chat-hf
+    python lit_review.py pubmed_export.csv --provider together --model meta-llama/Llama-2-70b-chat-hf
 
     # Using Groq
     export GROQ_API_KEY="..."
-    python cdss_lit_review_pipeline_v3.py pubmed_export.csv --provider groq --model mixtral-8x7b-32768
+    python lit_review.py pubmed_export.csv --provider groq --model mixtral-8x7b-32768
 
     # Using local Ollama
-    python cdss_lit_review_pipeline_v3.py pubmed_export.csv --provider local --model llama2
+    python lit_review.py pubmed_export.csv --provider local --model llama2
 """
 
 import json
@@ -178,7 +178,7 @@ API_CONFIGS = {
         'headers_fn': lambda key, model: {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {key}',
-            'HTTP-Referer': 'https://github.com/user/cdss-lit-review'
+            'HTTP-Referer': 'https://github.com/cstroie/lit-review'
         },
         'body_fn': lambda prompt, model: {
             'model': model,
@@ -948,7 +948,7 @@ class CDSSLitReviewProcessor:
                         'study_design': str,
                         'clinical_domain': str,
                         'imaging_modality': (str, list),
-                        'cdss_type': str,
+                        'extract': dict,
                         'sample_size': (dict, int, type(None)),  # Also allow null/None
                         'key_metrics': dict,
                         'main_findings': str
