@@ -39,8 +39,29 @@ import argparse
 import urllib.request
 import urllib.error
 import re
+import random
 from typing import Dict, Any
 import html
+
+MAX_PROMPT_SIZE = 1 * 1024 * 1024  # 1MB
+MAX_INPUT_SIZE = 10 * 1024 * 1024  # 10MB
+
+def validate_file_path(path: str, max_size: Optional[int] = None) -> Path:
+    """Validate and normalize file path to prevent directory traversal"""
+    path_obj = Path(path).resolve()
+    
+    if not path_obj.exists():
+        raise ValueError(f"File does not exist: {path}")
+    if path_obj.is_dir():
+        raise ValueError(f"Path is a directory: {path}")
+    
+    # Check file size limit if specified
+    if max_size is not None:
+        file_size = path_obj.stat().st_size
+        if file_size > max_size:
+            raise ValueError(f"File {path} size {file_size} exceeds maximum allowed {max_size} bytes")
+    
+    return path_obj
 
 def sanitize_filename(name: str) -> str:
     """Sanitize filename to prevent path traversal"""
