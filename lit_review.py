@@ -46,6 +46,7 @@ class APIKeyError(Exception):
         self.env_var = env_var
 from pathlib import Path
 from datetime import datetime
+import os
 from typing import List, Dict, Optional
 import re
 
