@@ -246,7 +246,6 @@ class ArticleDataCollector:
             - Year range
             - Modality counts
             - Clinical domain distribution
-            - CDSS type distribution
             - Study design counts
             - Sample size statistics
             - Performance metrics
@@ -810,7 +809,7 @@ INSTRUCTIONS:
    - Study statistics: {json.dumps(self.data.get('statistics', {}), indent=2)}
    - Quality assessment summary: {self._format_quality_data()}
    - Performance metrics ranges by modality
-   - Distribution of CDSS types
+   - Distribution of intervention types
    - Years covered: {self.data.get('statistics', {}).get('year_range', 'N/A')}
 
 6. TABLES & FIGURES TO REFERENCE:
@@ -993,9 +992,7 @@ def generate_article_main(output_dir: str, provider: str = 'anthropic',
     
     # Try to compile
     print("\nNote: To compile the XeLaTeX document with references:")
-    print(f"  xelatex {output_file.name}")
     print(f"  bibtex {output_file.stem}")
-    print(f"  xelatex {output_file.name}")
     print(f"  xelatex {output_file.name}")
     
     return output_file
