@@ -204,7 +204,7 @@ class PubMedParser:
         return articles
     
     @staticmethod
-    def _normalize_medline_article(medline_dict: Dict) -> Dict:
+    def _normalize_medline_article(medline_dict: Dict) -> Dict[str, str]:
         """Convert MEDLINE field names to standard format"""
         # Map MEDLINE field codes to standard names
         field_map = {
@@ -272,7 +272,7 @@ class PubMedParser:
         return articles
     
     @staticmethod
-    def _parse_xml_article(article_elem) -> Dict:
+    def _parse_xml_article(article_elem) -> Dict[str, str]:
         """Extract article data from XML element"""
         # Try different path structures
         pmid_elem = article_elem.find('.//PMID')
@@ -362,7 +362,7 @@ class PubMedParser:
         return articles
     
     @staticmethod
-    def _normalize_json_article(json_article: Dict) -> Dict:
+    def _normalize_json_article(json_article: Dict) -> Dict[str, str]:
         """Normalize JSON article to standard format"""
         
         # Try various possible field names
