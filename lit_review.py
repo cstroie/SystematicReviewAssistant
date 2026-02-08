@@ -1069,15 +1069,7 @@ class CDSSLitReviewProcessor:
                 'AUC': auc,
                 'Accuracy': accuracy,
                 'Main Findings': str(item.get('main_findings', ''))[:100]
-            }
-                    
-return self._process_with_caching(
-    cache_file=extraction_file,
-    all_items=articles,
-    item_key='pmid',
-    process_fn=process_article,
-    cache_label='extracted records'
-)
+            })
 
         if not rows:
             print("No valid data to create summary table", "WARN")
