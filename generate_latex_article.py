@@ -202,6 +202,18 @@ class ArticleDataCollector:
             self.data['original_articles'] = json.load(f)
             
         print(f"  Original articles: {len(self.data['original_articles'])} loaded")
+    
+    def _load_review_topic(self) -> None:
+        """Load review topic metadata"""
+        file_path = self.output_dir / "00_review_topic.json"
+        
+        if not file_path.exists():
+            print(f"Warning: {file_path} not found")
+            self.data['review_topic'] = {}
+            return
+            
+        with open(file_path, 'r') as f:
+            self.data['review_topic'] = json.load(f)
 
     def _load_summary_characteristics(self) -> None:
         """Load summary characteristics CSV file
