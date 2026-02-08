@@ -1045,21 +1045,17 @@ class CDSSLitReviewProcessor:
         with open(topic_file, 'r', encoding='utf-8') as f:
             topic_data = json.load(f)
         
-        # Get dynamic section 2 template
-        section2_template = topic_data.get('synthesis', 
-            ["Distribution by type", "Technology trends", "Implementation characteristics"])
+        # Prepare analysis bullets
+        analysis_bullets = '\n'.join(f'   - {bullet}' for bullet in topic_data.get('synthesis', [])) or \
+            '   - Distribution by type\n   - Technology trends\n   - Implementation characteristics'
         
-        # Build synthesis prompt with dynamic section
+        # Build synthesis prompt
         synthesis_template = self._load_prompt('synthesis')
-        updated_template = synthesis_template.replace(
-            "2. TYPES OF CDSS SYSTEMS\n   - Distribution by type (AI/ML vs rule-based)\n   - Technology trends over time",
-            f"2. TYPES OF SYSTEMS\n{section2_template}"
-        )
-        
-        synthesis_prompt = updated_template.format(
+        synthesis_prompt = synthesis_template.format(
             topic=topic,
             total_studies=len(extracted_data),
-            data_sample=json.dumps(summary_dict, indent=2)
+            data_sample=json.dumps(summary_dict, indent=2),
+            analysis=analysis_bullets
         )
 
         try:
