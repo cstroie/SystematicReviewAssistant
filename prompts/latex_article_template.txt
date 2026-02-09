@@ -7,10 +7,8 @@ This article should be suitable for submission to high-impact medical imaging or
 REVIEW DATA SUMMARY:
 {data_summary}
 
-KEY STUDY EXAMPLES:
 {study_examples}
 
-HIGH-IMPACT STUDIES:
 {high_impact_studies}
 
 PATTERN INSIGHTS:

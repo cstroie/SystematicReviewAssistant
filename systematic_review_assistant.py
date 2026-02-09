@@ -1648,7 +1648,7 @@ class CDSSLitReviewProcessor:
         if pd is not None:
             try:
                 df = pd.DataFrame(rows)
-                output_file = self.workdir / "summary_characteristics_table.csv"
+                output_file = self.workdir / "06_summary_characteristics.csv"
                 df.to_csv(output_file, index=False)
                 print(f"Summary table saved ({len(rows)} studies) - CSV format")
                 return
@@ -1658,7 +1658,7 @@ class CDSSLitReviewProcessor:
 
         # Fall back to manual CSV creation without pandas
         try:
-            output_file = self.workdir / "summary_characteristics_table.csv"
+            output_file = self.workdir / "06_summary_characteristics.csv"
             with open(output_file, 'w', encoding='utf-8', newline='') as f:
                 if rows:
                     # Collect all headers from all rows

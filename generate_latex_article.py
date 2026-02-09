@@ -54,16 +54,16 @@ Technical Architecture:
 Usage Examples:
     # Basic usage with default settings
     python generate_latex_article.py /path/to/workdir
-    
+
     # Specify LLM provider and model
     python generate_latex_article.py /path/to/workdir --provider anthropic
-    
+
     # Use streaming mode for large articles
     python generate_latex_article.py /path/to/workdir --stream --verbose
-    
+
     # Custom model and temperature
     python generate_latex_article.py /path/to/workdir --model claude-3-opus-20240229 --temperature 0.7
-    
+
     # Debug mode for troubleshooting
     python generate_latex_article.py /path/to/workdir --debug
 
@@ -74,7 +74,7 @@ Required Pipeline Outputs:
 - 03_extracted_data.json: Structured extracted study data
 - 04_quality_assessment.json: Quality assessment results
 - 05_thematic_synthesis.txt: Qualitative synthesis findings
-- summary_characteristics_table.csv: Study characteristics matrix
+- 06_summary_characteristics.csv: Study characteristics matrix
 
 Generated Outputs:
 - 07_review.tex: Complete LaTeX article document
@@ -183,7 +183,7 @@ class ArticleDataCollector:
         4. Quality assessment (04_quality_assessment.json) - risk of bias evaluation
         5. Original articles (01_parsed_articles.json) - reference metadata
         6. Thematic synthesis (05_thematic_synthesis.txt) - qualitative findings
-        7. Characteristics table (summary_characteristics_table.csv) - study matrix
+        7. Characteristics table (06_summary_characteristics.csv) - study matrix
         8. Statistics calculation - summary metrics and patterns
 
         The method handles various file formats including JSON, CSV, and text
@@ -648,7 +648,7 @@ class ArticleDataCollector:
         """Load summary characteristics CSV file.
 
         This method loads the summary characteristics table from the pipeline
-        output file 'summary_characteristics_table.csv'. This table contains
+        output file '06_summary_characteristics.csv'. This table contains
         structured data summarizing key characteristics of all included
         studies, typically organized as a matrix with studies as rows and
         characteristics as columns.
@@ -694,7 +694,7 @@ class ArticleDataCollector:
             for study in characteristics:
                 print(f"Study: {study['basic_info']['title']}")
         """
-        file_path = self.workdir / "summary_characteristics_table.csv"
+        file_path = self.workdir / "06_summary_characteristics.csv"
 
         if not file_path.exists():
             print(f"Warning: {file_path} not found")
@@ -1342,7 +1342,7 @@ class LaTeXArticleGenerator:
         Example:
             # Non-streaming call:
             response = generator.call_llm(prompt, stream=False)
-            
+
             # Streaming call with file output:
             response = generator.call_llm(prompt, stream=True, output_file=Path('output.tex'))
         """
@@ -1531,7 +1531,7 @@ class LaTeXArticleGenerator:
         Example:
             # Generate article in non-streaming mode:
             article = generator.generate_article(stream=False)
-            
+
             # Generate article in streaming mode:
             article = generator.generate_article(stream=True)
         """
@@ -1625,7 +1625,7 @@ class LaTeXArticleGenerator:
             plan = self.data.get('plan', {})
             title = plan.get('title', 'Systematic Review')
             topic = plan.get('topic', 'the research topic')
-            
+
             # Generate all data components
             data_summary = self._format_data_for_prompt()
             study_examples = self._get_key_study_examples()
@@ -1633,14 +1633,14 @@ class LaTeXArticleGenerator:
             pattern_insights = self._extract_patterns_for_prompt()
             characteristics_summary = self._format_characteristics_for_prompt()
             synthesis_data = self.data.get('synthesis', '')
-            
+
             # Format extract fields for quality requirements
             extract_fields = plan.get('extract', {})
             extract_fields_str = '\n'.join(f'      * {field.replace("_", " ")}: {desc}' for field, desc in extract_fields.items())
-            
+
             # Use template with placeholders
             prompt_template = self._get_prompt_template()
-            
+
             # Format the prompt with data
             prompt = prompt_template.format(
                 title=title,
@@ -1653,17 +1653,17 @@ class LaTeXArticleGenerator:
                 synthesis_data=synthesis_data,
                 extract_fields=extract_fields_str
             )
-            
+
             return prompt
-            
+
         except (FileNotFoundError, IOError) as e:
             print(f"Error loading prompt template: {str(e)}")
             # Fallback to a simple prompt
             return f"Generate a LaTeX article about {topic} with the following data:\n{self._format_data_for_prompt()}"
-    
+
     def _get_prompt_template(self) -> str:
         """Load the prompt template from file.
-        
+
         This method loads the external prompt template file containing the
         structured framework for article generation. The template uses
         placeholders that are substituted with actual data during prompt
@@ -1675,11 +1675,11 @@ class LaTeXArticleGenerator:
 
         Returns:
             str: Template string with placeholders for dynamic content
-            
+
         Raises:
             FileNotFoundError: If the prompt template file cannot be found
             IOError: If the prompt template file cannot be read
-            
+
         Example:
             template = generator._get_prompt_template()
             print(f"Template loaded: {len(template)} characters")
@@ -1687,7 +1687,7 @@ class LaTeXArticleGenerator:
         # Get the directory containing this script
         script_dir = Path(__file__).parent
         prompt_file = script_dir / 'prompts' / 'latex_article_template.txt'
-        
+
         try:
             with open(prompt_file, 'r', encoding='utf-8') as f:
                 return f.read()
@@ -1698,13 +1698,13 @@ class LaTeXArticleGenerator:
 
     def _get_key_study_examples(self, max_examples: int = 5) -> str:
         """Get a few representative study examples for the prompt.
-        
+
         This method selects a subset of studies to provide concrete examples
         for the LLM during article generation. The examples help the LLM
         understand the typical structure and content of the included studies.
 
-        The method selects the first N studies from the extracted data and
-        formats their key information in a readable way. It includes:
+        The method selects studies with the most words in 'main_findings' to
+        provide the most informative examples. It includes:
         - Study title and year
         - Study design and methodology
         - Imaging modality and clinical domain
@@ -1715,11 +1715,11 @@ class LaTeXArticleGenerator:
         Args:
             max_examples (int, optional): Maximum number of examples to include.
                 Defaults to 5. Controls the verbosity of the examples section.
-                
+
         Returns:
             str: Formatted string with key study examples, ready for
                 inclusion in the prompt template.
-                
+
         Example:
             examples = generator._get_key_study_examples(max_examples=3)
             print(f"Generated examples for {len(examples)} studies")
@@ -1727,38 +1727,39 @@ class LaTeXArticleGenerator:
         extracted = self.data.get('extracted', [])
         if not extracted:
             return "No extracted data available"
-        
-        # Take the first N examples
-        examples = extracted[:max_examples]
-        
-        lines = []
+
+        # Sort studies by word count in main_findings (descending)
+        def get_finding_word_count(study):
+            findings = study.get('main_findings', '')
+            if findings and findings != 'N/A':
+                return len(findings.split())
+            return 0
+
+        # Sort by word count and take top N examples
+        sorted_examples = sorted(extracted, key=get_finding_word_count, reverse=True)
+        examples = sorted_examples[:max_examples]
+
+        # Format the examples for the prompt
+        lines = ["KEY STUDY EXAMPLES:", ""]
         for i, study in enumerate(examples, 1):
-            lines.append(f"Example Study {i}:")
-            
-            # Use the improved characteristics data structure
-            basic_info = study.get('basic_info', {})
-            methodology = study.get('methodology', {})
-            
-            lines.append(f"  Title: {basic_info.get('title', study.get('title', 'N/A'))}")
-            lines.append(f"  Year: {basic_info.get('year', study.get('year', 'N/A'))}")
-            lines.append(f"  Design: {methodology.get('study_design', study.get('study_design', 'N/A'))}")
-            lines.append(f"  Modality: {methodology.get('imaging_modality', study.get('imaging_modality', 'N/A'))}")
-            lines.append(f"  Domain: {basic_info.get('clinical_domain', study.get('clinical_domain', 'N/A'))}")
-            
+            lines.append(f"Example Study {study.get('pmid', i)}:")
+            lines.append(f"  Title: {study.get('title', 'N/A')}")
+            lines.append(f"  Year: {study.get('year', 'N/A')}")
+            lines.append(f"  Design: {study.get('study_design', 'N/A')}")
+            lines.append(f"  Modality: {study.get('imaging_modality', 'N/A')}")
+            lines.append(f"  Domain: {study.get('clinical_domain', 'N/A')}")
+            lines.append(f"  Main findings: {study.get('main_findings', 'N/A')}")
+            lines.append(f"  Clinical implications: {study.get('clinical_implications', 'N/A')}")
+
             # Sample size
-            sample_size = basic_info.get('sample_size', study.get('sample_size', {}))
+            sample_size = study.get('sample_size', {})
             if isinstance(sample_size, dict):
-                total = sample_size.get('total_patients', 'N/A')
-                lines.append(f"  Sample: {total} patients")
+                total = sample_size.get('total_patients', None)
+                if total:
+                    lines.append(f"  Sample: {total} patients")
             else:
                 lines.append(f"  Sample: {sample_size}")
-            
-            # Key findings (truncated if long)
-            findings = study.get('key_findings', 'N/A')
-            if findings and findings != 'N/A':
-                truncated = findings[:200] + '...' if len(findings) > 200 else findings
-                lines.append(f"  Key Findings: {truncated}")
-            
+
             # Performance metrics if available
             metrics = study.get('key_metrics', {})
             if isinstance(metrics, dict):
@@ -1773,14 +1774,16 @@ class LaTeXArticleGenerator:
                         lines.append(f"    - Specificity: {spec}")
                     if auc:
                         lines.append(f"    - AUC: {auc}")
-            
+
+            # Add spacing between examples
             lines.append("")
-        
+
+        # Return formatted examples section
         return "\n".join(lines)
 
     def _get_high_impact_studies(self) -> str:
         """Get studies with exceptional results or novel approaches.
-        
+
         This method identifies studies that demonstrate exceptional performance
         metrics or introduce novel approaches. These studies are highlighted
         in the article's discussion and conclusions sections.
@@ -1799,7 +1802,7 @@ class LaTeXArticleGenerator:
         Returns:
             str: Formatted string with high-impact studies, ready for
                 inclusion in the prompt template.
-                
+
         Example:
             high_impact = generator._get_high_impact_studies()
             print(f"Found {len(high_impact.split('Study:')) - 1} high-impact studies")
@@ -1807,10 +1810,10 @@ class LaTeXArticleGenerator:
         extracted = self.data.get('extracted', [])
         if not extracted:
             return "No extracted data available"
-        
+
         # Filter for studies with exceptional metrics or novel approaches
         high_impact = []
-        
+
         for study in extracted:
             metrics = study.get('key_metrics', {})
             if isinstance(metrics, dict):
@@ -1818,7 +1821,7 @@ class LaTeXArticleGenerator:
                 sensitivity = metrics.get('sensitivity')
                 specificity = metrics.get('specificity')
                 auc = metrics.get('auc')
-                
+
                 # Convert to float if they're strings
                 try:
                     if isinstance(sensitivity, str):
@@ -1832,7 +1835,7 @@ class LaTeXArticleGenerator:
                     sensitivity = None
                     specificity = None
                     auc = None
-                
+
                 # Consider study high impact if any metric is exceptional
                 is_high_impact = False
                 if sensitivity is not None and (sensitivity > 0.95 or sensitivity > 0.90):
@@ -1843,35 +1846,33 @@ class LaTeXArticleGenerator:
                     is_high_impact = True
                 if sensitivity is not None and specificity is not None and sensitivity > 0.90 and specificity > 0.90:
                     is_high_impact = True
-                
+
+                # Add to high impact list if criteria met
                 if is_high_impact:
                     high_impact.append((study, metrics))
-        
+
         # Also check for novel approaches based on key findings
         for study in extracted:
-            findings = study.get('key_findings', '')
+            findings = study.get('main_findings', '')
             if findings and 'novel' in findings.lower() and 'first' in findings.lower():
                 # Check if already included
                 already_included = any(s[0]['title'] == study['title'] for s in high_impact)
                 if not already_included:
                     high_impact.append((study, {'novel_approach': True}))
-        
+
         if not high_impact:
             return "No studies with exceptional performance metrics or novel approaches found"
-        
-        lines = ["HIGH-IMPACT STUDIES:"]
+
+        # Format the high-impact studies section
+        lines = ["HIGH-IMPACT STUDIES:", ""]
         for study, metrics in high_impact[:3]:  # Top 3
-            # Use the improved characteristics data structure
-            basic_info = study.get('basic_info', {})
-            methodology = study.get('methodology', {})
-            
-            lines.append(f"  Study: {basic_info.get('title', study.get('title', 'N/A'))}")
-            lines.append(f"  Year: {basic_info.get('year', study.get('year', 'N/A'))}")
-            lines.append(f"  Design: {methodology.get('study_design', study.get('study_design', 'N/A'))}")
-            
+            lines.append(f"  Study: {study.get('title', 'N/A')}")
+            lines.append(f"  Year: {study.get('year', 'N/A')}")
+            lines.append(f"  Design: {study.get('study_design', 'N/A')}")
+            # Highlight novel approaches or exceptional metrics
             if isinstance(metrics, dict) and 'novel_approach' in metrics:
                 lines.append(f"  Innovation: Novel approach detected")
-                lines.append(f"  Key Finding: {study.get('key_findings', 'N/A')[:100]}...")
+                lines.append(f"  Key Finding: {study.get('main_findings', 'N/A')}")
             else:
                 lines.append("  Performance:")
                 if 'sensitivity' in metrics:
@@ -1880,14 +1881,14 @@ class LaTeXArticleGenerator:
                     lines.append(f"    - Specificity: {metrics.get('specificity', 'N/A')}")
                 if 'auc' in metrics:
                     lines.append(f"    - AUC: {metrics.get('auc', 'N/A')}")
-            
+            # Add spacing between studies
             lines.append("")
-        
+        # Return formatted high-impact studies section
         return "\n".join(lines)
 
     def _extract_patterns_for_prompt(self) -> str:
         """Extract key patterns from extracted data for prompt inclusion.
-        
+
         This method analyzes the extracted study data to identify patterns
         and trends that can inform the article's thematic synthesis and
         discussion sections. The patterns provide quantitative context
@@ -1905,7 +1906,7 @@ class LaTeXArticleGenerator:
         Returns:
             str: Formatted string with key patterns and insights, ready for
                 inclusion in the prompt template.
-                
+
         Example:
             patterns = generator._extract_patterns_for_prompt()
             print(f"Identified patterns across {len(patterns.split('STUDY DESIGNS:'))} categories")
@@ -1913,75 +1914,75 @@ class LaTeXArticleGenerator:
         extracted = self.data.get('extracted', [])
         if not extracted:
             return "No extracted data available"
-        
+
         patterns = []
-        
+
         # Extract key findings patterns
         all_findings = []
         for study in extracted:
             findings = study.get('key_findings', '')
             if findings and findings != 'N/A':
                 all_findings.append(findings.lower())
-        
+
         if all_findings:
             patterns.append("KEY FINDINGS PATTERNS:")
             # Simple pattern detection - look for common words
             from collections import Counter
             word_counts = Counter()
-            
+
             for finding in all_findings:
                 words = finding.split()
                 for word in words:
                     if len(word) > 3:  # Ignore very short words
                         word_counts[word] += 1
-            
+
             # Get most common patterns
             common_patterns = word_counts.most_common(10)
             for word, count in common_patterns:
                 if count >= 2:  # Only show patterns that appear in multiple studies
                     patterns.append(f"  - '{word}' appears in {count} studies")
-        
+
         # Extract methodology insights
         designs = {}
         modalities = {}
         domains = {}
-        
+
         for study in extracted:
             # Use the improved characteristics data structure
             basic_info = study.get('basic_info', {})
             methodology = study.get('methodology', {})
-            
+
             design = methodology.get('study_design', basic_info.get('study_design', study.get('study_design', 'Unknown')))
             designs[design] = designs.get(design, 0) + 1
-            
+
             modality = methodology.get('imaging_modality', basic_info.get('imaging_modality', study.get('imaging_modality', 'Unknown')))
             if isinstance(modality, list):
                 for m in modality:
                     modalities[m] = modalities.get(m, 0) + 1
             elif modality:
                 modalities[modality] = modalities.get(modality, 0) + 1
-            
+
             domain = basic_info.get('clinical_domain', study.get('clinical_domain', 'Unknown'))
             domains[domain] = domains.get(domain, 0) + 1
-        
+
         patterns.append("\nMETHODOLOGY INSIGHTS:")
         patterns.append("  Study designs:")
         for design, count in sorted(designs.items(), key=lambda x: x[1], reverse=True):
             patterns.append(f"    - {design}: {count} studies")
-        
+
         patterns.append("  Imaging modalities:")
         for mod, count in sorted(modalities.items(), key=lambda x: x[1], reverse=True):
             patterns.append(f"    - {mod}: {count} studies")
-        
+
         patterns.append("  Clinical domains:")
         for domain, count in sorted(domains.items(), key=lambda x: x[1], reverse=True):
             patterns.append(f"    - {domain}: {count} studies")
-        
+
         return "\n".join(patterns)
 
     def _format_characteristics_for_prompt(self) -> str:
         """Format characteristics table in a readable way for prompt inclusion.
-        
+
         This method presents the characteristics table data in a structured,
         readable format that's more useful for the LLM than raw JSON. It
         transforms tabular data into organized insights that can inform
@@ -2001,7 +2002,7 @@ class LaTeXArticleGenerator:
                 - Methodology patterns
                 - Performance summary
                 - Key findings patterns
-                
+
         Example:
             characteristics = generator._format_characteristics_for_prompt()
             print(f"Formatted characteristics for {len(characteristics)} studies")
@@ -2009,37 +2010,37 @@ class LaTeXArticleGenerator:
         characteristics = self.data.get('characteristics_table', [])
         if not characteristics:
             return "No characteristics data available"
-        
+
         lines = ["CHARACTERISTICS TABLE SUMMARY:"]
-        
+
         # Extract and organize data
         all_years = []
         all_domains = {}
         all_designs = {}
         all_modalities = {}
         all_performance = {'sensitivity': [], 'specificity': [], 'auc': []}
-        
+
         for study in characteristics:
             # Basic info
             basic_info = study.get('basic_info', {})
             methodology = study.get('methodology', {})
             performance = study.get('performance', {})
-            
+
             # Collect years
             year = basic_info.get('year')
             if year:
                 all_years.append(year)
-            
+
             # Collect domains
             domain = basic_info.get('clinical_domain')
             if domain:
                 all_domains[domain] = all_domains.get(domain, 0) + 1
-            
+
             # Collect designs
             design = methodology.get('study_design')
             if design:
                 all_designs[design] = all_designs.get(design, 0) + 1
-            
+
             # Collect modalities
             modality = methodology.get('imaging_modality')
             if modality:
@@ -2048,35 +2049,35 @@ class LaTeXArticleGenerator:
                         all_modalities[m] = all_modalities.get(m, 0) + 1
                 else:
                     all_modalities[modality] = all_modalities.get(modality, 0) + 1
-            
+
             # Collect performance metrics
             for metric in ['sensitivity', 'specificity', 'auc']:
                 value = performance.get(metric)
                 if value is not None:
                     all_performance[metric].append(value)
-        
+
         # Study overview
         lines.append("\nSTUDY OVERVIEW:")
         lines.append(f"  - Total studies: {len(characteristics)}")
         if all_years:
             lines.append(f"  - Year range: {min(all_years)}-{max(all_years)}")
         lines.append(f"  - Sample size range: {self._get_sample_size_range(characteristics)}")
-        
+
         # Clinical domains
         lines.append("\nCLINICAL DOMAINS:")
         for domain, count in sorted(all_domains.items(), key=lambda x: x[1], reverse=True):
             lines.append(f"  - {domain}: {count} studies")
-        
+
         # Study designs
         lines.append("\nSTUDY DESIGNS:")
         for design, count in sorted(all_designs.items(), key=lambda x: x[1], reverse=True):
             lines.append(f"  - {design}: {count} studies")
-        
+
         # Imaging modalities
         lines.append("\nIMAGING MODALITIES:")
         for modality, count in sorted(all_modalities.items(), key=lambda x: x[1], reverse=True):
             lines.append(f"  - {modality}: {count} studies")
-        
+
         # Performance summary
         lines.append("\nPERFORMANCE METRICS SUMMARY:")
         for metric, values in all_performance.items():
@@ -2097,7 +2098,7 @@ class LaTeXArticleGenerator:
                     lines.append(f"  - {metric.title()}:")
                     lines.append(f"    No numeric values found")
                     lines.append(f"    Studies reported: {len(values)}")
-        
+
         # Sample key findings
         lines.append("\nKEY FINDINGS SAMPLE:")
         for i, study in enumerate(characteristics[:3]):  # Show first 3
@@ -2106,24 +2107,24 @@ class LaTeXArticleGenerator:
                 lines.append(f"  Study {i+1}: {findings[:100]}...")
             elif findings:
                 lines.append(f"  Study {i+1}: {findings}")
-        
+
         return "\n".join(lines)
-    
+
     def _get_sample_size_range(self, characteristics: List[Dict]) -> str:
         """Get the range of sample sizes from characteristics data.
-        
+
         This method extracts and calculates the range of sample sizes from
         the characteristics table data. It handles various data formats
         and provides a clean range string for reporting.
-        
+
         Args:
             characteristics (List[Dict]): List of study characteristics
                 dictionaries from the processed characteristics table.
-                
+
         Returns:
             str: String representing the sample size range in format
                 "min-max", or "N/A" if no valid sample sizes are found.
-                
+
         Example:
             range_str = generator._get_sample_size_range(characteristics)
             print(f"Sample size range: {range_str}")
@@ -2134,10 +2135,10 @@ class LaTeXArticleGenerator:
             sample_size = basic_info.get('sample_size')
             if sample_size and isinstance(sample_size, int):
                 sizes.append(sample_size)
-        
+
         if not sizes:
             return "N/A"
-        
+
         sizes.sort()
         return f"{sizes[0]}-{sizes[-1]}"
 
@@ -2277,7 +2278,7 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
             - 03_extracted_data.json: Extracted study data
             - 04_quality_assessment.json: Quality assessment results
             - 05_thematic_synthesis.txt: Thematic synthesis text
-            - summary_characteristics_table.csv: Study characteristics
+            - 06_summary_characteristics.csv: Study characteristics
         provider (str, optional): LLM provider name. Defaults to 'openrouter'.
             Supported providers: 'anthropic', 'openrouter', 'together',
             'groq', 'local'. Determines API endpoint and authentication
@@ -2320,7 +2321,7 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
     Example:
         # Basic usage
         output_path = generate_article_main('/path/to/workdir')
-        
+
         # With custom provider and streaming
         output_path = generate_article_main(
             '/path/to/workdir',
