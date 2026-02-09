@@ -1047,12 +1047,12 @@ class PlanGenerator:
             raise ValueError(f"Failed to load prompt '{safe_name}': {str(e)}") from e
 
 
-    def generate(self, plan: str):
+    def generate(self, request: str):
         """Generate and save plan components"""
         try:
             # Sanitize user input
-            safe_plan = sanitize_api_input(plan)
-            prompt = self.prompt.format(plan=safe_plan)
+            safe_request = sanitize_api_input(request)
+            prompt = self.prompt.format(request=safe_request)
             response_text = self.llm.call(prompt)
 
             # Attempt multiple JSON extraction patterns
@@ -1101,6 +1101,9 @@ class PlanGenerator:
             missing_screening = screening_reqs - set(components['screening'].keys())
             if missing_screening:
                 raise ValueError(f"Missing screening criteria: {missing_screening}")
+
+            # Keep also the original free text for reference
+            components['request'] = request
 
             # Save validated data in both JSON and YAML formats
             output_path_json = self.workdir / "00_plan.json"
