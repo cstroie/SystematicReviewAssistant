@@ -1554,20 +1554,16 @@ class CDSSLitReviewProcessor:
             'total_count': len(extracted_data)
         }
 
-        # Load review template
-        plan_file = self.workdir / "00_plan.json"
-        with open(plan_file, 'r', encoding='utf-8') as f:
-            topic_data = json.load(f)
-        
-        # Validate and prepare analysis bullets
+        # Validate and prepare analysis themes
         if 'analysis' not in topic_data:
             raise ValueError("Missing required 'analysis' field in review metadata")
         
-        analysis_bullets = topic_data['analysis']
-        if not isinstance(analysis_bullets, list) or len(analysis_bullets) == 0:
-            raise ValueError("'analysis' field must be a non-empty list of bullet points")
+        analysis_themes = topic_data['analysis']
+        if not isinstance(analysis_themes, list) or len(analysis_themes) == 0:
+            raise ValueError("'analysis' field must be a non-empty list of themes")
         
-        analysis_bullets = '\n'.join(f'   - {bullet}' for bullet in analysis_bullets)
+        # Format analysis themes for the template
+        analysis_themes_formatted = '\n'.join(f'   - {theme}' for theme in analysis_themes)
         
         # Build synthesis prompt
         synthesis_template = self._load_prompt('synthesis')
@@ -1575,7 +1571,7 @@ class CDSSLitReviewProcessor:
             topic=topic,
             total_studies=len(extracted_data),
             data_sample=json.dumps(summary_dict, indent=2),
-            analysis=analysis_bullets
+            analysis_themes=analysis_themes_formatted
         )
 
         try:
