@@ -12,10 +12,19 @@ Based on this analysis and typical patterns in this field, provide a comprehensi
    - Imaging modalities covered
    - Clinical domains studied
 
-2. ANALYSIS
+2. DATA SYNTHESIS METHODS
+   - Describe the synthesis approach (narrative, statistical, or mixed)
+   - If statistical synthesis was performed, detail the meta-analysis methods:
+     * Statistical models used (fixed-effect, random-effects)
+     * Heterogeneity assessment (I² statistic, Cochran's Q test)
+     * Methods for investigating sources of bias across studies
+     * Sensitivity analyses performed
+   - If narrative synthesis was used, describe the thematic analysis approach
+
+3. ANALYSIS
 {analysis}
 
-3. CLINICAL PERFORMANCE
+4. CLINICAL PERFORMANCE
    - Range of reported metrics (sensitivity, specificity, AUC)
    - Best and worst performing systems
    - Performance by clinical domain
@@ -25,17 +34,22 @@ Based on this analysis and typical patterns in this field, provide a comprehensi
    - Key findings and consistencies
    - Important variations and contradictions
 
-5. METHODOLOGICAL ASSESSMENT  
+5. EVIDENCE QUALITY ASSESSMENT
+   - Confidence in the body of evidence using GRADE or similar framework
+   - Key factors influencing confidence (risk of bias, inconsistency, indirectness, imprecision)
+   - Assessment of publication bias (funnel plots, Egger's test if applicable)
+
+6. METHODOLOGICAL ASSESSMENT  
    - Common strengths
    - Prevalent limitations
    - Quality trends
 
-6. CLINICAL IMPLICATIONS
+7. CLINICAL IMPLICATIONS
    - Evidence for clinical implementation
    - Adoption barriers
    - Impact on clinical workflows
 
-7. RESEARCH GAPS AND RECOMMENDATIONS
+8. RESEARCH GAPS AND RECOMMENDATIONS
    - Underrepresented clinical domains
    - Methodological gaps
    - Recommendations for future research
