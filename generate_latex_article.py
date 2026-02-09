@@ -116,21 +116,30 @@ class ArticleDataCollector:
         print("✓ Data collection complete")
         return self.data
     
-    def _load_screening_results(self) -> None:
-        """Load and process screening results from JSON file
-        
-        Populates:
-            self.data['screening'] with screening statistics and counts
-        """
-        file_path = self.workdir / "02_screening_results.json"
-        
-        if not file_path.exists():
-            print(f"Warning: {file_path} not found")
-            self.data['screening'] = {}
-            return
-        
-        with open(file_path, 'r') as f:
-            results = json.load(f)
+    def _load_screening_results(self) -> None:                                                                                                                                                 
+        """Load and process screening results from JSON file                                                                                                                                   
+                                                                                                                                                                                               
+        Populates:                                                                                                                                                                             
+            self.data['screening'] with screening statistics and counts                                                                                                                        
+        """                                                                                                                                                                                    
+        file_path = self.workdir / "02_screening_results.json"                                                                                                                                 
+                                                                                                                                                                                               
+        if not file_path.exists():                                                                                                                                                             
+            print(f"Warning: {file_path} not found")                                                                                                                                           
+            self.data['screening'] = {}                                                                                                                                                        
+            return                                                                                                                                                                             
+                                                                                                                                                                                               
+        try:                                                                                                                                                                                   
+            with open(file_path, 'r', encoding='utf-8') as f:                                                                                                                                  
+                results = json.load(f)                                                                                                                                                         
+        except json.JSONDecodeError as e:                                                                                                                                                      
+            print(f"Error: Invalid JSON in {file_path}: {str(e)}")                                                                                                                             
+            self.data['screening'] = {}                                                                                                                                                        
+            return                                                                                                                                                                             
+        except IOError as e:                                                                                                                                                                   
+            print(f"Error: Cannot read {file_path}: {str(e)}")                                                                                                                                 
+            self.data['screening'] = {}                                                                                                                                                        
+            return                                                                                                                                                                             
         
         total = len(results)
         included = sum(1 for r in results if r.get('decision') == 'INCLUDE')
@@ -151,117 +160,167 @@ class ArticleDataCollector:
         
         print(f"  Screening: {included} included, {excluded} excluded, {uncertain} uncertain")
     
-    def _load_extracted_data(self) -> None:
-        """Load extracted study data from JSON file
-        
-        Populates:
-            self.data['extracted'] with list of extracted study data
-        """
-        file_path = self.workdir / "03_extracted_data.json"
-        
-        if not file_path.exists():
-            print(f"Warning: {file_path} not found")
-            self.data['extracted'] = []
-            return
-        
-        with open(file_path, 'r') as f:
-            data = json.load(f)
+    def _load_extracted_data(self) -> None:                                                                                                                                                    
+        """Load extracted study data from JSON file                                                                                                                                            
+                                                                                                                                                                                               
+        Populates:                                                                                                                                                                             
+            self.data['extracted'] with list of extracted study data                                                                                                                           
+        """                                                                                                                                                                                    
+        file_path = self.workdir / "03_extracted_data.json"                                                                                                                                    
+                                                                                                                                                                                               
+        if not file_path.exists():                                                                                                                                                             
+            print(f"Warning: {file_path} not found")                                                                                                                                           
+            self.data['extracted'] = []                                                                                                                                                        
+            return                                                                                                                                                                             
+                                                                                                                                                                                               
+        try:                                                                                                                                                                                   
+            with open(file_path, 'r', encoding='utf-8') as f:                                                                                                                                  
+                data = json.load(f)                                                                                                                                                            
+        except json.JSONDecodeError as e:                                                                                                                                                      
+            print(f"Error: Invalid JSON in {file_path}: {str(e)}")                                                                                                                             
+            self.data['extracted'] = []                                                                                                                                                        
+            return                                                                                                                                                                             
+        except IOError as e:                                                                                                                                                                   
+            print(f"Error: Cannot read {file_path}: {str(e)}")                                                                                                                                 
+            self.data['extracted'] = []                                                                                                                                                        
+            return                                                                                                                                                                             
         
         # Filter out items with errors
         self.data['extracted'] = [d for d in data if 'extraction_error' not in d]
         
         print(f"  Extracted: {len(self.data['extracted'])} studies")
     
-    def _load_quality_assessment(self) -> None:
-        """Load quality assessment data from JSON file
-        
-        Populates:
-            self.data['quality'] with list of quality assessments
-        """
-        file_path = self.workdir / "04_quality_assessment.json"
-        
-        if not file_path.exists():
-            print(f"Warning: {file_path} not found")
-            self.data['quality'] = []
-            return
-        
-        with open(file_path, 'r') as f:
-            data = json.load(f)
+    def _load_quality_assessment(self) -> None:                                                                                                                                                
+        """Load quality assessment data from JSON file                                                                                                                                         
+                                                                                                                                                                                               
+        Populates:                                                                                                                                                                             
+            self.data['quality'] with list of quality assessments                                                                                                                              
+        """                                                                                                                                                                                    
+        file_path = self.workdir / "04_quality_assessment.json"                                                                                                                                
+                                                                                                                                                                                               
+        if not file_path.exists():                                                                                                                                                             
+            print(f"Warning: {file_path} not found")                                                                                                                                           
+            self.data['quality'] = []                                                                                                                                                          
+            return                                                                                                                                                                             
+                                                                                                                                                                                               
+        try:                                                                                                                                                                                   
+            with open(file_path, 'r', encoding='utf-8') as f:                                                                                                                                  
+                data = json.load(f)                                                                                                                                                            
+        except json.JSONDecodeError as e:                                                                                                                                                      
+            print(f"Error: Invalid JSON in {file_path}: {str(e)}")                                                                                                                             
+            self.data['quality'] = []                                                                                                                                                          
+            return                                                                                                                                                                             
+        except IOError as e:                                                                                                                                                                   
+            print(f"Error: Cannot read {file_path}: {str(e)}")                                                                                                                                 
+            self.data['quality'] = []                                                                                                                                                          
+            return                                                                                                                                                                             
         
         self.data['quality'] = [d for d in data if 'assessment_error' not in d]
         
         print(f"  Quality assessment: {len(self.data['quality'])} studies rated")
     
-    def _load_thematic_synthesis(self) -> None:
-        """Load thematic synthesis text from file
-        
-        Populates:
-            self.data['synthesis'] with synthesis text content
-        """
-        file_path = self.workdir / "05_thematic_synthesis.txt"
-        
-        if not file_path.exists():
-            print(f"Warning: {file_path} not found")
-            self.data['synthesis'] = ""
-            return
-        
-        with open(file_path, 'r') as f:
-            self.data['synthesis'] = f.read()
+    def _load_thematic_synthesis(self) -> None:                                                                                                                                                
+        """Load thematic synthesis text from file                                                                                                                                              
+                                                                                                                                                                                               
+        Populates:                                                                                                                                                                             
+            self.data['synthesis'] with synthesis text content                                                                                                                                 
+        """                                                                                                                                                                                    
+        file_path = self.workdir / "05_thematic_synthesis.txt"                                                                                                                                 
+                                                                                                                                                                                               
+        if not file_path.exists():                                                                                                                                                             
+            print(f"Warning: {file_path} not found")                                                                                                                                           
+            self.data['synthesis'] = ""                                                                                                                                                        
+            return                                                                                                                                                                             
+                                                                                                                                                                                               
+        try:                                                                                                                                                                                   
+            with open(file_path, 'r', encoding='utf-8') as f:                                                                                                                                  
+                self.data['synthesis'] = f.read()                                                                                                                                              
+        except IOError as e:                                                                                                                                                                   
+            print(f"Error: Cannot read {file_path}: {str(e)}")                                                                                                                                 
+            self.data['synthesis'] = ""                                                                                                                                                        
+            return                                                                                                                                                                             
         
         print(f"  Synthesis: {len(self.data['synthesis'])} characters")
     
-    def _load_original_articles(self) -> None:
-        """Load original parsed articles from JSON file
-        
-        Populates:
-            self.data['original_articles'] with list of parsed articles
-        """
-        file_path = self.workdir / "01_parsed_articles.json"
-        
-        if not file_path.exists():
-            print(f"Warning: {file_path} not found")
-            self.data['original_articles'] = []
-            return
-            
-        with open(file_path, 'r') as f:
-            self.data['original_articles'] = json.load(f)
+    def _load_original_articles(self) -> None:                                                                                                                                                 
+        """Load original parsed articles from JSON file                                                                                                                                        
+                                                                                                                                                                                               
+        Populates:                                                                                                                                                                             
+            self.data['original_articles'] with list of parsed articles                                                                                                                        
+        """                                                                                                                                                                                    
+        file_path = self.workdir / "01_parsed_articles.json"                                                                                                                                   
+                                                                                                                                                                                               
+        if not file_path.exists():                                                                                                                                                             
+            print(f"Warning: {file_path} not found")                                                                                                                                           
+            self.data['original_articles'] = []                                                                                                                                                
+            return                                                                                                                                                                             
+                                                                                                                                                                                               
+        try:                                                                                                                                                                                   
+            with open(file_path, 'r', encoding='utf-8') as f:                                                                                                                                  
+                self.data['original_articles'] = json.load(f)                                                                                                                                  
+        except json.JSONDecodeError as e:                                                                                                                                                      
+            print(f"Error: Invalid JSON in {file_path}: {str(e)}")                                                                                                                             
+            self.data['original_articles'] = []                                                                                                                                                
+            return                                                                                                                                                                             
+        except IOError as e:                                                                                                                                                                   
+            print(f"Error: Cannot read {file_path}: {str(e)}")                                                                                                                                 
+            self.data['original_articles'] = []                                                                                                                                                
+            return                                                                                                                                                                             
             
         print(f"  Original articles: {len(self.data['original_articles'])} loaded")
     
-    def _load_plan(self) -> None:
-        """Load plan metadata"""
-        file_path = self.workdir / "00_plan.json"
-        
-        if not file_path.exists():
-            print(f"Warning: {file_path} not found")
-            self.data['plan'] = {}
-            return
-            
-        with open(file_path, 'r') as f:
-            self.data['plan'] = json.load(f)
+    def _load_plan(self) -> None:                                                                                                                                                              
+        """Load plan metadata"""                                                                                                                                                               
+        file_path = self.workdir / "00_plan.json"                                                                                                                                              
+                                                                                                                                                                                               
+        if not file_path.exists():                                                                                                                                                             
+            print(f"Warning: {file_path} not found")                                                                                                                                           
+            self.data['plan'] = {}                                                                                                                                                             
+            return                                                                                                                                                                             
+                                                                                                                                                                                               
+        try:                                                                                                                                                                                   
+            with open(file_path, 'r', encoding='utf-8') as f:                                                                                                                                  
+                self.data['plan'] = json.load(f)                                                                                                                                               
+        except json.JSONDecodeError as e:                                                                                                                                                      
+            print(f"Error: Invalid JSON in {file_path}: {str(e)}")                                                                                                                             
+            self.data['plan'] = {}                                                                                                                                                             
+            return                                                                                                                                                                             
+        except IOError as e:                                                                                                                                                                   
+            print(f"Error: Cannot read {file_path}: {str(e)}")                                                                                                                                 
+            self.data['plan'] = {}                                                                                                                                                             
+            return                                                                                                                                                                             
 
         print(f"  Study: {self.data['plan']['title']}")
 
-    def _load_summary_characteristics(self) -> None:
-        """Load summary characteristics CSV file
-        
-        Populates:
-            self.data['characteristics_table'] with list of study characteristics
-        """
-        file_path = self.workdir / "summary_characteristics_table.csv"
-        
-        if not file_path.exists():
-            print(f"Warning: {file_path} not found")
-            self.data['characteristics_table'] = []
-            return
-        
-        rows = []
-        with open(file_path, 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                rows.append(row)
-        
-        self.data['characteristics_table'] = rows
+    def _load_summary_characteristics(self) -> None:                                                                                                                                           
+        """Load summary characteristics CSV file                                                                                                                                               
+                                                                                                                                                                                               
+        Populates:                                                                                                                                                                             
+            self.data['characteristics_table'] with list of study characteristics                                                                                                              
+        """                                                                                                                                                                                    
+        file_path = self.workdir / "summary_characteristics_table.csv"                                                                                                                         
+                                                                                                                                                                                               
+        if not file_path.exists():                                                                                                                                                             
+            print(f"Warning: {file_path} not found")                                                                                                                                           
+            self.data['characteristics_table'] = []                                                                                                                                            
+            return                                                                                                                                                                             
+                                                                                                                                                                                               
+        try:                                                                                                                                                                                   
+            rows = []                                                                                                                                                                          
+            with open(file_path, 'r', encoding='utf-8') as f:                                                                                                                                  
+                reader = csv.DictReader(f)                                                                                                                                                     
+                for row in reader:                                                                                                                                                             
+                    rows.append(row)                                                                                                                                                           
+                                                                                                                                                                                               
+            self.data['characteristics_table'] = rows                                                                                                                                          
+        except csv.Error as e:                                                                                                                                                                 
+            print(f"Error: Invalid CSV in {file_path}: {str(e)}")                                                                                                                              
+            self.data['characteristics_table'] = []                                                                                                                                            
+            return                                                                                                                                                                             
+        except IOError as e:                                                                                                                                                                   
+            print(f"Error: Cannot read {file_path}: {str(e)}")                                                                                                                                 
+            self.data['characteristics_table'] = []                                                                                                                                            
+            return                                                                                                                                                                             
         
         print(f"  Characteristics table: {len(rows)} studies")
     
@@ -407,71 +466,75 @@ class ArticleDataCollector:
             'mean': round(sum(values) / len(values), 3)
         }
 
-    def generate_bibtex(self) -> str:
-        """Generate BibTeX entries for all included studies
-        
-        Returns:
-            String containing complete BibTeX entries
-        """
-        entries = []
-        extracted = self.data.get('extracted', [])
-        original_articles = {art['title']: art for art in self.data.get('original_articles', [])}
-        
-        for i, study in enumerate(extracted):
-            # Get original article details for more complete metadata
-            original = original_articles.get(study.get('title'), {})
-            
-            # Merge fields preferring original parse data when available
-            authors = original.get('authors', study.get('authors', 'Unknown'))
-            journal = original.get('journal', study.get('journal', 'Unknown Journal'))
-            volume = original.get('volume', study.get('volume', ''))
-            issue = original.get('issue', study.get('issue', ''))
-            pages = original.get('pages', study.get('pages', ''))
-            doi = original.get('doi', study.get('doi', ''))
-            pmid = original.get('pmid', study.get('pmid', ''))
-            url = original.get('url', study.get('url', ''))
-            year = original.get('year', study.get('year', '0000'))
-            
-            # Create unique citation key - prioritize PMID
-            citation_key = ""
-            if pmid and pmid.strip() and pmid != 'N/A':
-                citation_key = f"pmid{pmid.strip()}"
-            elif doi and doi.strip() and doi != 'N/A':
-                citation_key = doi.strip()
-            else:
-                # Fallback to author-year-index if no PMID/DOI
-                if isinstance(authors, list):
-                    first_author_last = authors[0].split()[-1] if authors else 'Unknown'
+    def generate_bibtex(self) -> str:                                                                                                                                                          
+        """Generate BibTeX entries for all included studies                                                                                                                                    
+                                                                                                                                                                                               
+        Returns:                                                                                                                                                                               
+            String containing complete BibTeX entries                                                                                                                                          
+        """                                                                                                                                                                                    
+        entries = []                                                                                                                                                                           
+        extracted = self.data.get('extracted', [])                                                                                                                                             
+        original_articles = {art['title']: art for art in self.data.get('original_articles', [])}                                                                                              
+                                                                                                                                                                                               
+        for i, study in enumerate(extracted):                                                                                                                                                  
+            try:                                                                                                                                                                               
+                # Get original article details for more complete metadata
+                original = original_articles.get(study.get('title'), {})
+                
+                # Merge fields preferring original parse data when available
+                authors = original.get('authors', study.get('authors', 'Unknown'))
+                journal = original.get('journal', study.get('journal', 'Unknown Journal'))
+                volume = original.get('volume', study.get('volume', ''))
+                issue = original.get('issue', study.get('issue', ''))
+                pages = original.get('pages', study.get('pages', ''))
+                doi = original.get('doi', study.get('doi', ''))
+                pmid = original.get('pmid', study.get('pmid', ''))
+                url = original.get('url', study.get('url', ''))
+                year = original.get('year', study.get('year', '0000'))
+                
+                # Create unique citation key - prioritize PMID
+                citation_key = ""
+                if pmid and pmid.strip() and pmid != 'N/A':
+                    citation_key = f"pmid{pmid.strip()}"
+                elif doi and doi.strip() and doi != 'N/A':
+                    citation_key = doi.strip()
                 else:
-                    first_author_last = authors.split()[0] if authors else 'Unknown'
-                citation_key = f"{first_author_last}{year}{i:02d}".lower()
-            
-            # Format authors for BibTeX
-            if isinstance(authors, list):
-                formatted_authors = " and ".join(authors)
-            else:
-                formatted_authors = authors
-            
-            # LaTeX escaping for BibTeX fields (except DOI/PMID/URL which shouldn't need it)
-            title = study.get('title', 'Untitled').replace('&', r'\\&').replace('$', r'\\$').replace('%', r'\\%').replace('#', r'\\#')
-            journal_esc = journal.replace('&', r'\\&').replace('$', r'\\$').replace('%', r'\\%').replace('#', r'\\#')
-            formatted_authors_esc = formatted_authors.replace('&', r'\\&').replace('$', r'\\$').replace('%', r'\\%').replace('#', r'\\#')
+                    # Fallback to author-year-index if no PMID/DOI
+                    if isinstance(authors, list):
+                        first_author_last = authors[0].split()[-1] if authors else 'Unknown'
+                    else:
+                        first_author_last = authors.split()[0] if authors else 'Unknown'
+                    citation_key = f"{first_author_last}{year}{i:02d}".lower()
+                
+                # Format authors for BibTeX
+                if isinstance(authors, list):
+                    formatted_authors = " and ".join(authors)
+                else:
+                    formatted_authors = authors
+                
+                # LaTeX escaping for BibTeX fields (except DOI/PMID/URL which shouldn't need it)
+                title = study.get('title', 'Untitled').replace('&', r'\\&').replace('$', r'\\$').replace('%', r'\\%').replace('#', r'\\#')
+                journal_esc = journal.replace('&', r'\\&').replace('$', r'\\$').replace('%', r'\\%').replace('#', r'\\#')
+                formatted_authors_esc = formatted_authors.replace('&', r'\\&').replace('$', r'\\$').replace('%', r'\\%').replace('#', r'\\#')
 
-            entry = f"""@article{{{citation_key},
-  title     = {{{title}}},
-  author    = {{{formatted_authors_esc}}},
-  journal   = {{{journal_esc}}},
-  year      = {{{year}}},
-  volume    = {{{volume}}},
-  number    = {{{issue}}},
-  pages     = {{{pages}}},
-  doi       = {{{doi}}},  # No escaping needed
-  pmid      = {{{pmid}}},  # No escaping needed
-  url       = {{{url}}}   # No escaping needed
-}}"""
-            entries.append(entry)
-        
-        return "\n\n".join(entries)
+                entry = f"""@article{{{citation_key},                                                                                                                                          
+  title     = {{{title}}},                                                                                                                                                                     
+  author    = {{{formatted_authors_esc}}},                                                                                                                                                     
+  journal   = {{{journal_esc}}},                                                                                                                                                               
+  year      = {{{year}}},                                                                                                                                                                      
+  volume    = {{{volume}}},                                                                                                                                                                    
+  number    = {{{issue}}},                                                                                                                                                                     
+  pages     = {{{pages}}},                                                                                                                                                                     
+  doi       = {{{doi}}},  # No escaping needed                                                                                                                                                 
+  pmid      = {{{pmid}}},  # No escaping needed                                                                                                                                                
+  url       = {{{url}}}   # No escaping needed                                                                                                                                                 
+}}"""                                                                                                                                                                                          
+                entries.append(entry)                                                                                                                                                          
+            except Exception as e:                                                                                                                                                             
+                print(f"Warning: Could not generate BibTeX entry for study {i}: {str(e)}")                                                                                                     
+                continue                                                                                                                                                                       
+                                                                                                                                                                                               
+        return "\n\n".join(entries)                                                                                                                                                            
 
 
 class LaTeXArticleGenerator:
@@ -1084,18 +1147,22 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
 
     article_content = generator.generate_article(stream=stream, temperature=temperature)
     
-    # Save article
-    output_file = workdir / '06_review.tex'
-    bib_file = workdir / 'references.bib'
-    
-    # Save LaTeX article
-    with open(output_file, 'w', encoding='utf-8') as f:
-        f.write(article_content)
-    
-    # Save BibTeX references
-    bib_content = collector.generate_bibtex()
-    with open(bib_file, 'w', encoding='utf-8') as f:
-        f.write(bib_content)
+    # Save article                                                                                                                                                                             
+    output_file = workdir / '06_review.tex'                                                                                                                                                    
+    bib_file = workdir / 'references.bib'                                                                                                                                                      
+                                                                                                                                                                                               
+    try:                                                                                                                                                                                       
+        # Save LaTeX article                                                                                                                                                                   
+        with open(output_file, 'w', encoding='utf-8') as f:                                                                                                                                    
+            f.write(article_content)                                                                                                                                                           
+                                                                                                                                                                                               
+        # Save BibTeX references                                                                                                                                                               
+        bib_content = collector.generate_bibtex()                                                                                                                                              
+        with open(bib_file, 'w', encoding='utf-8') as f:                                                                                                                                       
+            f.write(bib_content)                                                                                                                                                               
+    except IOError as e:                                                                                                                                                                       
+        print(f"Error: Could not save output files: {str(e)}")                                                                                                                                 
+        raise                                                                                                                                                                                  
     
     print(f"\n✓ Article generated successfully!")
     print(f"  Saved to: {output_file}")
