@@ -30,7 +30,7 @@ First deeply understand the research topic and domain to create meaningful crite
 - Clinical applications
 - Technical implementations
 
-Criteria should be:
+Inclusion and exclusions criteria should be:
 - Specific and measurable
 - Mutually exclusive between inclusion/exclusion
 - Relevant to the review's research questions
