@@ -126,6 +126,29 @@ ARTICLE STRUCTURE & CONTENT:
       * Industry/developers
       * Policymakers (regulatory frameworks)
 
+8. FUNDING AND CONFLICTS OF INTEREST
+   - Funding sources disclosure:
+      * All funding sources for the research
+      * Grant numbers and funding agencies
+      * Role of funders in study design, data collection, analysis, interpretation
+      * Final approval of manuscript
+   - Conflicts of interest disclosure:
+      * Financial conflicts (consulting fees, stock ownership, patents)
+      * Non-financial conflicts (personal relationships, academic competition)
+      * Institutional conflicts (departmental relationships)
+      * Solutions for managing conflicts (independent review, data sharing)
+   - Author contributions:
+      * Individual author contributions to conception, design, data collection, analysis, interpretation
+      * Drafting and critical revision of manuscript
+      * Final approval of version to be published
+   - Acknowledgments:
+      * Technical assistance
+      * Statistical advice
+      * Writing assistance
+      * Other support (equipment, materials)
+   - Ethical approval statement if applicable
+   - Data availability statement
+
 QUALITY & STYLE REQUIREMENTS:
 - Professional academic tone with stylistic variation
 - Clear, concise writing (avoid filler phrases)
