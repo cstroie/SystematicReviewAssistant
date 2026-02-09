@@ -1364,14 +1364,23 @@ class LaTeXArticleGenerator:
         for study in extracted:
             metrics = study.get('key_metrics', {})
             if isinstance(metrics, dict):
-                # Check for exceptional performance
-                sensitivity = metrics.get('sensitivity', 0)
-                specificity = metrics.get('specificity', 0)
-                auc = metrics.get('auc', 0)
+                # Check for exceptional performance with null checks
+                sensitivity = metrics.get('sensitivity')
+                specificity = metrics.get('specificity')
+                auc = metrics.get('auc')
                 
                 # Consider study high impact if any metric is exceptional
-                if (sensitivity > 0.95 or specificity > 0.95 or auc > 0.95 or
-                    (sensitivity > 0.90 and specificity > 0.90)):
+                is_high_impact = False
+                if sensitivity is not None and (sensitivity > 0.95 or sensitivity > 0.90):
+                    is_high_impact = True
+                if specificity is not None and (specificity > 0.95 or specificity > 0.90):
+                    is_high_impact = True
+                if auc is not None and auc > 0.95:
+                    is_high_impact = True
+                if sensitivity is not None and specificity is not None and sensitivity > 0.90 and specificity > 0.90:
+                    is_high_impact = True
+                
+                if is_high_impact:
                     high_impact.append((study, metrics))
         
         # Also check for novel approaches based on key findings
