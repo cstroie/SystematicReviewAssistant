@@ -807,7 +807,7 @@ class LaTeXArticleGenerator:
 
     def __init__(self, data: Dict, provider: str = 'anthropic',
                  model: Optional[str] = None, api_url: Optional[str] = None,
-                 api_key: Optional[str] = None, verbose: bool = False):
+                 api_key: Optional[str] = None, verbose: bool = False, **kwargs):
         """Initialize generator with config and collected data.
 
         This constructor sets up the LaTeX article generator with all necessary
@@ -851,6 +851,7 @@ class LaTeXArticleGenerator:
         self.data = data
         self.provider = provider.lower()
         self.verbose = verbose
+        self.debug = kwargs.get('debug', False)
 
         # API configuration (same as in main pipeline)
         self.api_configs = {
@@ -1135,7 +1136,7 @@ class LaTeXArticleGenerator:
 
             For streaming mode, the output file '06_review.tex' is created
             in the working directory and written incrementally. For debugging,
-            the complete prompt is saved to 'debug_prompts/' directory with
+            the complete prompt is saved to 'debug/' directory with
             timestamp.
 
             The generation process may take several minutes for large articles
@@ -1147,16 +1148,17 @@ class LaTeXArticleGenerator:
         # Build comprehensive prompt with all data
         prompt = self._build_article_prompt()
 
-        print(f"Prompt size before LLM call: {len(prompt) / 1024:.1f} KB")
+        print(f"Prompt size for LLM call: {len(prompt) / 1024:.1f} KB")
 
         # Save prompt to filesystem for debugging
-        debug_dir = Path(self.data['workdir']) / 'debug_prompts'
-        debug_dir.mkdir(exist_ok=True)
-        timestamp = time.strftime('%Y%m%d_%H%M%S')
-        prompt_file = debug_dir / f'prompt_{timestamp}.txt'
-        with open(prompt_file, 'w', encoding='utf-8') as f:
-            f.write(prompt)
-        print(f"  Prompt saved to: {prompt_file}")
+        if self.debug:
+            debug_dir = Path(self.data['workdir']) / 'debug'
+            debug_dir.mkdir(exist_ok=True)
+            timestamp = time.strftime('%Y%m%d_%H%M%S')
+            prompt_file = debug_dir / f'prompt_{timestamp}.txt'
+            with open(prompt_file, 'w', encoding='utf-8') as f:
+                f.write(prompt)
+            print(f"  Prompt saved to: {prompt_file}")
 
         if stream:
             print("Streaming response from LLM...")
@@ -1601,7 +1603,7 @@ IMPORTANT:
 def generate_article_main(workdir: str, provider: str = 'openrouter',
                          model: Optional[str] = None, api_url: Optional[str] = None,
                          api_key: Optional[str] = None, stream: bool = False,
-                         temperature: float = 0.8, verbose: bool = False) -> Path:
+                         temperature: float = 0.8, verbose: bool = False, debug: bool = False) -> Path:
     """Main entry point for article generation.
 
     This function orchestrates the complete LaTeX article generation process,
@@ -1676,7 +1678,8 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
         model=model,
         api_url=api_url,
         api_key=api_key,
-        verbose=verbose
+        verbose=verbose,
+        debug=debug
     )
 
     if stream:
@@ -1760,6 +1763,7 @@ Examples:
     parser.add_argument('-s', '--stream', action='store_true', help='Enable streaming response')
     parser.add_argument('-t', '--temperature', type=float, default=0.8, help='LLM temperature (default: 0.8)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Print response content in streaming mode')
+    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode')
 
     args = parser.parse_args()
 
@@ -1772,7 +1776,8 @@ Examples:
             api_key=args.api_key,
             stream=args.stream,
             temperature=args.temperature,
-            verbose=args.verbose
+            verbose=args.verbose,
+            debug=args.debug
         )
     except Exception as e:
         print(f"Error: {str(e)}")
