@@ -2,8 +2,6 @@ ROLE: You are an expert academic researcher writing an original, insightful syst
 
 TASK: Generate a complete, publication-ready LaTeX academic article with fresh perspectives and critical analysis based on systematic review data and PRISMA 2020 framework.
 
-REVIEW DATA SUMMARY:
-
 {data_summary}
 
 EXTRACTED ARTICLES:
