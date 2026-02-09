@@ -626,7 +626,7 @@ class LaTeXArticleGenerator:
         print(f"✓ Initialized {provider.upper()} API client")
         print(f"  Model: {self.model}")
     
-    def call_llm(self, prompt: str, max_retries: int = 3, stream: bool = False, temperature: float = 0.8, output_file: Optional[Path] = None) -> str:
+    def call_llm(self, prompt: str, max_retries: int = 3, stream: bool = False, temperature: float = 0.8, output_file: Optional[Path] = None, verbose: bool = False) -> str:
         """Execute LLM API call with comprehensive retry logic
 
         Args:
@@ -635,6 +635,7 @@ class LaTeXArticleGenerator:
             stream: Whether to stream the response
             temperature: Temperature for LLM generation (0.0-2.0)
             output_file: Optional file path to write streaming output to
+            verbose: Whether to print response content in streaming mode
 
         Returns:
             Generated text content from LLM (empty if streaming to file)
@@ -710,11 +711,12 @@ class LaTeXArticleGenerator:
                                             content = delta["content"]
                                             full_response += content
                                             
-                                            # Write to file and console
+                                            # Write to file and optionally print
                                             if file_handle:
                                                 file_handle.write(content)
                                                 #file_handle.flush()
-                                            print(content, end="", flush=True)
+                                            if verbose:
+                                                print(content, end="", flush=True)
                                 except json.JSONDecodeError:
                                     # Skip invalid JSON lines
                                     pass
@@ -1134,7 +1136,7 @@ IMPORTANT:
 def generate_article_main(workdir: str, provider: str = 'openrouter',
                          model: Optional[str] = None, api_url: Optional[str] = None,
                          api_key: Optional[str] = None, stream: bool = False,
-                         temperature: float = 0.8) -> Path:
+                         temperature: float = 0.8, verbose: bool = False) -> Path:
     """Main entry point for article generation
 
     Args:
@@ -1145,6 +1147,7 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
         api_key: API key (optional)
         stream: Whether to stream the response
         temperature: LLM temperature (default: 0.8)
+        verbose: Whether to print response content in streaming mode
 
     Returns:
         Path to generated LaTeX file
@@ -1223,6 +1226,7 @@ if __name__ == '__main__':
     parser.add_argument('--api-url', help='Custom API URL')
     parser.add_argument('--api-key', help='API key (uses env var if not specified)')
     parser.add_argument('--stream', action='store_true', help='Enable streaming response')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Print response content in streaming mode')
     parser.add_argument('--temperature', type=float, default=0.8, help='LLM temperature (default: 0.8)')
 
     args = parser.parse_args()
@@ -1235,7 +1239,8 @@ if __name__ == '__main__':
             api_url=args.api_url,
             api_key=args.api_key,
             stream=args.stream,
-            temperature=args.temperature
+            temperature=args.temperature,
+            verbose=args.verbose
         )
     except Exception as e:
         print(f"Error: {str(e)}")
