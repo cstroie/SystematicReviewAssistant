@@ -1485,7 +1485,8 @@ class CDSSLitReviewProcessor:
         with open(plan_file, 'r', encoding='utf-8') as f:
             topic_data = json.load(f)
         
-        quality_tool = topic_data.get('quality', 'grade').lower()
+        # Normalize quality tool name - lowercase and remove non-alphanumeric
+        quality_tool = re.sub(r'[^a-z0-9]', '', topic_data.get('quality', 'grade').lower())
         quality_prompt = self._load_prompt(f'quality_assessment_{quality_tool}')
 
         def process_article(article):
