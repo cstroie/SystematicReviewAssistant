@@ -1322,7 +1322,7 @@ class LaTeXArticleGenerator:
             
             # Format quality data
             quality_data = json.dumps(self.data.get('quality', {}), indent=2)
-            characteristics_data = json.dumps(self.data.get('characteristics_table', {}), indent=2)
+            characteristics_summary = self._format_characteristics_for_prompt()
             synthesis_data = self.data.get('synthesis', '')
             
             # Format analysis points
@@ -1344,7 +1344,7 @@ class LaTeXArticleGenerator:
                 high_impact_studies=high_impact_studies,
                 pattern_insights=pattern_insights,
                 quality_data=quality_data,
-                characteristics_data=characteristics_data,
+                characteristics_summary=characteristics_summary,
                 synthesis_data=synthesis_data,
                 analysis_points=analysis_points_str,
                 extract_fields=extract_fields_str
@@ -1606,6 +1606,129 @@ class LaTeXArticleGenerator:
         
         return "\n".join(patterns)
 
+    def _format_characteristics_for_prompt(self) -> str:
+        """Format characteristics table in a readable way for prompt inclusion.
+        
+        This method presents the characteristics table data in a structured,
+        readable format that's more useful for the LLM than raw JSON.
+        
+        Returns:
+            str: Formatted string with characteristics table organized by:
+                - Study overview (basic info)
+                - Methodology patterns
+                - Performance summary
+                - Key findings patterns
+        """
+        characteristics = self.data.get('characteristics_table', [])
+        if not characteristics:
+            return "No characteristics data available"
+        
+        lines = ["CHARACTERISTICS TABLE SUMMARY:"]
+        
+        # Extract and organize data
+        all_years = []
+        all_domains = {}
+        all_designs = {}
+        all_modalities = {}
+        all_performance = {'sensitivity': [], 'specificity': [], 'auc': []}
+        
+        for study in characteristics:
+            # Basic info
+            basic_info = study.get('basic_info', {})
+            methodology = study.get('methodology', {})
+            performance = study.get('performance', {})
+            
+            # Collect years
+            year = basic_info.get('year')
+            if year:
+                all_years.append(year)
+            
+            # Collect domains
+            domain = basic_info.get('clinical_domain')
+            if domain:
+                all_domains[domain] = all_domains.get(domain, 0) + 1
+            
+            # Collect designs
+            design = methodology.get('study_design')
+            if design:
+                all_designs[design] = all_designs.get(design, 0) + 1
+            
+            # Collect modalities
+            modality = methodology.get('imaging_modality')
+            if modality:
+                if isinstance(modality, list):
+                    for m in modality:
+                        all_modalities[m] = all_modalities.get(m, 0) + 1
+                else:
+                    all_modalities[modality] = all_modalities.get(modality, 0) + 1
+            
+            # Collect performance metrics
+            for metric in ['sensitivity', 'specificity', 'auc']:
+                value = performance.get(metric)
+                if value is not None:
+                    all_performance[metric].append(value)
+        
+        # Study overview
+        lines.append("\nSTUDY OVERVIEW:")
+        lines.append(f"  - Total studies: {len(characteristics)}")
+        if all_years:
+            lines.append(f"  - Year range: {min(all_years)}-{max(all_years)}")
+        lines.append(f"  - Sample size range: {self._get_sample_size_range(characteristics)}")
+        
+        # Clinical domains
+        lines.append("\nCLINICAL DOMAINS:")
+        for domain, count in sorted(all_domains.items(), key=lambda x: x[1], reverse=True):
+            lines.append(f"  - {domain}: {count} studies")
+        
+        # Study designs
+        lines.append("\nSTUDY DESIGNS:")
+        for design, count in sorted(all_designs.items(), key=lambda x: x[1], reverse=True):
+            lines.append(f"  - {design}: {count} studies")
+        
+        # Imaging modalities
+        lines.append("\nIMAGING MODALITIES:")
+        for modality, count in sorted(all_modalities.items(), key=lambda x: x[1], reverse=True):
+            lines.append(f"  - {modality}: {count} studies")
+        
+        # Performance summary
+        lines.append("\nPERFORMANCE METRICS SUMMARY:")
+        for metric, values in all_performance.items():
+            if values:
+                values.sort()
+                median = values[len(values)//2]
+                min_val = min(values)
+                max_val = max(values)
+                lines.append(f"  - {metric.title()}:")
+                lines.append(f"    Median: {median:.3f}")
+                lines.append(f"    Range: {min_val:.3f}-{max_val:.3f}")
+                lines.append(f"    Studies reported: {len(values)}")
+        
+        # Sample key findings
+        lines.append("\nKEY FINDINGS SAMPLE:")
+        for i, study in enumerate(characteristics[:3]):  # Show first 3
+            findings = study.get('findings', {}).get('main_findings', '')
+            if findings and len(findings) > 50:
+                lines.append(f"  Study {i+1}: {findings[:100]}...")
+            elif findings:
+                lines.append(f"  Study {i+1}: {findings}")
+        
+        return "\n".join(lines)
+    
+    def _get_sample_size_range(self, characteristics: List[Dict]) -> str:
+        """Get the range of sample sizes from characteristics data."""
+        sizes = []
+        for study in characteristics:
+            basic_info = study.get('basic_info', {})
+            sample_size = basic_info.get('sample_size')
+            if sample_size and isinstance(sample_size, int):
+                sizes.append(sample_size)
+        
+        if not sizes:
+            return "N/A"
+        
+        sizes.sort()
+        return f"{sizes[0]}-{sizes[-1]}"
+
     def _format_data_for_prompt(self) -> str:
         """Create human-readable summary of collected data for inclusion in prompt.
 
@@ -1627,6 +1750,7 @@ class LaTeXArticleGenerator:
                 - Quality assessment summary
                 - Key study examples (representative studies)
                 - Pattern-based insights from the data
+                - Characteristics table summary
 
         Note:
             This method is designed to provide the LLM with a clear overview
@@ -1705,6 +1829,9 @@ class LaTeXArticleGenerator:
             lines.append(f"  - Moderate risk: {mod_risk} ({100*mod_risk//len(quality)}%)")
             lines.append(f"  - High risk: {high_risk} ({100*high_risk//len(quality)}%)")
         lines.append("")
+
+        # Add formatted characteristics
+        lines.append(self._format_characteristics_for_prompt())
 
         return "\n".join(lines)
 

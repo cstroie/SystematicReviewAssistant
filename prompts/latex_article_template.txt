@@ -16,9 +16,9 @@ PATTERN INSIGHTS:
 
 {pattern_insights}
 
-CHARACTERISTICS TABLE:
+CHARACTERISTICS TABLE SUMMARY:
 
-{characteristics_data}
+{characteristics_summary}
 
 SYNTHESIS:
 
