@@ -658,9 +658,12 @@ class LaTeXArticleGenerator:
         
         raise ValueError("Failed to get response after all retries")
     
-    def generate_article(self) -> str:
+    def generate_article(self, stream: bool = False) -> str:
         """Generate complete LaTeX article from collected data
         
+        Args:
+            stream: Whether to stream the response
+            
         Returns:
             Complete LaTeX document source as string
             
@@ -687,7 +690,7 @@ class LaTeXArticleGenerator:
         
         print("Making LLM call (this may take several minutes)...")
         print(f"Final prompt size: {len(prompt) / 1024:.1f} KB")
-        article_content = self.call_llm(prompt)
+        article_content = self.call_llm(prompt, stream=stream)
         
         return article_content
     
@@ -1005,7 +1008,7 @@ IMPORTANT:
 
 def generate_article_main(workdir: str, provider: str = 'openrouter',
                          model: Optional[str] = None, api_url: Optional[str] = None,
-                         api_key: Optional[str] = None) -> Path:
+                         api_key: Optional[str] = None, stream: bool = False) -> Path:
     """Main entry point for article generation
     
     Args:
@@ -1014,6 +1017,7 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
         model: Model name (optional)
         api_url: Custom API URL (optional)
         api_key: API key (optional)
+        stream: Whether to stream the response
         
     Returns:
         Path to generated LaTeX file
@@ -1037,7 +1041,7 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
         api_key=api_key
     )
     
-    article_content = generator.generate_article()
+    article_content = generator.generate_article(stream=stream)
     
     # Save article
     output_file = workdir / '06_review.tex'
@@ -1076,6 +1080,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
     parser.add_argument('--api-url', help='Custom API URL')
     parser.add_argument('--api-key', help='API key (uses env var if not specified)')
+    parser.add_argument('--stream', action='store_true', help='Enable streaming response')
     
     args = parser.parse_args()
     
@@ -1085,7 +1090,8 @@ if __name__ == '__main__':
             provider=args.provider,
             model=args.model,
             api_url=args.api_url,
-            api_key=args.api_key
+            api_key=args.api_key,
+            stream=args.stream
         )
     except Exception as e:
         print(f"Error: {str(e)}")
