@@ -466,10 +466,31 @@ class ArticleDataCollector:
         print(f"  Study: {self.data['plan']['title']}")
 
     def _load_summary_characteristics(self) -> None:                                                                                                                                           
-        """Load summary characteristics CSV file                                                                                                                                               
-                                                                                                                                                                                               
-        Populates:                                                                                                                                                                             
-            self.data['characteristics_table'] with list of study characteristics                                                                                                              
+        """Load summary characteristics CSV file.
+        
+        This method loads the summary characteristics table from the pipeline
+        output file 'summary_characteristics_table.csv'. This table contains
+        structured data summarizing key characteristics of all included
+        studies, typically organized as a matrix with studies as rows and
+        characteristics as columns.
+        
+        This data is used to generate Table 1 in the systematic review,
+        which provides an overview of the included studies' features.
+        
+        Populates:
+            self.data['characteristics_table'] (list): List of dictionaries
+                representing the characteristics table. Each dictionary
+                corresponds to a row in the CSV and contains:
+                - study_id: Unique identifier for each study
+                - Various characteristic fields based on the extraction form
+                - Values may include categorical data, numerical values,
+                  or text descriptions depending on the characteristic type
+                
+        Note:
+            Missing files or invalid CSV will generate warnings and result
+            in an empty characteristics table. The pipeline will continue,
+            but the generated article will reference a Table 1 that may
+            not be present.
         """                                                                                                                                                                                    
         file_path = self.workdir / "summary_characteristics_table.csv"                                                                                                                         
                                                                                                                                                                                                
