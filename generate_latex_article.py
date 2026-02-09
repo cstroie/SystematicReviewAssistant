@@ -1191,6 +1191,7 @@ class LaTeXArticleGenerator:
         Returns:
             str: Comprehensive prompt string containing:
                 - Role definition and task instructions
+                - Data summary overview
                 - Complete extracted articles data
                 - Quality assessment results
                 - Characteristics table data
@@ -1198,7 +1199,6 @@ class LaTeXArticleGenerator:
                 - Detailed article structure requirements
                 - Section-specific content guidelines
                 - LaTeX formatting instructions
-                - Data inclusion requirements
                 - Quality and style guidelines
 
         Note:
@@ -1217,15 +1217,15 @@ class LaTeXArticleGenerator:
             topic = plan.get('topic', 'the research topic')
             analysis_points = plan.get('analysis', [])
             
+            # Generate data summary using the existing function
+            data_summary = self._format_data_for_prompt()
+            
             # Format data sections
             extracted_data = json.dumps(self.data.get('extracted', {}), indent=2)
             quality_data = json.dumps(self.data.get('quality', {}), indent=2)
             characteristics_data = json.dumps(self.data.get('characteristics_table', {}), indent=2)
             synthesis_data = self.data.get('synthesis', '')
-            screening_data = json.dumps(self.data.get('screening', {}), indent=2)
-            statistics_data = json.dumps(self.data.get('statistics', {}), indent=2)
             quality_summary = self._format_quality_data()
-            year_range = self.data.get('statistics', {}).get('year_range', 'N/A')
             
             # Format analysis points
             analysis_points_str = '\n'.join(f'      * {point}' for point in analysis_points)
@@ -1241,15 +1241,13 @@ class LaTeXArticleGenerator:
             prompt = prompt_template.format(
                 title=title,
                 topic=topic,
+                data_summary=data_summary,
                 extracted_data=extracted_data,
                 quality_data=quality_data,
                 characteristics_data=characteristics_data,
                 synthesis_data=synthesis_data,
                 analysis_points=analysis_points_str,
-                screening_data=screening_data,
-                statistics_data=statistics_data,
                 quality_summary=quality_summary,
-                year_range=year_range,
                 extract_fields=extract_fields_str
             )
             
