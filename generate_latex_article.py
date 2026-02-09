@@ -1699,8 +1699,16 @@ class LaTeXArticleGenerator:
                 min_val = min(values)
                 max_val = max(values)
                 lines.append(f"  - {metric.title()}:")
-                lines.append(f"    Median: {median:.3f}")
-                lines.append(f"    Range: {min_val:.3f}-{max_val:.3f}")
+                # Format median only if it's a number
+                if isinstance(median, (int, float)):
+                    lines.append(f"    Median: {median:.3f}")
+                else:
+                    lines.append(f"    Median: {median}")
+                # Format range only if values are numbers
+                if isinstance(min_val, (int, float)) and isinstance(max_val, (int, float)):
+                    lines.append(f"    Range: {min_val:.3f}-{max_val:.3f}")
+                else:
+                    lines.append(f"    Range: {min_val}-{max_val}")
                 lines.append(f"    Studies reported: {len(values)}")
         
         # Sample key findings
