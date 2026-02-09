@@ -46,7 +46,8 @@ ARTICLE STRUCTURE & CONTENT:
    - Inclusion/exclusion criteria (explicit)
    - Screening process (two-stage)
    - Data extraction (standardized form)
-   - Quality assessment (QUADAS-2 details)
+   - Quality assessment (GRADE, QUADAS-2, RE-AIM, ROBINS-I)
+   - Risk of bias analysis (detailed details)
    - Analysis approach (quantitative + thematic)
    - PRISMA 2020 compliance statement
 
