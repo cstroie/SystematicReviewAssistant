@@ -149,7 +149,12 @@ TABLES & FIGURES TO REFERENCE:
 - Table 2: QUADAS-2 assessment summary
 - Table 3: Performance metrics by modality
 - Table 4: Studies by clinical domain
-- Figure 1: PRISMA flow diagram
+- Figure 1: PRISMA 2020 flow diagram showing complete study selection process:
+  * Identification: Records identified from databases and other sources
+  * Screening: Records screened after duplicates removed
+  * Eligibility: Full-text articles assessed for eligibility
+  * Included: Studies included in qualitative/quantitative synthesis
+  * Include exact numbers and percentages for each phase
 - Figure 2: Study distribution over time
 - Figure 3: Distribution of intervention types
 
