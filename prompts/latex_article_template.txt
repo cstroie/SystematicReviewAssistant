@@ -8,6 +8,10 @@ KEY STUDY EXAMPLES:
 
 {study_examples}
 
+HIGH-IMPACT STUDIES:
+
+{high_impact_studies}
+
 PATTERN INSIGHTS:
 
 {pattern_insights}

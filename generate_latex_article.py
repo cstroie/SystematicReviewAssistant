@@ -1223,6 +1223,9 @@ class LaTeXArticleGenerator:
             # Get key study examples (replaces full JSON list)
             study_examples = self._get_key_study_examples()
             
+            # Get high-impact studies
+            high_impact_studies = self._get_high_impact_studies()
+            
             # Get pattern-based insights
             pattern_insights = self._extract_patterns_for_prompt()
             
@@ -1247,6 +1250,7 @@ class LaTeXArticleGenerator:
                 topic=topic,
                 data_summary=data_summary,
                 study_examples=study_examples,
+                high_impact_studies=high_impact_studies,
                 pattern_insights=pattern_insights,
                 quality_data=quality_data,
                 characteristics_data=characteristics_data,
@@ -1339,6 +1343,66 @@ class LaTeXArticleGenerator:
                         lines.append(f"    - Specificity: {spec}")
                     if auc:
                         lines.append(f"    - AUC: {auc}")
+            
+            lines.append("")
+        
+        return "\n".join(lines)
+
+    def _get_high_impact_studies(self) -> str:
+        """Get studies with exceptional results or novel approaches.
+        
+        Returns:
+            Formatted string with high-impact studies
+        """
+        extracted = self.data.get('extracted', [])
+        if not extracted:
+            return "No extracted data available"
+        
+        # Filter for studies with exceptional metrics or novel approaches
+        high_impact = []
+        
+        for study in extracted:
+            metrics = study.get('key_metrics', {})
+            if isinstance(metrics, dict):
+                # Check for exceptional performance
+                sensitivity = metrics.get('sensitivity', 0)
+                specificity = metrics.get('specificity', 0)
+                auc = metrics.get('auc', 0)
+                
+                # Consider study high impact if any metric is exceptional
+                if (sensitivity > 0.95 or specificity > 0.95 or auc > 0.95 or
+                    (sensitivity > 0.90 and specificity > 0.90)):
+                    high_impact.append((study, metrics))
+        
+        # Also check for novel approaches based on key findings
+        for study in extracted:
+            findings = study.get('key_findings', '')
+            if findings and 'novel' in findings.lower() and 'first' in findings.lower():
+                # Check if already included
+                already_included = any(s[0]['title'] == study['title'] for s in high_impact)
+                if not already_included:
+                    high_impact.append((study, {'novel_approach': True}))
+        
+        if not high_impact:
+            return "No studies with exceptional performance metrics or novel approaches found"
+        
+        lines = ["HIGH-IMPACT STUDIES:"]
+        for study, metrics in high_impact[:3]:  # Top 3
+            lines.append(f"  Study: {study.get('title', 'N/A')}")
+            lines.append(f"  Year: {study.get('year', 'N/A')}")
+            lines.append(f"  Design: {study.get('study_design', 'N/A')}")
+            
+            if isinstance(metrics, dict) and 'novel_approach' in metrics:
+                lines.append(f"  Innovation: Novel approach detected")
+                lines.append(f"  Key Finding: {study.get('key_findings', 'N/A')[:100]}...")
+            else:
+                lines.append("  Performance:")
+                if 'sensitivity' in metrics:
+                    lines.append(f"    - Sensitivity: {metrics.get('sensitivity', 'N/A')}")
+                if 'specificity' in metrics:
+                    lines.append(f"    - Specificity: {metrics.get('specificity', 'N/A')}")
+                if 'auc' in metrics:
+                    lines.append(f"    - AUC: {metrics.get('auc', 'N/A')}")
             
             lines.append("")
         
