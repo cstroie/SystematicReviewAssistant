@@ -1,0 +1,29 @@
+Assess the quality of this clinical study using the GRADE approach.
+
+PMID: {pmid}
+TITLE: {title}
+ABSTRACT: {abstract}
+
+Evaluate these GRADE domains (answer: High|Moderate|Low|Very Low):
+
+1. STUDY DESIGN (RCTs start as High, observational as Low)
+2. RISK OF BIAS (bias assessment across study)
+3. INCONSISTENCY (heterogeneity in outcomes) 
+4. INDIRECTNESS (applicability to question)
+5. IMPRECISION (confidence intervals width)
+6. PUBLICATION BIAS (likelihood of missing studies)
+
+Return ONLY JSON:
+{{
+  "pmid": "{pmid}",
+  "domains": {{
+    "design": "High|Moderate|Low|Very Low",
+    "bias": "High|Moderate|Low|Very Low",
+    "inconsistency": "High|Moderate|Low|Very Low",
+    "indirectness": "High|Moderate|Low|Very Low",
+    "imprecision": "High|Moderate|Low|Very Low",
+    "publication_bias": "High|Moderate|Low|Very Low"
+  }},
+  "overall_evidence": "High|Moderate|Low|Very Low",
+  "notes": "brief justification"
+}}

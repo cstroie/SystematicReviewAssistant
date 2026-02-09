@@ -1282,10 +1282,11 @@ class CDSSLitReviewProcessor:
         with open(topic_file, 'r', encoding='utf-8') as f:
             topic_data = json.load(f)
 
-        # Validate required screening criteria
+        # Validate required criteria
         screening = topic_data.get('screening', {})
         inclusion = screening.get('inclusion', [])
         exclusion = screening.get('exclusion', [])
+        quality_tool = topic_data.get('quality', 'quadas2').lower()
 
         if not inclusion:
             raise ValueError("Screening criteria missing inclusion list in topic file")
@@ -1476,7 +1477,16 @@ class CDSSLitReviewProcessor:
 
     def _assess_quality(self, articles: List[Dict], quality_file: Path) -> List[Dict]:
         """Assess study quality with caching support"""
-        quadas2_prompt = self._load_prompt('quality_assessment')
+        # Load quality tool from plan metadata
+        topic_file = self.workdir / "00_plan.json"
+        if not topic_file.exists():
+            raise ValueError(f"Review plan file {topic_file.name} not found")
+
+        with open(topic_file, 'r', encoding='utf-8') as f:
+            topic_data = json.load(f)
+        
+        quality_tool = topic_data.get('quality', 'quadas2').lower()
+        quality_prompt = self._load_prompt(f'quality_assessment_{quality_tool}')
 
         def process_article(article):
             prompt = quadas2_prompt.format(

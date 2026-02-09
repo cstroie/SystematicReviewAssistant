@@ -1,0 +1,27 @@
+Assess implementation potential using RE-AIM framework.
+
+PMID: {pmid}
+TITLE: {title}
+ABSTRACT: {abstract}
+
+Evaluate these RE-AIM dimensions (answer Yes/No and provide brief justification):
+
+1. REACH: Did the study recruit participants representative of target population?
+2. EFFECTIVENESS: Were significant positive outcomes observed?
+3. ADOPTION: Were implementing settings/staff representative of real-world?
+4. IMPLEMENTATION: Was intervention delivered consistently as intended?
+5. MAINTENANCE: Were effects sustained over time and institutionalized?
+
+Return ONLY JSON:
+{{
+  "pmid": "{pmid}",
+  "dimensions": {{
+    "reach": {{"answer": "Yes|No", "justification": "..."}},
+    "effectiveness": {{"answer": "Yes|No", "justification": "..."}},
+    "adoption": {{"answer": "Yes|No", "justification": "..."}},
+    "implementation": {{"answer": "Yes|No", "justification": "..."}},
+    "maintenance": {{"answer": "Yes|No", "justification": "..."}}
+  }},
+  "overall_feasibility": "High|Moderate|Low",
+  "notes": "summary assessment"
+}}
