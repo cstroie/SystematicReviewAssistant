@@ -626,7 +626,7 @@ class LaTeXArticleGenerator:
         print(f"✓ Initialized {provider.upper()} API client")
         print(f"  Model: {self.model}")
     
-    def call_llm(self, prompt: str, max_retries: int = 3, stream: bool = False, temperature: float = 0.8) -> str:
+    def call_llm(self, prompt: str, max_retries: int = 3, stream: bool = False, temperature: float = 0.8, output_file: Optional[Path] = None) -> str:
         """Execute LLM API call with comprehensive retry logic
 
         Args:
@@ -634,9 +634,10 @@ class LaTeXArticleGenerator:
             max_retries: Maximum number of retry attempts
             stream: Whether to stream the response
             temperature: Temperature for LLM generation (0.0-2.0)
+            output_file: Optional file path to write streaming output to
 
         Returns:
-            Generated text content from LLM
+            Generated text content from LLM (empty if streaming to file)
 
         Raises:
             ValueError: On failed API call after all retries exhausted
@@ -689,22 +690,38 @@ class LaTeXArticleGenerator:
                     # Handle streaming response
                     response = urllib.request.urlopen(req, timeout=60)
                     full_response = ""
-                    for line in response:
-                        data_str = line.decode('utf-8').strip()
-                        if data_str.startswith('data: '):
-                            data_str = data_str[6:]
-                            try:
-                                chunk_data = json.loads(data_str)
-                                if "choices" in chunk_data and len(chunk_data["choices"]) > 0:
-                                    delta = chunk_data["choices"][0].get("delta", {})
-                                    if "content" in delta:
-                                        content = delta["content"]
-                                        full_response += content
-                                        # Print content immediately as it arrives
-                                        print(content, end="", flush=True)
-                            except json.JSONDecodeError:
-                                # Skip invalid JSON lines
-                                pass
+                    
+                    # Open output file if provided
+                    file_handle = None
+                    if output_file:
+                        output_file.parent.mkdir(parents=True, exist_ok=True)
+                        file_handle = open(output_file, 'w', encoding='utf-8')
+                    
+                    try:
+                        for line in response:
+                            data_str = line.decode('utf-8').strip()
+                            if data_str.startswith('data: '):
+                                data_str = data_str[6:]
+                                try:
+                                    chunk_data = json.loads(data_str)
+                                    if "choices" in chunk_data and len(chunk_data["choices"]) > 0:
+                                        delta = chunk_data["choices"][0].get("delta", {})
+                                        if "content" in delta:
+                                            content = delta["content"]
+                                            full_response += content
+                                            
+                                            # Write to file and console
+                                            if file_handle:
+                                                file_handle.write(content)
+                                                file_handle.flush()
+                                            print(content, end="", flush=True)
+                                except json.JSONDecodeError:
+                                    # Skip invalid JSON lines
+                                    pass
+                    finally:
+                        if file_handle:
+                            file_handle.close()
+                    
                     return full_response
                 else:
                     # Handle non-streaming response
@@ -760,7 +777,7 @@ class LaTeXArticleGenerator:
             stream: Whether to stream the response
             temperature: Temperature for LLM generation (0.0-2.0)
         Returns:
-            Complete LaTeX document source as string
+            Complete LaTeX document source as string (empty if streaming to file)
             
         Note:
             Makes a single LLM API call with comprehensive prompt
@@ -785,12 +802,18 @@ class LaTeXArticleGenerator:
         
         if stream:
             print("Streaming response from LLM...")
+            # Create output file path for streaming
+            output_file = Path(self.data['workdir']) / '06_review.tex'
+            # Call LLM API to generate article content with streaming to file
+            article_content = self.call_llm(prompt, stream=stream, temperature=temperature, output_file=output_file)
+            # Response is empty when streaming to file
+            return ""
         else:
             print("Making LLM call (this may take several minutes)...")
-        # Call LLM API to generate article content
-        article_content = self.call_llm(prompt, stream=stream, temperature=temperature)
-        # Response is expected to be the complete LaTeX document source
-        return article_content
+            # Call LLM API to generate article content
+            article_content = self.call_llm(prompt, stream=stream, temperature=temperature)
+            # Response is expected to be the complete LaTeX document source
+            return article_content
     
     def _build_article_prompt(self) -> str:
         """Construct the complete LLM prompt with structured content requirements
@@ -1145,29 +1168,40 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
         api_key=api_key
     )
 
-    article_content = generator.generate_article(stream=stream, temperature=temperature)
-    
-    # Save article                                                                                                                                                                             
-    output_file = workdir / '06_review.tex'                                                                                                                                                    
-    bib_file = workdir / 'references.bib'                                                                                                                                                      
-                                                                                                                                                                                               
-    try:                                                                                                                                                                                       
-        # Save LaTeX article                                                                                                                                                                   
-        with open(output_file, 'w', encoding='utf-8') as f:                                                                                                                                    
-            f.write(article_content)                                                                                                                                                           
-                                                                                                                                                                                               
-        # Save BibTeX references                                                                                                                                                               
-        bib_content = collector.generate_bibtex()                                                                                                                                              
-        with open(bib_file, 'w', encoding='utf-8') as f:                                                                                                                                       
-            f.write(bib_content)                                                                                                                                                               
-    except IOError as e:                                                                                                                                                                       
-        print(f"Error: Could not save output files: {str(e)}")                                                                                                                                 
-        raise                                                                                                                                                                                  
+    if stream:
+        # For streaming, the file is written directly during the API call
+        output_file = workdir / '06_review.tex'
+        article_content = generator.generate_article(stream=stream, temperature=temperature)
+        
+        # Save BibTeX references
+        bib_file = workdir / 'references.bib'
+        bib_content = collector.generate_bibtex()
+        with open(bib_file, 'w', encoding='utf-8') as f:
+            f.write(bib_content)
+    else:
+        # For non-streaming, write the complete content at once
+        article_content = generator.generate_article(stream=stream, temperature=temperature)
+        output_file = workdir / '06_review.tex'
+        bib_file = workdir / 'references.bib'
+        
+        try:
+            # Save LaTeX article
+            with open(output_file, 'w', encoding='utf-8') as f:
+                f.write(article_content)
+            
+            # Save BibTeX references
+            bib_content = collector.generate_bibtex()
+            with open(bib_file, 'w', encoding='utf-8') as f:
+                f.write(bib_content)
+        except IOError as e:
+            print(f"Error: Could not save output files: {str(e)}")
+            raise
     
     print(f"\n✓ Article generated successfully!")
     print(f"  Saved to: {output_file}")
     print(f"  References saved to: {bib_file}")
-    print(f"  Total size: {len(article_content) + len(bib_content)} bytes")
+    if not stream:
+        print(f"  Total size: {len(article_content) + len(bib_content)} bytes")
     
     # Try to compile
     print("\nNote: To compile the XeLaTeX document with references:")
