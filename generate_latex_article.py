@@ -1396,7 +1396,7 @@ class LaTeXArticleGenerator:
         # based on diversity, impact, or representativeness)
         examples = extracted[:max_examples]
         
-        lines = []
+        lines = ["KEY STUDY EXAMPLES:", ""]
         for i, study in enumerate(examples, 1):
             lines.append(f"Example Study {i}:")
             # Use the improved characteristics data structure
