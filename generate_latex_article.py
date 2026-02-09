@@ -563,20 +563,21 @@ class LaTeXArticleGenerator:
         print(f"✓ Initialized {provider.upper()} API client")
         print(f"  Model: {self.model}")
     
-    def call_llm(self, prompt: str, max_retries: int = 3) -> str:
+    def call_llm(self, prompt: str, max_retries: int = 3, stream: bool = False) -> str:
         """Execute LLM API call with comprehensive retry logic
-        
+
         Args:
             prompt: Complete prompt string to send to LLM
             max_retries: Maximum number of retry attempts
-            
+            stream: Whether to stream the response
+
         Returns:
             Generated text content from LLM
-            
+
         Raises:
             ValueError: On failed API call after all retries exhausted
         """
-        
+
         # Prepare request based on provider
         if self.provider == 'anthropic':
             headers = {
@@ -589,6 +590,9 @@ class LaTeXArticleGenerator:
                 'max_tokens': 20000,  # Increased for longer articles
                 'messages': [{'role': 'user', 'content': prompt}]
             }
+            if stream:
+                body['stream'] = True
+                headers['Accept'] = 'text/event-stream'
         else:  # OpenAI-compatible
             headers = {
                 'Content-Type': 'application/json',
@@ -600,9 +604,11 @@ class LaTeXArticleGenerator:
                 'temperature': 0.3,
                 'messages': [{'role': 'user', 'content': prompt}]
             }
-        
+            if stream:
+                body['stream'] = True
+
         body_json = json.dumps(body).encode('utf-8')
-        
+
         # Retry loop
         for attempt in range(max_retries):
             try:
@@ -612,20 +618,43 @@ class LaTeXArticleGenerator:
                     headers=headers,
                     method='POST'
                 )
-                
-                with urllib.request.urlopen(req, timeout=60) as response:
-                    response_data = json.loads(response.read().decode('utf-8'))
-                    
-                    # Extract response based on provider
-                    if self.provider == 'anthropic':
-                        result = response_data.get('content', [{}])[0].get('text', '')
-                    else:
-                        result = response_data.get('choices', [{}])[0].get('message', {}).get('content', '')
-                    
-                    if not result:
-                        raise ValueError("Empty response from API")
-                    
-                    return result
+
+                if stream:
+                    # Handle streaming response
+                    response = urllib.request.urlopen(req, timeout=60)
+                    full_response = ""
+                    for line in response:
+                        data_str = line.decode('utf-8').strip()
+                        if data_str.startswith('data: '):
+                            data_str = data_str[6:]
+                            try:
+                                chunk_data = json.loads(data_str)
+                                if "choices" in chunk_data and len(chunk_data["choices"]) > 0:
+                                    delta = chunk_data["choices"][0].get("delta", {})
+                                    if "content" in delta:
+                                        content = delta["content"]
+                                        full_response += content
+                                        # Print content immediately as it arrives
+                                        print(content, end="", flush=True)
+                            except json.JSONDecodeError:
+                                # Skip invalid JSON lines
+                                pass
+                    return full_response
+                else:
+                    # Handle non-streaming response
+                    with urllib.request.urlopen(req, timeout=60) as response:
+                        response_data = json.loads(response.read().decode('utf-8'))
+
+                        # Extract response based on provider
+                        if self.provider == 'anthropic':
+                            result = response_data.get('content', [{}])[0].get('text', '')
+                        else:
+                            result = response_data.get('choices', [{}])[0].get('message', {}).get('content', '')
+
+                        if not result:
+                            raise ValueError("Empty response from API")
+
+                        return result
             
             except urllib.error.HTTPError as e:
                 if e.code == 429:  # Rate limit
@@ -688,10 +717,13 @@ class LaTeXArticleGenerator:
             f.write(prompt)
         print(f"  Prompt saved to: {prompt_file}")
         
-        print("Making LLM call (this may take several minutes)...")
-        print(f"Final prompt size: {len(prompt) / 1024:.1f} KB")
+        if stream:
+            print("Streaming response from LLM...")
+        else:
+            print("Making LLM call (this may take several minutes)...")
+        # Call LLM API to generate article content
         article_content = self.call_llm(prompt, stream=stream)
-        
+        # Response is expected to be the complete LaTeX document source
         return article_content
     
     def _build_article_prompt(self) -> str:
