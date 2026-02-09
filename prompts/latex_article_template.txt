@@ -222,18 +222,18 @@ LATEX FORMATTING (XeLaTeX compatible):
 - No pdflatex-specific packages
 
 TABLES & FIGURES TO REFERENCE:
-- Table 1: Study characteristics (from data provided)
-- Table 2: QUADAS-2 assessment summary
-- Table 3: Performance metrics by modality
-- Table 4: Studies by clinical domain
-- Figure 1: PRISMA 2020 flow diagram showing complete study selection process:
-  * Identification: Records identified from databases and other sources
-  * Screening: Records screened after duplicates removed
-  * Eligibility: Full-text articles assessed for eligibility
-  * Included: Studies included in qualitative/quantitative synthesis
-  * Include exact numbers and percentages for each phase
-- Figure 2: Study distribution over time
-- Figure 3: Distribution of intervention types
+- Table 1: Study characteristics table with columns for: study ID, year, country, sample size, modality, clinical domain, study design, key findings, quality score
+- Table 2: QUADAS-2 assessment summary showing risk of bias domains (patient selection, index test, reference standard, flow/timing) with detailed judgments for each study
+- Table 3: Performance metrics table with columns for: modality, sensitivity (range), specificity (range), AUC (range), PPV, NPV, with statistical summaries
+- Table 4: Studies by clinical domain showing distribution across: cardiology, neurology, oncology, pediatrics, emergency medicine, surgery, with counts and percentages
+- Figure 1: PRISMA 2020 flow diagram with four quadrants showing:
+  * Top-left: Identification phase - total records identified from databases with exact number
+  * Top-right: Screening phase - records screened after duplicate removal with exclusion count
+  * Bottom-left: Eligibility phase - full-text articles assessed with reasons for exclusion
+  * Bottom-right: Inclusion phase - final included studies with key characteristics
+  * Include exact numbers and percentages at each stage with clear arrows between phases
+- Figure 2: Study distribution over time showing annual publication trend from 2014-2024 with peaks and notable increases
+- Figure 3: Distribution of intervention types as pie chart/bar graph showing: AI algorithms, traditional ML, deep learning, hybrid approaches with percentages
 
 SUPPLEMENTARY MATERIALS:
 - Search strategy documentation with full PubMed query syntax
