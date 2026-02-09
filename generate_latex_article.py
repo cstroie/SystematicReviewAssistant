@@ -448,9 +448,9 @@ class ArticleDataCollector:
                 formatted_authors = authors
             
             # LaTeX escaping for BibTeX fields (except DOI/PMID/URL which shouldn't need it)
-            title = study.get('title', 'Untitled').replace('&', r'\&').replace('$', r'\$').replace('%', r'\%').replace('#', r'\#')
-            journal_esc = journal.replace('&', r'\&').replace('$', r'\$').replace('%', r'\%').replace('#', r'\#')
-            formatted_authors_esc = formatted_authors.replace('&', r'\&').replace('$', r'\$').replace('%', r'\%').replace('#', r'\#')
+            title = study.get('title', 'Untitled').replace('&', r'\\&').replace('$', r'\\$').replace('%', r'\\%').replace('#', r'\\#')
+            journal_esc = journal.replace('&', r'\\&').replace('$', r'\\$').replace('%', r'\\%').replace('#', r'\\#')
+            formatted_authors_esc = formatted_authors.replace('&', r'\\&').replace('$', r'\\$').replace('%', r'\\%').replace('#', r'\\#')
 
             entry = f"""@article{{{citation_key},
   title     = {{{title}}},
