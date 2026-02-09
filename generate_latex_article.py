@@ -87,6 +87,7 @@ class ArticleDataCollector:
         """
         
         print("Collecting data from pipeline outputs...")
+        self.data['output_dir'] = str(self.output_dir)
         
         # Load screening results
         self._load_screening_results()
@@ -677,6 +678,15 @@ class LaTeXArticleGenerator:
             if len(synthesis_content) > 10000:
                 synthesis_trunc += "\n... [truncated]"
             prompt += f"\n\nAdditional Synthesis Content:\n{synthesis_trunc}"
+        
+        # Save prompt to filesystem for debugging
+        debug_dir = Path(self.data['output_dir']) / 'debug_prompts'
+        debug_dir.mkdir(exist_ok=True)
+        timestamp = time.strftime('%Y%m%d_%H%M%S')
+        prompt_file = debug_dir / f'prompt_{timestamp}.txt'
+        with open(prompt_file, 'w', encoding='utf-8') as f:
+            f.write(prompt)
+        print(f"  Prompt saved to: {prompt_file}")
         
         print("Making LLM call (this may take several minutes)...")
         print(f"Final prompt size: {len(prompt) / 1024:.1f} KB")
