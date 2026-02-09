@@ -1275,11 +1275,11 @@ class CDSSLitReviewProcessor:
     def _screen_articles(self, articles: List[Dict], screening_file: Path) -> List[Dict]:
         """Screen articles for inclusion with caching support"""
         # Load screening criteria from generated metadata
-        topic_file = self.workdir / "00_plan.json"
-        if not topic_file.exists():
-            raise ValueError(f"Review topic file {topic_file.name} not found - run with --plan first")
+        plan_file = self.workdir / "00_plan.json"
+        if not plan_file.exists():
+            raise ValueError(f"Review topic file {plan_file.name} not found - run with --plan first")
 
-        with open(topic_file, 'r', encoding='utf-8') as f:
+        with open(plan_file, 'r', encoding='utf-8') as f:
             topic_data = json.load(f)
 
         # Validate required criteria
@@ -1387,11 +1387,11 @@ class CDSSLitReviewProcessor:
     def _extract_article_data(self, articles: List[Dict], extraction_file: Path) -> List[Dict]:
         """Extract article data with caching support"""
         # Load extract fields template
-        topic_file = self.workdir / "00_plan.json"
+        plan_file = self.workdir / "00_plan.json"
         extract_json = "{}"  # Default empty template
-        if topic_file.exists():
+        if plan_file.exists():
             try:
-                with open(topic_file, 'r', encoding='utf-8') as f:
+                with open(plan_file, 'r', encoding='utf-8') as f:
                     topic_data = json.load(f)
                 extract = topic_data.get('extract', {})
                 extract_json = json.dumps(extract, indent=2)
@@ -1478,11 +1478,11 @@ class CDSSLitReviewProcessor:
     def _assess_quality(self, articles: List[Dict], quality_file: Path) -> List[Dict]:
         """Assess study quality with caching support"""
         # Load quality tool from plan metadata
-        topic_file = self.workdir / "00_plan.json"
-        if not topic_file.exists():
-            raise ValueError(f"Review plan file {topic_file.name} not found")
+        plan_file = self.workdir / "00_plan.json"
+        if not plan_file.exists():
+            raise ValueError(f"Review plan file {plan_file.name} not found")
 
-        with open(topic_file, 'r', encoding='utf-8') as f:
+        with open(plan_file, 'r', encoding='utf-8') as f:
             topic_data = json.load(f)
         
         quality_tool = topic_data.get('quality', 'grade').lower()
@@ -1534,11 +1534,11 @@ class CDSSLitReviewProcessor:
         """Perform thematic synthesis and identify patterns"""
 
         # Load review topic from metadata
-        topic_file = self.workdir / "00_plan.json"
-        if not topic_file.exists():
-            raise ValueError(f"Review topic file {topic_file.name} not found - run with --plan first")
+        plan_file = self.workdir / "00_plan.json"
+        if not plan_file.exists():
+            raise ValueError(f"Review topic file {plan_file.name} not found - run with --plan first")
 
-        with open(topic_file, 'r', encoding='utf-8') as f:
+        with open(plan_file, 'r', encoding='utf-8') as f:
             topic_data = json.load(f)
 
         topic = topic_data['topic']
@@ -1551,8 +1551,8 @@ class CDSSLitReviewProcessor:
         }
 
         # Load review template
-        topic_file = self.workdir / "00_plan.json"
-        with open(topic_file, 'r', encoding='utf-8') as f:
+        plan_file = self.workdir / "00_plan.json"
+        with open(plan_file, 'r', encoding='utf-8') as f:
             topic_data = json.load(f)
         
         # Validate and prepare analysis bullets
