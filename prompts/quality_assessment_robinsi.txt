@@ -6,13 +6,13 @@ ABSTRACT: {abstract}
 
 Evaluate these ROBINS-I domains (answer: Low|Moderate|Serious|Critical|No Information):
 
-1. CONFOUNDING (important confounding variables)
-2. SELECTION (of participants into study)
-3. INTERVENTION CLASSIFICATION
-4. DEVIATIONS FROM INTENDED INTERVENTIONS
-5. MISSING DATA
-6. OUTCOME MEASUREMENT
-7. SELECTIVE REPORTING
+1. CONFOUNDING (pre-intervention variables affecting both intervention and outcome)
+2. SELECTION (systematic differences in participant inclusion/exclusion)
+3. INTERVENTION CLASSIFICATION (accurate distinction between intervention groups)
+4. DEVIATIONS FROM INTENDED INTERVENTIONS (protocol violations during implementation)
+5. MISSING DATA (completeness and handling of missing data)
+6. OUTCOME MEASUREMENT (validity and reliability of outcome assessment)
+7. SELECTIVE REPORTING (bias in selection of reported results)
 
 Return ONLY JSON:
 {{
