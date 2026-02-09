@@ -88,6 +88,9 @@ class ArticleDataCollector:
         
         print("Collecting data from pipeline outputs...")
         self.data['workdir'] = str(self.workdir)
+
+        # Load the study plan
+        self._load_plan()
         
         # Load screening results
         self._load_screening_results()
@@ -225,17 +228,19 @@ class ArticleDataCollector:
             
         print(f"  Original articles: {len(self.data['original_articles'])} loaded")
     
-    def _load_review_topic(self) -> None:
-        """Load review topic metadata"""
-        file_path = self.workdir / "00_review_topic.json"
+    def _load_plan(self) -> None:
+        """Load plan metadata"""
+        file_path = self.workdir / "00_plan.json"
         
         if not file_path.exists():
             print(f"Warning: {file_path} not found")
-            self.data['review_topic'] = {}
+            self.data['plan'] = {}
             return
             
         with open(file_path, 'r') as f:
-            self.data['review_topic'] = json.load(f)
+            self.data['plan'] = json.load(f)
+
+        print(f"  Study: {self.data['plan']['title']}")
 
     def _load_summary_characteristics(self) -> None:
         """Load summary characteristics CSV file
@@ -321,8 +326,8 @@ class ArticleDataCollector:
     def _get_extract_fields(self, data: List[Dict]) -> Dict[str, Dict[str, int]]:
         """Get statistics for all extract fields"""
         extract_fields = {}
-        topic = self.data.get('review_topic', {})
-        extract_config = topic.get('extract', {})
+        plan = self.data.get('plan', {})
+        extract_config = plan.get('extract', {})
         
         for field in extract_config.keys():
             field_values = {}
@@ -670,15 +675,7 @@ class LaTeXArticleGenerator:
         prompt = self._build_article_prompt()
         
         print(f"Prompt size before LLM call: {len(prompt) / 1024:.1f} KB")
-        
-        # Include more of the synthesis content
-        synthesis_content = self.data.get('synthesis', '')
-        if len(synthesis_content) > 0:
-            synthesis_trunc = synthesis_content[:10000]  # Include first 10KB
-            if len(synthesis_content) > 10000:
-                synthesis_trunc += "\n... [truncated]"
-            prompt += f"\n\nAdditional Synthesis Content:\n{synthesis_trunc}"
-        
+
         # Save prompt to filesystem for debugging
         debug_dir = Path(self.data['workdir']) / 'debug_prompts'
         debug_dir.mkdir(exist_ok=True)
@@ -702,35 +699,45 @@ class LaTeXArticleGenerator:
             formatting instructions, and content specifications
         """
         
-        # Format data for prompt
-        data_summary = json.dumps(self.data, indent=2)  # Use JSON representation to preserve structure and prevent LaTeX issues
-        
         # Get review metadata
-        topic = self.data.get('review_topic', {})
-        review_title = topic.get('title', 'Systematic Review')
-        topic_description = topic.get('topic', 'the research topic')
-        analysis_points = topic.get('analysis', [])
-        
+        plan = self.data.get('plan', {})
+        title = plan.get('title', 'Systematic Review')
+        topic = plan.get('topic', 'the research topic')
+        analysis_points = plan.get('analysis', [])
+
         prompt = f"""
-ROLE: You are an expert academic researcher writing an original, insightful systematic review article on {topic_description}.
+ROLE: You are an expert academic researcher writing an original, insightful systematic review article on "{topic}".
 
 TASK: Generate a complete, publication-ready LaTeX academic article with fresh perspectives and critical analysis based on systematic review data and PRISMA 2020 framework.
 
-DATA PROVIDED:
+EXTRACTED ARTICLES:
 
-{data_summary}
+{json.dumps(self.data.get('extracted', {}), indent=2)}
+
+QUALITY ASSESSMENT:
+
+{json.dumps(self.data.get('quality', {}), indent=2)}
+
+CHARACTERISTICS TABLE:
+
+{json.dumps(self.data.get('characteristics_table', {}), indent=2)}
+
+SYNTHESIS:
+
+{self.data.get('synthesis', {})}
+
 
 INSTRUCTIONS:
 
 1. ARTICLE STRUCTURE (in this exact order):
    - Complete LaTeX document with proper preamble
-   - Title: "{review_title}"
+   - Title: "{title}"
    - Abstract (250-300 words)
    - Introduction (1000-1200 words) with background, justification, and research questions
    - Methods (1000-1500 words) with detailed protocol, search strategy, selection criteria, data extraction, quality assessment
    - Results (1500-2500 words) with study characteristics, intervention types, diagnostic accuracy, implementation status, quality assessment
    - Thematic Synthesis (1500-2000 words) analyzing major themes with quantitative and qualitative data based on these analysis points:
-      {chr(10).join(f'     - {point}' for point in analysis_points)}
+{chr(10).join(f'      * {point}' for point in analysis_points)}
    - Discussion (1500-2000 words) interpreting findings, addressing implementation barriers and domain-specific considerations
    - Conclusions (300-400 words) with actionable recommendations
    - References in proper format
@@ -738,7 +745,7 @@ INSTRUCTIONS:
 2. CONTENT REQUIREMENTS:
 
    ABSTRACT:
-   - Background on {topic_description}
+   - Background on {topic}
    - PRESERVE LaTeX commands untouched (e.g. \\cite, \\ref, \\section)
    - Escape special LaTeX characters: \\&, \\%, \\$, \\#, \\_ 
    - Systematic review objective
@@ -747,7 +754,7 @@ INSTRUCTIONS:
    - Conclusions with implications
 
    INTRODUCTION:
-   - Current state of research in {topic_description}
+   - Current state of research in {topic}
    - Key challenges in the field
    - Gaps in existing literature
    - Current landscape and deficiencies
@@ -766,7 +773,7 @@ INSTRUCTIONS:
    RESULTS:
    - Study selection numbers with percentages
    - Study characteristics (Table 1 reference)
-   - Intervention types and distribution (related to {topic_description})
+   - Intervention types and distribution (related to {topic})
    - Breakdown by modality (CT, MRI, US, etc.)
    - Breakdown by clinical domain
    - Performance metrics (sensitivity, specificity, AUC) with ranges
@@ -777,13 +784,13 @@ INSTRUCTIONS:
    - Successful implementation case studies (focus on deployed systems)
 
    THEMATIC SYNTHESIS:
-   - 6 major themes identified and analyzed:
-     1. Technology Evolution (shift to AI/ML)
-     2. Clinical Performance (diagnostic value)
-     3. Implementation Challenges (barriers)
-     4. User Acceptance (human factors)
-     5. Pediatric Considerations (age-specific issues)
-     6. Evidence Gaps (research needs)
+   - Major themes identified and analyzed:
+      1. Technology Evolution (shift to AI/ML)
+      2. Clinical Performance (diagnostic value)
+      3. Implementation Challenges (barriers)
+      4. User Acceptance (human factors)
+      5. Pediatric Considerations (age-specific issues)
+      6. Evidence Gaps (research needs)
    - For each theme: evidence quality, frequency, clinical significance
    - Cross-cutting patterns and paradoxes
 
@@ -804,31 +811,31 @@ INSTRUCTIONS:
    - Clinical practice implications addressing real-world constraints
    - Comparison with related reviews while highlighting unique contributions
    - Innovative solutions for AI/ML transparency:
-     * Explainable AI (XAI) techniques
-     * Model documentation standards
-     * Open-source implementations
-     * Independent validation protocols
+      * Explainable AI (XAI) techniques
+      * Model documentation standards
+      * Open-source implementations
+      * Independent validation protocols
 
    CONCLUSIONS:
    - Summary of main findings
    - Clinical significance
    - Most critical research gap
    - Recommendations for high-risk-of-bias study designs:
-     * Improved reporting standards
-     * Prospective validation studies
-     * Real-world performance monitoring
+      * Improved reporting standards
+      * Prospective validation studies
+      * Real-world performance monitoring
    - Specific recommendations for:
-     * Clinicians/institutions
-     * Researchers
-     * Industry/developers
-     * Policymakers (including regulatory frameworks)
+      * Clinicians/institutions
+      * Researchers
+      * Industry/developers
+      * Policymakers (including regulatory frameworks)
 
 3. QUALITY & STYLE:
    - Professional academic tone with moderate stylistic variation
    - Clear, concise writing that favors direct communication over filler phrases
    - Evidence-based (all claims supported by data provided)
    - Proper LaTeX escaping: use \& for &, \% for %, \$ for $, \# for #
-   - Preserve LaTeX commands like \cite, \ref, \section exactly as generated
+   - Preserve LaTeX commands like \cite, \\ref, \section exactly as generated
    - Critical analysis (explain WHY findings matter)
    - Use jargon strategically - explain technical terms if needed
    - Vary sentence structure to avoid repetitive patterns
@@ -839,7 +846,7 @@ INSTRUCTIONS:
    - Actionable recommendations with practical implementation guidance
    - PRISMA 2020 compliant
    - Focus analysis on these key aspects defined in the review:
-     {chr(10).join(f'     - {field}: {desc}' for field, desc in topic.get('extract', {}).items())}
+{chr(10).join(f'      * {field.replace("_", " ")}: {desc}' for field, desc in plan.get('extract', {}).items())}
 
 4. LATEX FORMATTING (XeLaTeX compatible):
    - \\documentclass[12pt]{{article}}
@@ -856,9 +863,12 @@ INSTRUCTIONS:
    - Remove any pdflatex-specific packages
 
 5. SPECIFIC DATA TO INCLUDE:
-   - Screening numbers: {json.dumps(self.data.get('screening', {}), indent=2)}
-   - Study statistics: {json.dumps(self.data.get('statistics', {}), indent=2)}
-   - Quality assessment summary: {self._format_quality_data()}
+   - Screening numbers:
+{json.dumps(self.data.get('screening', {}), indent=2)}
+   - Study statistics:
+{json.dumps(self.data.get('statistics', {}), indent=2)}
+   - Quality assessment summary:
+{self._format_quality_data()}
    - Performance metrics ranges by modality
    - Distribution of intervention types
    - Years covered: {self.data.get('statistics', {}).get('year_range', 'N/A')}
@@ -881,7 +891,6 @@ IMPORTANT:
 - Professional, rigorous academic style
 - Ready for peer review
 
-Generate the complete LaTeX document now:
 """
         return prompt
     
