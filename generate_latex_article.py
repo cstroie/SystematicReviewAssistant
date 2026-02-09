@@ -562,7 +562,6 @@ class LaTeXArticleGenerator:
         
         print(f"✓ Initialized {provider.upper()} API client")
         print(f"  Model: {self.model}")
-        print(f"  Temperature: {self.temperature}")
     
     def call_llm(self, prompt: str, max_retries: int = 3, stream: bool = False, temperature: float = 0.8) -> str:
         """Execute LLM API call with comprehensive retry logic
