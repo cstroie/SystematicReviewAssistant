@@ -562,14 +562,16 @@ class LaTeXArticleGenerator:
         
         print(f"✓ Initialized {provider.upper()} API client")
         print(f"  Model: {self.model}")
+        print(f"  Temperature: {self.temperature}")
     
-    def call_llm(self, prompt: str, max_retries: int = 3, stream: bool = False) -> str:
+    def call_llm(self, prompt: str, max_retries: int = 3, stream: bool = False, temperature: float = 0.8) -> str:
         """Execute LLM API call with comprehensive retry logic
 
         Args:
             prompt: Complete prompt string to send to LLM
             max_retries: Maximum number of retry attempts
             stream: Whether to stream the response
+            temperature: Temperature for LLM generation (0.0-2.0)
 
         Returns:
             Generated text content from LLM
@@ -588,6 +590,7 @@ class LaTeXArticleGenerator:
             body = {
                 'model': self.model,
                 'max_tokens': 20000,  # Increased for longer articles
+                'temperature': temperature,
                 'messages': [{'role': 'user', 'content': prompt}]
             }
             if stream:
@@ -601,12 +604,13 @@ class LaTeXArticleGenerator:
             body = {
                 'model': self.model,
                 'max_tokens': 20000,  # Increased for longer articles
-                'temperature': 0.3,
+                'temperature': temperature,
                 'messages': [{'role': 'user', 'content': prompt}]
             }
             if stream:
                 body['stream'] = True
 
+        # Convert body to JSON bytes
         body_json = json.dumps(body).encode('utf-8')
 
         # Retry loop
@@ -687,12 +691,12 @@ class LaTeXArticleGenerator:
         
         raise ValueError("Failed to get response after all retries")
     
-    def generate_article(self, stream: bool = False) -> str:
+    def generate_article(self, stream: bool = False, temperature: float = 0.8) -> str:
         """Generate complete LaTeX article from collected data
         
         Args:
             stream: Whether to stream the response
-            
+            temperature: Temperature for LLM generation (0.0-2.0)
         Returns:
             Complete LaTeX document source as string
             
@@ -722,7 +726,7 @@ class LaTeXArticleGenerator:
         else:
             print("Making LLM call (this may take several minutes)...")
         # Call LLM API to generate article content
-        article_content = self.call_llm(prompt, stream=stream)
+        article_content = self.call_llm(prompt, stream=stream, temperature=temperature)
         # Response is expected to be the complete LaTeX document source
         return article_content
     
