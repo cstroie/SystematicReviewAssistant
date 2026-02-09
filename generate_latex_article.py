@@ -713,7 +713,7 @@ class LaTeXArticleGenerator:
                                             # Write to file and console
                                             if file_handle:
                                                 file_handle.write(content)
-                                                file_handle.flush()
+                                                #file_handle.flush()
                                             print(content, end="", flush=True)
                                 except json.JSONDecodeError:
                                     # Skip invalid JSON lines
