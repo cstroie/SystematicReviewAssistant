@@ -1200,7 +1200,7 @@ class CDSSLitReviewProcessor:
 
             # Step 4: Assess study quality
             quality_file = self.workdir / "04_quality_assessment.json"
-            print("\n[STEP 4/6] Assessing study quality (QUADAS-2)...")
+            print("\n[STEP 4/6] Assessing study quality...")
             quality_assessments = self._assess_quality(included_articles, quality_file)
             print(f"✓ Quality assessment complete for {len(quality_assessments)} studies")
 
@@ -1485,11 +1485,11 @@ class CDSSLitReviewProcessor:
         with open(topic_file, 'r', encoding='utf-8') as f:
             topic_data = json.load(f)
         
-        quality_tool = topic_data.get('quality', 'quadas2').lower()
+        quality_tool = topic_data.get('quality', 'grade').lower()
         quality_prompt = self._load_prompt(f'quality_assessment_{quality_tool}')
 
         def process_article(article):
-            prompt = quadas2_prompt.format(
+            prompt = quality_prompt.format(
                 pmid=article['pmid'],
                 title=article['title'],
                 abstract=article['abstract']
@@ -1703,7 +1703,7 @@ class CDSSLitReviewProcessor:
         if cache_file.exists():
             try:
                 cached_results = self._load_file(cache_file)
-                print(f"  Loaded {len(cached_results)} cached {cache_label}")
+                print(f"✓ Loaded {len(cached_results)} cached {cache_label}")
             except Exception as e:
                 print(f"  Cache load error: {str(e)} - creating new cache")
 
