@@ -1208,33 +1208,76 @@ class LaTeXArticleGenerator:
             The prompt size can be substantial (often 100KB+), so it's
             saved to disk for debugging purposes when generating articles.
         """
-
         # Get review metadata
         plan = self.data.get('plan', {})
         title = plan.get('title', 'Systematic Review')
         topic = plan.get('topic', 'the research topic')
         analysis_points = plan.get('analysis', [])
-
-        prompt = f"""
+        
+        # Format data sections
+        extracted_data = json.dumps(self.data.get('extracted', {}), indent=2)
+        quality_data = json.dumps(self.data.get('quality', {}), indent=2)
+        characteristics_data = json.dumps(self.data.get('characteristics_table', {}), indent=2)
+        synthesis_data = self.data.get('synthesis', '')
+        screening_data = json.dumps(self.data.get('screening', {}), indent=2)
+        statistics_data = json.dumps(self.data.get('statistics', {}), indent=2)
+        quality_summary = self._format_quality_data()
+        year_range = self.data.get('statistics', {}).get('year_range', 'N/A')
+        
+        # Format analysis points
+        analysis_points_str = '\n'.join(f'      * {point}' for point in analysis_points)
+        
+        # Format extract fields
+        extract_fields = plan.get('extract', {})
+        extract_fields_str = '\n'.join(f'      * {field.replace("_", " ")}: {desc}' for field, desc in extract_fields.items())
+        
+        # Use template with placeholders
+        prompt_template = self._get_prompt_template()
+        
+        # Format the prompt with data
+        prompt = prompt_template.format(
+            title=title,
+            topic=topic,
+            extracted_data=extracted_data,
+            quality_data=quality_data,
+            characteristics_data=characteristics_data,
+            synthesis_data=synthesis_data,
+            analysis_points=analysis_points_str,
+            screening_data=screening_data,
+            statistics_data=statistics_data,
+            quality_summary=quality_summary,
+            year_range=year_range,
+            extract_fields=extract_fields_str
+        )
+        
+        return prompt
+    
+    def _get_prompt_template(self) -> str:
+        """Get the prompt template with placeholders.
+        
+        Returns:
+            str: Template string with placeholders for dynamic content
+        """
+        return """
 ROLE: You are an expert academic researcher writing an original, insightful systematic review article on "{topic}".
 
 TASK: Generate a complete, publication-ready LaTeX academic article with fresh perspectives and critical analysis based on systematic review data and PRISMA 2020 framework.
 
 EXTRACTED ARTICLES:
 
-{json.dumps(self.data.get('extracted', {}), indent=2)}
+{extracted_data}
 
 QUALITY ASSESSMENT:
 
-{json.dumps(self.data.get('quality', {}), indent=2)}
+{quality_data}
 
 CHARACTERISTICS TABLE:
 
-{json.dumps(self.data.get('characteristics_table', {}), indent=2)}
+{characteristics_data}
 
 SYNTHESIS:
 
-{self.data.get('synthesis', {})}
+{synthesis_data}
 
 
 INSTRUCTIONS:
@@ -1247,7 +1290,7 @@ INSTRUCTIONS:
    - Methods (1000-1500 words) with detailed protocol, search strategy, selection criteria, data extraction, quality assessment
    - Results (1500-2500 words) with study characteristics, intervention types, diagnostic accuracy, implementation status, quality assessment
    - Thematic Synthesis (1500-2000 words) analyzing major themes with quantitative and qualitative data based on these analysis points:
-{chr(10).join(f'      * {point}' for point in analysis_points)}
+{analysis_points}
    - Discussion (1500-2000 words) interpreting findings, addressing implementation barriers and domain-specific considerations
    - Conclusions (300-400 words) with actionable recommendations
    - References in proper format
@@ -1359,7 +1402,7 @@ INSTRUCTIONS:
    - Actionable recommendations with practical implementation guidance
    - PRISMA 2020 compliant
    - Focus analysis on these key aspects defined in the review:
-{chr(10).join(f'      * {field.replace("_", " ")}: {desc}' for field, desc in plan.get('extract', {}).items())}
+{extract_fields}
 
 4. LATEX FORMATTING (XeLaTeX compatible):
    - \\documentclass[12pt]{{article}}
@@ -1378,14 +1421,14 @@ INSTRUCTIONS:
 
 5. SPECIFIC DATA TO INCLUDE:
    - Screening numbers:
-{json.dumps(self.data.get('screening', {}), indent=2)}
+{screening_data}
    - Study statistics:
-{json.dumps(self.data.get('statistics', {}), indent=2)}
+{statistics_data}
    - Quality assessment summary:
-{self._format_quality_data()}
+{quality_summary}
    - Performance metrics ranges by modality
    - Distribution of intervention types
-   - Years covered: {self.data.get('statistics', {}).get('year_range', 'N/A')}
+   - Years covered: {year_range}
 
 6. TABLES & FIGURES TO REFERENCE:
    - Table 1: Study characteristics (reference the data provided)
@@ -1406,7 +1449,6 @@ IMPORTANT:
 - Ready for peer review
 
 """
-        return prompt
 
     def _format_data_for_prompt(self) -> str:
         """Create human-readable summary of collected data for inclusion in prompt.
