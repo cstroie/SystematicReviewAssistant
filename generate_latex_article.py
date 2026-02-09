@@ -77,7 +77,7 @@ Required Pipeline Outputs:
 - summary_characteristics_table.csv: Study characteristics matrix
 
 Generated Outputs:
-- 06_review.tex: Complete LaTeX article document
+- 07_review.tex: Complete LaTeX article document
 - references.bib: BibTeX entries for all included studies
 - debug/prompt_*.txt: Prompt templates for debugging (when debug=True)
 
@@ -1477,7 +1477,7 @@ class LaTeXArticleGenerator:
 
         raise ValueError("Failed to get response after all retries")
 
-    def generate_article(self, stream: bool = False, temperature: float = 0.8) -> str:
+    def generate_article(self, output_file: str, stream: bool = False, temperature: float = 0.8) -> str:
         """Generate complete LaTeX article from collected data.
 
         This method orchestrates the complete article generation process by
@@ -1499,7 +1499,7 @@ class LaTeXArticleGenerator:
         Args:
             stream (bool, optional): Whether to enable streaming response
                 mode. Defaults to False. When True, content is written directly
-                to '06_review.tex' as it's received. When False, complete
+                to '07_review.tex' as it's received. When False, complete
                 content is returned as a string
             temperature (float, optional): Temperature parameter for LLM
                 generation controlling randomness. Defaults to 0.8. Higher
@@ -1520,7 +1520,7 @@ class LaTeXArticleGenerator:
             - Content quality guidelines
             - Specific data to include
 
-            For streaming mode, the output file '06_review.tex' is created
+            For streaming mode, the output file '07_review.tex' is created
             in the working directory and written incrementally. For debugging,
             the complete prompt is saved to 'debug/' directory with
             timestamp.
@@ -1555,8 +1555,6 @@ class LaTeXArticleGenerator:
 
         if stream:
             print("Streaming response from LLM...")
-            # Create output file path for streaming
-            output_file = Path(self.data['workdir']) / '06_review.tex'
             # Call LLM API to generate article content with streaming to file
             article_content = self.call_llm(prompt, stream=stream, temperature=temperature, output_file=output_file)
             # Response is empty when streaming to file
@@ -1565,6 +1563,14 @@ class LaTeXArticleGenerator:
             print("Making LLM call (this may take several minutes)...")
             # Call LLM API to generate article content
             article_content = self.call_llm(prompt, stream=stream, temperature=temperature)
+            # Save the generated article to file
+            try:
+                # Save LaTeX article
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    f.write(article_content)
+            except IOError as e:
+                print(f"Error: Could not save output files: {str(e)}")
+                raise
             # Response is expected to be the complete LaTeX document source
             return article_content
 
@@ -2290,7 +2296,7 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
 
     Returns:
         Path: Path object pointing to the generated LaTeX file
-            ('06_review.tex' in the workdir). Also generates 'references.bib'
+            ('07_review.tex' in the workdir). Also generates 'references.bib'
             in the same directory
 
     Raises:
@@ -2304,7 +2310,7 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
 
     Note:
         The function handles both streaming and non-streaming modes differently:
-        - Streaming mode: Content written incrementally to '06_review.tex'
+        - Streaming mode: Content written incrementally to '07_review.tex'
           during API calls, with BibTeX references written separately
         - Non-streaming mode: Complete content generated then written to file
 
@@ -2341,35 +2347,19 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
         debug=debug
     )
 
-    if stream:
-        # For streaming, the file is written directly during the API call
-        output_file = workdir / '06_review.tex'
-        article_content = generator.generate_article(stream=stream, temperature=temperature)
+    # Determine output file path
+    output_file = workdir / '07_review.tex'
 
-        # Save BibTeX references
-        bib_file = workdir / 'references.bib'
-        bib_content = collector.generate_bibtex()
-        with open(bib_file, 'w', encoding='utf-8') as f:
-            f.write(bib_content)
-    else:
-        # For non-streaming, write the complete content at once
-        article_content = generator.generate_article(stream=stream, temperature=temperature)
-        output_file = workdir / '06_review.tex'
-        bib_file = workdir / 'references.bib'
+    # Save BibTeX references
+    bib_file = workdir / 'references.bib'
+    bib_content = collector.generate_bibtex()
+    with open(bib_file, 'w', encoding='utf-8') as f:
+        f.write(bib_content)
 
-        try:
-            # Save LaTeX article
-            with open(output_file, 'w', encoding='utf-8') as f:
-                f.write(article_content)
+    # Generate article
+    article_content = generator.generate_article(output_file=output_file, stream=stream, temperature=temperature)
 
-            # Save BibTeX references
-            bib_content = collector.generate_bibtex()
-            with open(bib_file, 'w', encoding='utf-8') as f:
-                f.write(bib_content)
-        except IOError as e:
-            print(f"Error: Could not save output files: {str(e)}")
-            raise
-
+    # Print success message
     print(f"\n✓ Article generated successfully!")
     print(f"  Saved to: {output_file}")
     print(f"  References saved to: {bib_file}")
@@ -2381,6 +2371,7 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
     print(f"  bibtex {output_file.stem}")
     print(f"  xelatex {output_file.name}")
 
+    # Return the output file path
     return output_file
 
 
