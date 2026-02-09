@@ -29,5 +29,14 @@ Extract and return this JSON structure (use null for unavailable data):
   "comparison": "compared against what? (e.g., radiologist alone, standard of care)",
   "main_findings": "1-2 sentence summary of key results",
   "limitations": ["list", "of", "limitations"],
-  "clinical_implications": "stated implications or clinical impact"
+  "clinical_implications": "stated implications or clinical impact",
+  "funding_conflicts": {
+    "funding_sources": ["list", "of", "funding", "sources"],
+    "conflicts_of_interest": ["list", "of", "conflicts", "of", "interest"]
+  },
+  "statistical_methods": {
+    "statistical_tests_used": ["list", "of", "statistical", "tests"],
+    "analysis_methods": ["list", "of", "analysis", "methods"],
+    "software_used": ["list", "of", "statistical", "software"]
+  }
 }}
