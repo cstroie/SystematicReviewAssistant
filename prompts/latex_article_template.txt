@@ -56,17 +56,28 @@ ARTICLE STRUCTURE & CONTENT:
    - PRISMA 2020 compliance statement
 
 4. RESULTS (1500-2500 words)
-   - Study selection numbers with percentages
-   - Study characteristics (Table 1 reference)
-   - Intervention types and distribution
-   - Breakdown by modality (CT, MRI, US, etc.)
-   - Breakdown by clinical domain
-   - Performance metrics (sensitivity, specificity, AUC) with ranges
-   - Cost-effectiveness analysis (ROI, cost per case)
-   - Implementation status and challenges
-   - User experience findings
-   - Quality assessment distribution
-   - High-impact studies analysis
+   4.1 Study Selection
+      - PRISMA flow diagram results (Figure 1 reference)
+      - Numbers and percentages at each stage
+      - Reasons for exclusion at full-text stage
+   
+   4.2 Study Characteristics
+      - Table 1: Detailed study characteristics
+      - Study design distribution
+      - Sample size statistics
+      - Geographic and temporal distribution
+      - Intervention types and distribution
+      - Breakdown by modality (CT, MRI, US, etc.)
+      - Breakdown by clinical domain
+   
+   4.3 Synthesis of Results
+      - Performance metrics (sensitivity, specificity, AUC) with ranges
+      - Cost-effectiveness analysis (ROI, cost per case)
+      - Implementation status and challenges
+      - User experience findings
+      - Quality assessment distribution (Table 2 reference)
+      - High-impact studies analysis
+      - Thematic synthesis integration
 
 5. THEMATIC SYNTHESIS (1500-2000 words)
    - Major themes identified and analyzed:
