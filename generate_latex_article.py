@@ -1364,10 +1364,24 @@ class LaTeXArticleGenerator:
         for study in extracted:
             metrics = study.get('key_metrics', {})
             if isinstance(metrics, dict):
-                # Check for exceptional performance with null checks
+                # Check for exceptional performance with null checks and type conversion
                 sensitivity = metrics.get('sensitivity')
                 specificity = metrics.get('specificity')
                 auc = metrics.get('auc')
+                
+                # Convert to float if they're strings
+                try:
+                    if isinstance(sensitivity, str):
+                        sensitivity = float(sensitivity)
+                    if isinstance(specificity, str):
+                        specificity = float(specificity)
+                    if isinstance(auc, str):
+                        auc = float(auc)
+                except (ValueError, TypeError):
+                    # If conversion fails, treat as None
+                    sensitivity = None
+                    specificity = None
+                    auc = None
                 
                 # Consider study high impact if any metric is exceptional
                 is_high_impact = False
