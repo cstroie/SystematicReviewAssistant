@@ -1220,8 +1220,13 @@ class LaTeXArticleGenerator:
             # Generate data summary using the existing function
             data_summary = self._format_data_for_prompt()
             
-            # Format data sections
-            extracted_data = json.dumps(self.data.get('extracted', {}), indent=2)
+            # Get key study examples (replaces full JSON list)
+            study_examples = self._get_key_study_examples()
+            
+            # Get pattern-based insights
+            pattern_insights = self._extract_patterns_for_prompt()
+            
+            # Format quality data
             quality_data = json.dumps(self.data.get('quality', {}), indent=2)
             characteristics_data = json.dumps(self.data.get('characteristics_table', {}), indent=2)
             synthesis_data = self.data.get('synthesis', '')
@@ -1241,7 +1246,8 @@ class LaTeXArticleGenerator:
                 title=title,
                 topic=topic,
                 data_summary=data_summary,
-                extracted_data=extracted_data,
+                study_examples=study_examples,
+                pattern_insights=pattern_insights,
                 quality_data=quality_data,
                 characteristics_data=characteristics_data,
                 synthesis_data=synthesis_data,
@@ -1278,6 +1284,138 @@ class LaTeXArticleGenerator:
         except IOError as e:
             raise IOError(f"Error reading prompt template file {prompt_file}: {str(e)}")
 
+    def _get_key_study_examples(self, max_examples: int = 5) -> str:
+        """Get a few representative study examples for the prompt.
+        
+        Args:
+            max_examples: Maximum number of examples to include
+            
+        Returns:
+            Formatted string with key study examples
+        """
+        extracted = self.data.get('extracted', [])
+        if not extracted:
+            return "No extracted data available"
+        
+        # Take the first N examples (in practice, you might want to select
+        # based on diversity, impact, or representativeness)
+        examples = extracted[:max_examples]
+        
+        lines = []
+        for i, study in enumerate(examples, 1):
+            lines.append(f"Example Study {i}:")
+            lines.append(f"  Title: {study.get('title', 'N/A')}")
+            lines.append(f"  Year: {study.get('year', 'N/A')}")
+            lines.append(f"  Design: {study.get('study_design', 'N/A')}")
+            lines.append(f"  Modality: {study.get('imaging_modality', 'N/A')}")
+            lines.append(f"  Domain: {study.get('clinical_domain', 'N/A')}")
+            
+            # Sample size
+            sample_size = study.get('sample_size', {})
+            if isinstance(sample_size, dict):
+                total = sample_size.get('total_patients', 'N/A')
+                lines.append(f"  Sample: {total} patients")
+            else:
+                lines.append(f"  Sample: {sample_size}")
+            
+            # Key findings
+            findings = study.get('key_findings', 'N/A')
+            if findings and findings != 'N/A':
+                # Truncate long findings to fit in prompt
+                truncated = findings[:200] + '...' if len(findings) > 200 else findings
+                lines.append(f"  Key Findings: {truncated}")
+            
+            # Performance metrics if available
+            metrics = study.get('key_metrics', {})
+            if isinstance(metrics, dict):
+                sens = metrics.get('sensitivity')
+                spec = metrics.get('specificity')
+                auc = metrics.get('auc')
+                if sens or spec or auc:
+                    lines.append("  Performance:")
+                    if sens:
+                        lines.append(f"    - Sensitivity: {sens}")
+                    if spec:
+                        lines.append(f"    - Specificity: {spec}")
+                    if auc:
+                        lines.append(f"    - AUC: {auc}")
+            
+            lines.append("")
+        
+        return "\n".join(lines)
+
+    def _extract_patterns_for_prompt(self) -> str:
+        """Extract key patterns from extracted data for prompt inclusion.
+        
+        Returns:
+            Formatted string with key patterns and insights
+        """
+        extracted = self.data.get('extracted', [])
+        if not extracted:
+            return "No extracted data available"
+        
+        patterns = []
+        
+        # Extract key findings patterns
+        all_findings = []
+        for study in extracted:
+            findings = study.get('key_findings', '')
+            if findings and findings != 'N/A':
+                all_findings.append(findings.lower())
+        
+        if all_findings:
+            patterns.append("KEY FINDINGS PATTERNS:")
+            # Simple pattern detection - look for common words/phrases
+            from collections import Counter
+            word_counts = Counter()
+            
+            for finding in all_findings:
+                # Simple word extraction (in practice, you'd want more sophisticated NLP)
+                words = finding.split()
+                for word in words:
+                    if len(word) > 3:  # Ignore very short words
+                        word_counts[word] += 1
+            
+            # Get most common patterns
+            common_patterns = word_counts.most_common(10)
+            for word, count in common_patterns:
+                if count >= 2:  # Only show patterns that appear in multiple studies
+                    patterns.append(f"  - '{word}' appears in {count} studies")
+        
+        # Extract methodology insights
+        designs = {}
+        modalities = {}
+        domains = {}
+        
+        for study in extracted:
+            design = study.get('study_design', 'Unknown')
+            designs[design] = designs.get(design, 0) + 1
+            
+            modality = study.get('imaging_modality', 'Unknown')
+            if isinstance(modality, list):
+                for m in modality:
+                    modalities[m] = modalities.get(m, 0) + 1
+            elif modality:
+                modalities[modality] = modalities.get(modality, 0) + 1
+            
+            domain = study.get('clinical_domain', 'Unknown')
+            domains[domain] = domains.get(domain, 0) + 1
+        
+        patterns.append("\nMETHODOLOGY INSIGHTS:")
+        patterns.append("  Study designs:")
+        for design, count in sorted(designs.items(), key=lambda x: x[1], reverse=True):
+            patterns.append(f"    - {design}: {count} studies")
+        
+        patterns.append("  Imaging modalities:")
+        for mod, count in sorted(modalities.items(), key=lambda x: x[1], reverse=True):
+            patterns.append(f"    - {mod}: {count} studies")
+        
+        patterns.append("  Clinical domains:")
+        for domain, count in sorted(domains.items(), key=lambda x: x[1], reverse=True):
+            patterns.append(f"    - {domain}: {count} studies")
+        
+        return "\n".join(patterns)
+
     def _format_data_for_prompt(self) -> str:
         """Create human-readable summary of collected data for inclusion in prompt.
 
@@ -1287,8 +1425,7 @@ class LaTeXArticleGenerator:
         process and reference during article generation.
 
         The summary includes screening results, study statistics, quality
-        assessment data, and other key metrics organized with clear
-        section headers and consistent formatting.
+        assessment data, and key study examples with patterns.
 
         Returns:
             str: Formatted string containing organized data summary with
@@ -1298,13 +1435,15 @@ class LaTeXArticleGenerator:
                 - Sample size statistics
                 - Performance metrics
                 - Quality assessment summary
-                - Thematic synthesis excerpt
+                - Key study examples (representative studies)
+                - Pattern-based insights from the data
 
         Note:
             This method is designed to provide the LLM with a clear overview
             of the collected data without overwhelming it with raw JSON data.
             The summary highlights key patterns and statistics that are most
-            relevant for article generation.
+            relevant for article generation, using representative examples
+            rather than the full dataset.
         """
         lines = []
 

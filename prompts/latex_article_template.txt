@@ -4,9 +4,13 @@ TASK: Generate a complete, publication-ready LaTeX academic article with fresh p
 
 {data_summary}
 
-EXTRACTED ARTICLES:
+KEY STUDY EXAMPLES:
 
-{extracted_data}
+{study_examples}
+
+PATTERN INSIGHTS:
+
+{pattern_insights}
 
 CHARACTERISTICS TABLE:
 
@@ -163,6 +167,7 @@ INSTRUCTIONS:
    - Performance metrics ranges by modality
    - Distribution of intervention types
    - Years covered
+   - Key study examples and patterns (already provided above)
 
 6. TABLES & FIGURES TO REFERENCE:
    - Table 1: Study characteristics (reference the data provided)
