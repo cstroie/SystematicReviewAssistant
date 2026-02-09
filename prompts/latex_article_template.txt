@@ -235,6 +235,27 @@ TABLES & FIGURES TO REFERENCE:
 - Figure 2: Study distribution over time
 - Figure 3: Distribution of intervention types
 
+SUPPLEMENTARY MATERIALS:
+- Search strategy documentation with full PubMed query syntax
+- Complete PRISMA flow diagram with detailed exclusion reasons
+- Full quality assessment tables for all included studies
+- Individual study data extraction forms
+- Statistical analysis code and scripts
+- Additional performance metrics not included in main text
+- Subgroup analysis results
+- Sensitivity analysis outcomes
+- Risk of bias assessment details for each study
+- Forest plots and meta-analysis results (if applicable)
+- Individual patient data characteristics
+- Additional thematic analysis findings
+- Extended discussion of limitations
+- Data availability statements
+- Code availability for AI/ML models
+- Model performance details on test sets
+- Implementation guidelines and protocols
+- Patient consent forms and ethical approvals
+- Conflict of interest statements for all authors
+
 CRITICAL REQUIREMENTS:
 - Include all provided data meaningfully
 - Analyze and interpret, don't just list
