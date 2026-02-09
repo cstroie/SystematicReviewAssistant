@@ -1601,7 +1601,7 @@ class LaTeXArticleGenerator:
                 - Key study examples
                 - High-impact studies
                 - Pattern insights
-                - Characteristics table summary
+                - Characteristics table in markdown format
                 - Thematic synthesis
                 - Article structure and content requirements
                 - Quality and style guidelines
@@ -1631,7 +1631,7 @@ class LaTeXArticleGenerator:
             study_examples = self._get_key_study_examples()
             high_impact_studies = self._get_high_impact_studies()
             pattern_insights = self._extract_patterns_for_prompt()
-            characteristics_summary = self._format_characteristics_for_prompt()
+            characteristics_table = self._format_characteristics_as_markdown()
             synthesis_data = self.data.get('synthesis', '')
 
             # Format extract fields for quality requirements
@@ -1656,7 +1656,7 @@ class LaTeXArticleGenerator:
                 study_examples=study_examples,
                 high_impact_studies=high_impact_studies,
                 pattern_insights=pattern_insights,
-                characteristics_summary=characteristics_summary,
+                characteristics_summary=characteristics_table,
                 synthesis_data=synthesis_data,
                 extract_fields=extract_fields_str,
                 analysis_themes=analysis_themes_str
@@ -1987,6 +1987,76 @@ class LaTeXArticleGenerator:
             patterns.append(f"    - {domain}: {count} studies")
 
         return "\n".join(patterns)
+
+    def _format_characteristics_as_markdown(self) -> str:
+        """Format characteristics table as markdown table for prompt inclusion.
+
+        This method presents the characteristics table data in a markdown format
+        that's easy for the LLM to read and understand. It reads the raw CSV
+        data and converts it to a properly formatted markdown table.
+
+        The method reads the CSV file directly and formats it as a markdown table
+        with proper alignment and formatting. This provides the LLM with the
+        complete tabular data in a structured format.
+
+        Returns:
+            str: Markdown formatted table string with:
+                - Column headers properly formatted
+                - Row data aligned in columns
+                - Proper markdown table syntax
+
+        Example:
+            markdown_table = generator._format_characteristics_as_markdown()
+            print(f"Markdown table with {len(markdown_table.splitlines())} lines")
+        """
+        # Get the workdir from data
+        workdir = self.data.get('workdir', '')
+        if not workdir:
+            return "No workdir available"
+
+        # Path to the characteristics CSV file
+        csv_file = Path(workdir) / '06_summary_characteristics.csv'
+
+        if not csv_file.exists():
+            return "No characteristics table found"
+
+        try:
+            with open(csv_file, 'r', encoding='utf-8') as f:
+                # Read CSV data
+                reader = csv.DictReader(f)
+                rows = list(reader)
+
+                if not rows:
+                    return "No data in characteristics table"
+
+                # Get headers
+                headers = reader.fieldnames or []
+
+                # Create markdown table
+                lines = []
+
+                # Add table header
+                lines.append("| " + " | ".join(headers) + " |")
+                lines.append("|" + "|".join(["---"] * len(headers)) + "|")
+
+                # Add rows
+                for row in rows:
+                    # Escape pipe characters and handle None values
+                    row_values = []
+                    for header in headers:
+                        value = row.get(header, '')
+                        if value is None:
+                            value = ''
+                        # Escape pipe characters in cell content
+                        value = str(value).replace('|', '\\|')
+                        row_values.append(value)
+                    lines.append("| " + " | ".join(row_values) + " |")
+
+                return "\n".join(lines)
+
+        except (csv.Error, IOError) as e:
+            print(f"Error reading characteristics CSV: {str(e)}")
+            return f"Error reading characteristics table: {str(e)}"
 
     def _format_characteristics_for_prompt(self) -> str:
         """Format characteristics table in a readable way for prompt inclusion.
