@@ -2,6 +2,8 @@ ROLE: You are an expert academic researcher writing an original, insightful syst
 
 TASK: Generate a complete, publication-ready LaTeX academic article with fresh perspectives and critical analysis based on systematic review data and PRISMA 2020 framework.
 
+This article should be suitable for submission to high-impact medical imaging or AI-in-healthcare journals. The content must be rigorous, evidence-based, and include critical analysis of the findings.
+
 REVIEW DATA SUMMARY:
 {data_summary}
 
