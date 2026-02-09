@@ -95,13 +95,52 @@ ARTICLE STRUCTURE & CONTENT:
    - Principal findings with fresh interpretation
    - Implementation vs. technical capability gap analysis
    - Research paradoxes (strong metrics vs. poor adoption)
-   - Quantitative limitations (heterogeneity, bias, gaps)
-   - Qualitative limitations (diversity, publication bias)
-   - Technical barriers (EHR integration, standardization)
-   - Organizational barriers (cost, workflow, institutional factors)
-   - Human factors (skepticism, trust, job concerns)
-   - Healthcare system factors (regulation, liability, reimbursement)
-   - Regulatory frameworks
+   - 6.1 Methodological Limitations
+      - Heterogeneity in study designs and methodologies
+      - Variability in quality assessment tools across studies
+      - Potential selection bias in included literature
+      - Limitations of single-arm study designs
+      - Challenges in comparing across different clinical contexts
+      - Temporal limitations (2014-2024 timeframe)
+   
+   - 6.2 Reporting Limitations
+      - Incomplete reporting of methodological details
+      - Publication bias favoring positive results
+      - Limited availability of raw data for reanalysis
+      - Inconsistent reporting of performance metrics
+      - Underreporting of implementation challenges and failures
+      - Missing data on long-term outcomes
+   
+   - 6.3 Applicability Limitations
+      - Geographic and institutional bias in included studies
+      - Limited diversity in patient populations
+      - Challenges in generalizing to resource-limited settings
+      - Limited real-world implementation data
+      - Gaps in pediatric and geriatric populations
+      - Regulatory and reimbursement barriers to adoption
+      - Healthcare system-specific implementation challenges
+   
+   - 6.4 Technical and Implementation Barriers
+      - EHR integration challenges
+      - Standardization and interoperability issues
+      - Data quality and availability constraints
+      - Computational resource requirements
+      - Model maintenance and update challenges
+   
+   - 6.5 Organizational and Human Factors
+      - Cost and resource constraints
+      - Workflow integration challenges
+      - Institutional resistance to change
+      - Clinician skepticism and trust issues
+      - Training and education requirements
+      - Job displacement and role change concerns
+   
+   - 6.6 Healthcare System Factors
+      - Regulatory framework limitations
+      - Liability and malpractice concerns
+      - Reimbursement and payment challenges
+      - Healthcare policy and guideline development
+      - Ethical and governance considerations
    - Case studies highlighting novel approaches
    - Future research priorities with original proposals
    - Clinical practice implications
