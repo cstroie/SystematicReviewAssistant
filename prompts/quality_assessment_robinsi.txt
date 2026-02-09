@@ -26,6 +26,6 @@ Return ONLY JSON:
     "outcome_measurement": "Low|Moderate|Serious|Critical|No Information",
     "selective_reporting": "Low|Moderate|Serious|Critical|No Information"
   }},
-  "overall_risk": "Low|Moderate|Serious|Critical",
-  "notes": "brief justification"
+  "overall": "Low|Moderate|Serious|Critical",
+  "notes": "brief justification of risk of bias assessment"
 }}

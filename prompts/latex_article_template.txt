@@ -4,20 +4,16 @@ TASK: Generate a complete, publication-ready LaTeX academic article with fresh p
 
 This article should be suitable for submission to high-impact medical imaging or AI-in-healthcare journals. The content must be rigorous, evidence-based, and include critical analysis of the findings.
 
-REVIEW DATA SUMMARY:
 {data_summary}
 
 {study_examples}
 
 {high_impact_studies}
 
-PATTERN INSIGHTS:
 {pattern_insights}
 
-CHARACTERISTICS TABLE SUMMARY:
-{characteristics_summary}
+{characteristics_table}
 
-THEMATIC SYNTHESIS:
 {synthesis_data}
 
 ARTICLE STRUCTURE & CONTENT:
@@ -81,7 +77,7 @@ ARTICLE STRUCTURE & CONTENT:
 
 5. THEMATIC SYNTHESIS (1500-2000 words)
    - Major themes identified and analyzed based on the analysis framework from 00_plan.json:
-      {analysis_themes}
+{analysis_themes}
    - For each theme: evidence quality, frequency, clinical significance
    - Cross-cutting patterns and paradoxes
    - Integration with quantitative findings
@@ -203,12 +199,13 @@ QUALITY & STYLE REQUIREMENTS:
 - Transparency about limitations
 - Actionable recommendations
 - PRISMA 2020 compliance
-- Focus on key aspects: {extract_fields}
+- Focus on key aspects:
+{extract_fields}
 
 LATEX FORMATTING (XeLaTeX compatible):
 - \\documentclass[12pt]{{article}}
 - \\usepackage{{fontspec}}
-- \\setmainfont{{Times New Roman}}
+- \\setromanfont{{TeX Gyre Pagella}}
 - \\usepackage{{polyglossia}}
 - \\setmainlanguage{{english}}
 - Proper math mode for statistics

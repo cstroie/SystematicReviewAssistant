@@ -29,27 +29,27 @@ Based on this analysis and typical patterns in this field, provide a comprehensi
    - Best and worst performing systems
    - Performance by clinical domain
 
-4. THEMATIC ANALYSIS
+5. THEMATIC ANALYSIS
    - Common themes across studies
    - Key findings and consistencies
    - Important variations and contradictions
 
-5. EVIDENCE QUALITY ASSESSMENT
+6. EVIDENCE QUALITY ASSESSMENT
    - Confidence in the body of evidence using GRADE or similar framework
    - Key factors influencing confidence (risk of bias, inconsistency, indirectness, imprecision)
    - Assessment of publication bias (funnel plots, Egger's test if applicable)
 
-6. METHODOLOGICAL ASSESSMENT  
+7. METHODOLOGICAL ASSESSMENT  
    - Common strengths
    - Prevalent limitations
    - Quality trends
 
-7. CLINICAL IMPLICATIONS
+8. CLINICAL IMPLICATIONS
    - Evidence for clinical implementation
    - Adoption barriers
    - Impact on clinical workflows
 
-8. RESEARCH GAPS AND RECOMMENDATIONS
+9. RESEARCH GAPS AND RECOMMENDATIONS
    - Underrepresented clinical domains
    - Methodological gaps
    - Recommendations for future research

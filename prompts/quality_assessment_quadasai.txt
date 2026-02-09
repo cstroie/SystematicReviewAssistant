@@ -26,6 +26,6 @@ Return ONLY JSON:
     "bias_analysis": "High|Moderate|Low",
     "reproducibility": "High|Moderate|Low"
   }},
-  "overall_quality": "High|Moderate|Low",
-  "notes": "brief justification"
+  "overall": "High|Moderate|Low",
+  "notes": "brief justification of quality assessment"
 }}

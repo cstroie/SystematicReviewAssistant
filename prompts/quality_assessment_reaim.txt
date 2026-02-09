@@ -22,6 +22,6 @@ Return ONLY JSON:
     "implementation": {{"answer": "Yes|No", "justification": "..."}},
     "maintenance": {{"answer": "Yes|No", "justification": "..."}}
   }},
-  "overall_feasibility": "High|Moderate|Low",
-  "notes": "summary assessment"
+  "overall": "High|Moderate|Low",
+  "notes": "summary assessment of feasibility"
 }}

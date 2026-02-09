@@ -1656,7 +1656,7 @@ class LaTeXArticleGenerator:
                 study_examples=study_examples,
                 high_impact_studies=high_impact_studies,
                 pattern_insights=pattern_insights,
-                characteristics_summary=characteristics_table,
+                characteristics_table=characteristics_table,
                 synthesis_data=synthesis_data,
                 extract_fields=extract_fields_str,
                 analysis_themes=analysis_themes_str
@@ -2033,7 +2033,7 @@ class LaTeXArticleGenerator:
                 headers = reader.fieldnames or []
 
                 # Create markdown table
-                lines = []
+                lines = ["CHARACTERISTICS TABLE:", ""]
 
                 # Add table header
                 lines.append("| " + " | ".join(headers) + " |")
@@ -2057,136 +2057,6 @@ class LaTeXArticleGenerator:
         except (csv.Error, IOError) as e:
             print(f"Error reading characteristics CSV: {str(e)}")
             return f"Error reading characteristics table: {str(e)}"
-
-    def _format_characteristics_for_prompt(self) -> str:
-        """Format characteristics table in a readable way for prompt inclusion.
-
-        This method presents the characteristics table data in a structured,
-        readable format that's more useful for the LLM than raw JSON. It
-        transforms tabular data into organized insights that can inform
-        the article's results and discussion sections.
-
-        The method organizes the data into logical sections:
-        - Study overview: Total studies, year range, sample size range
-        - Clinical domains: Distribution across medical specialties
-        - Study designs: Methodological approaches used
-        - Imaging modalities: Types of imaging techniques
-        - Performance metrics: Summary statistics for diagnostic accuracy
-        - Key findings sample: Representative qualitative insights
-
-        Returns:
-            str: Formatted string with characteristics table organized by:
-                - Study overview (basic info)
-                - Methodology patterns
-                - Performance summary
-                - Key findings patterns
-
-        Example:
-            characteristics = generator._format_characteristics_for_prompt()
-            print(f"Formatted characteristics for {len(characteristics)} studies")
-        """
-        characteristics = self.data.get('characteristics_table', [])
-        if not characteristics:
-            return "No characteristics data available"
-
-        lines = ["CHARACTERISTICS TABLE SUMMARY:"]
-
-        # Extract and organize data
-        all_years = []
-        all_domains = {}
-        all_designs = {}
-        all_modalities = {}
-        all_performance = {'sensitivity': [], 'specificity': [], 'auc': []}
-
-        for study in characteristics:
-            # Basic info
-            basic_info = study.get('basic_info', {})
-            methodology = study.get('methodology', {})
-            performance = study.get('performance', {})
-
-            # Collect years
-            year = basic_info.get('year')
-            if year:
-                all_years.append(year)
-
-            # Collect domains
-            domain = basic_info.get('clinical_domain')
-            if domain:
-                all_domains[domain] = all_domains.get(domain, 0) + 1
-
-            # Collect designs
-            design = methodology.get('study_design')
-            if design:
-                all_designs[design] = all_designs.get(design, 0) + 1
-
-            # Collect modalities
-            modality = methodology.get('imaging_modality')
-            if modality:
-                if isinstance(modality, list):
-                    for m in modality:
-                        all_modalities[m] = all_modalities.get(m, 0) + 1
-                else:
-                    all_modalities[modality] = all_modalities.get(modality, 0) + 1
-
-            # Collect performance metrics
-            for metric in ['sensitivity', 'specificity', 'auc']:
-                value = performance.get(metric)
-                if value is not None:
-                    all_performance[metric].append(value)
-
-        # Study overview
-        lines.append("\nSTUDY OVERVIEW:")
-        lines.append(f"  - Total studies: {len(characteristics)}")
-        if all_years:
-            lines.append(f"  - Year range: {min(all_years)}-{max(all_years)}")
-        lines.append(f"  - Sample size range: {self._get_sample_size_range(characteristics)}")
-
-        # Clinical domains
-        lines.append("\nCLINICAL DOMAINS:")
-        for domain, count in sorted(all_domains.items(), key=lambda x: x[1], reverse=True):
-            lines.append(f"  - {domain}: {count} studies")
-
-        # Study designs
-        lines.append("\nSTUDY DESIGNS:")
-        for design, count in sorted(all_designs.items(), key=lambda x: x[1], reverse=True):
-            lines.append(f"  - {design}: {count} studies")
-
-        # Imaging modalities
-        lines.append("\nIMAGING MODALITIES:")
-        for modality, count in sorted(all_modalities.items(), key=lambda x: x[1], reverse=True):
-            lines.append(f"  - {modality}: {count} studies")
-
-        # Performance summary
-        lines.append("\nPERFORMANCE METRICS SUMMARY:")
-        for metric, values in all_performance.items():
-            if values:
-                # Filter out non-numeric values before sorting
-                numeric_values = [v for v in values if isinstance(v, (int, float))]
-                if numeric_values:
-                    numeric_values.sort()
-                    median = numeric_values[len(numeric_values)//2]
-                    min_val = min(numeric_values)
-                    max_val = max(numeric_values)
-                    lines.append(f"  - {metric.title()}:")
-                    lines.append(f"    Median: {median:.3f}")
-                    lines.append(f"    Range: {min_val:.3f}-{max_val:.3f}")
-                    lines.append(f"    Studies reported: {len(numeric_values)}")
-                else:
-                    # Handle case where all values are non-numeric
-                    lines.append(f"  - {metric.title()}:")
-                    lines.append(f"    No numeric values found")
-                    lines.append(f"    Studies reported: {len(values)}")
-
-        # Sample key findings
-        lines.append("\nKEY FINDINGS SAMPLE:")
-        for i, study in enumerate(characteristics[:3]):  # Show first 3
-            findings = study.get('findings', {}).get('main_findings', '')
-            if findings and len(findings) > 50:
-                lines.append(f"  Study {i+1}: {findings[:100]}...")
-            elif findings:
-                lines.append(f"  Study {i+1}: {findings}")
-
-        return "\n".join(lines)
 
     def _get_sample_size_range(self, characteristics: List[Dict]) -> str:
         """Get the range of sample sizes from characteristics data.

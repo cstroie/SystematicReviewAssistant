@@ -24,6 +24,6 @@ Return ONLY JSON:
     "imprecision": "High|Moderate|Low|Very Low",
     "publication_bias": "High|Moderate|Low|Very Low"
   }},
-  "overall_evidence": "High|Moderate|Low|Very Low",
-  "notes": "brief justification"
+  "overall": "High|Moderate|Low|Very Low",
+  "notes": "brief justification of quality assessment"
 }}

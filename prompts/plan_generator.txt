@@ -1,5 +1,5 @@
 Generate a systematic literature review components based on this research topic description:
-"{plan}"
+"{request}"
 
 Return JSON with these keys:
 1. "query" - a properly formatted PubMed search query using MeSH terms and keywords

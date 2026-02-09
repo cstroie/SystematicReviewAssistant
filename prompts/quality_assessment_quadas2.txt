@@ -31,7 +31,7 @@ Return ONLY JSON:
     "reference_standard": "Yes|No|Unclear",
     "flow_timing": "Yes|No|Unclear"
   }},
-  "overall_bias": "Low|Moderate|High",
+  "overall": "Low|Moderate|High",
   "applicability": "Low|Moderate|High",
-  "notes": "brief justification"
+  "notes": "brief justification of quality assessment"
 }}
