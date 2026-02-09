@@ -477,14 +477,22 @@ class ArticleDataCollector:
         This data is used to generate Table 1 in the systematic review,
         which provides an overview of the included studies' features.
 
+        The method processes the raw CSV data to:
+        - Convert numeric fields to appropriate types
+        - Handle empty/missing values consistently
+        - Clean up field names for better readability
+        - Structure data in a more organized way
+
         Populates:
             self.data['characteristics_table'] (list): List of dictionaries
                 representing the characteristics table. Each dictionary
                 corresponds to a row in the CSV and contains:
-                - study_id: Unique identifier for each study
-                - Various characteristic fields based on the extraction form
-                - Values may include categorical data, numerical values,
-                  or text descriptions depending on the characteristic type
+                - study_id: Unique identifier for each study (PMID or title)
+                - basic_info: Dictionary with basic study information
+                - methodology: Dictionary with study design and methodology details
+                - performance: Dictionary with performance metrics (sensitivity, specificity, etc.)
+                - findings: Dictionary with key findings and notes
+                - All original fields are preserved but may be reorganized
 
         Note:
             Missing files or invalid CSV will generate warnings and result
@@ -500,13 +508,15 @@ class ArticleDataCollector:
             return
 
         try:
-            rows = []
+            processed_rows = []
             with open(file_path, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    rows.append(row)
+                    # Create a processed version of the row
+                    processed_row = self._process_characteristics_row(row)
+                    processed_rows.append(processed_row)
 
-            self.data['characteristics_table'] = rows
+            self.data['characteristics_table'] = processed_rows
         except csv.Error as e:
             print(f"Error: Invalid CSV in {file_path}: {str(e)}")
             self.data['characteristics_table'] = []
@@ -516,7 +526,88 @@ class ArticleDataCollector:
             self.data['characteristics_table'] = []
             return
 
-        print(f"  Characteristics table: {len(rows)} studies")
+        print(f"  Characteristics table: {len(processed_rows)} studies")
+
+    def _process_characteristics_row(self, row: Dict) -> Dict:
+        """Process a single row from characteristics table.
+
+        Args:
+            row: Dictionary representing a single row from CSV
+
+        Returns:
+            Dictionary with processed and reorganized data
+        """
+        processed = {
+            'study_id': row.get('PMID', row.get('Title', 'Unknown')),
+            'basic_info': {},
+            'methodology': {},
+            'performance': {},
+            'findings': {},
+            'original_fields': row  # Keep original for reference
+        }
+
+        # Process basic information fields
+        basic_fields = {
+            'Year': 'year',
+            'Title': 'title',
+            'Clinical Domain': 'clinical_domain',
+            'Sample Size (N)': 'sample_size'
+        }
+
+        for csv_field, processed_field in basic_fields.items():
+            value = row.get(csv_field, '').strip()
+            if value and value != '':
+                # Convert numeric fields
+                if processed_field == 'year' or processed_field == 'sample_size':
+                    try:
+                        processed['basic_info'][processed_field] = int(value)
+                    except ValueError:
+                        processed['basic_info'][processed_field] = value
+                else:
+                    processed['basic_info'][processed_field] = value
+
+        # Process methodology fields
+        methodology_fields = {
+            'Study Design': 'study_design',
+            'Imaging Modality': 'imaging_modality',
+            'algorithm_type': 'algorithm_type',
+            'dataset_size': 'dataset_size'
+        }
+
+        for csv_field, processed_field in methodology_fields.items():
+            value = row.get(csv_field, '').strip()
+            if value and value != '':
+                # Convert dataset_size to int if possible
+                if processed_field == 'dataset_size':
+                    try:
+                        processed['methodology'][processed_field] = int(value)
+                    except ValueError:
+                        processed['methodology'][processed_field] = value
+                else:
+                    processed['methodology'][processed_field] = value
+
+        # Process performance metrics
+        performance_fields = {
+            'Sensitivity': 'sensitivity',
+            'Specificity': 'specificity',
+            'AUC': 'auc',
+            'Accuracy': 'accuracy'
+        }
+
+        for csv_field, processed_field in performance_fields.items():
+            value = row.get(csv_field, '').strip()
+            if value and value != '':
+                try:
+                    processed['performance'][processed_field] = float(value)
+                except ValueError:
+                    processed['performance'][processed_field] = value
+
+        # Process findings and additional info
+        processed['findings']['main_findings'] = row.get('Main Findings', '').strip()
+        processed['findings']['performance_metrics'] = row.get('performance_metrics', '').strip()
+        processed['findings']['notes'] = row.get('Notes', '').strip()
+
+        return processed
 
     def _calculate_statistics(self) -> None:
         """Compute summary statistics from extracted data.
@@ -1308,14 +1399,18 @@ class LaTeXArticleGenerator:
         lines = []
         for i, study in enumerate(examples, 1):
             lines.append(f"Example Study {i}:")
-            lines.append(f"  Title: {study.get('title', 'N/A')}")
-            lines.append(f"  Year: {study.get('year', 'N/A')}")
-            lines.append(f"  Design: {study.get('study_design', 'N/A')}")
-            lines.append(f"  Modality: {study.get('imaging_modality', 'N/A')}")
-            lines.append(f"  Domain: {study.get('clinical_domain', 'N/A')}")
+            # Use the improved characteristics data structure
+            basic_info = study.get('basic_info', {})
+            methodology = study.get('methodology', {})
+            
+            lines.append(f"  Title: {basic_info.get('title', study.get('title', 'N/A'))}")
+            lines.append(f"  Year: {basic_info.get('year', study.get('year', 'N/A'))}")
+            lines.append(f"  Design: {methodology.get('study_design', study.get('study_design', 'N/A'))}")
+            lines.append(f"  Modality: {methodology.get('imaging_modality', study.get('imaging_modality', 'N/A'))}")
+            lines.append(f"  Domain: {basic_info.get('clinical_domain', study.get('clinical_domain', 'N/A'))}")
             
             # Sample size
-            sample_size = study.get('sample_size', {})
+            sample_size = basic_info.get('sample_size', study.get('sample_size', {}))
             if isinstance(sample_size, dict):
                 total = sample_size.get('total_patients', 'N/A')
                 lines.append(f"  Sample: {total} patients")
@@ -1411,9 +1506,13 @@ class LaTeXArticleGenerator:
         
         lines = ["HIGH-IMPACT STUDIES:"]
         for study, metrics in high_impact[:3]:  # Top 3
-            lines.append(f"  Study: {study.get('title', 'N/A')}")
-            lines.append(f"  Year: {study.get('year', 'N/A')}")
-            lines.append(f"  Design: {study.get('study_design', 'N/A')}")
+            # Use the improved characteristics data structure
+            basic_info = study.get('basic_info', {})
+            methodology = study.get('methodology', {})
+            
+            lines.append(f"  Study: {basic_info.get('title', study.get('title', 'N/A'))}")
+            lines.append(f"  Year: {basic_info.get('year', study.get('year', 'N/A'))}")
+            lines.append(f"  Design: {methodology.get('study_design', study.get('study_design', 'N/A'))}")
             
             if isinstance(metrics, dict) and 'novel_approach' in metrics:
                 lines.append(f"  Innovation: Novel approach detected")
@@ -1475,17 +1574,21 @@ class LaTeXArticleGenerator:
         domains = {}
         
         for study in extracted:
-            design = study.get('study_design', 'Unknown')
+            # Use the improved characteristics data structure
+            basic_info = study.get('basic_info', {})
+            methodology = study.get('methodology', {})
+            
+            design = methodology.get('study_design', basic_info.get('study_design', study.get('study_design', 'Unknown')))
             designs[design] = designs.get(design, 0) + 1
             
-            modality = study.get('imaging_modality', 'Unknown')
+            modality = methodology.get('imaging_modality', basic_info.get('imaging_modality', study.get('imaging_modality', 'Unknown')))
             if isinstance(modality, list):
                 for m in modality:
                     modalities[m] = modalities.get(m, 0) + 1
             elif modality:
                 modalities[modality] = modalities.get(modality, 0) + 1
             
-            domain = study.get('clinical_domain', 'Unknown')
+            domain = basic_info.get('clinical_domain', study.get('clinical_domain', 'Unknown'))
             domains[domain] = domains.get(domain, 0) + 1
         
         patterns.append("\nMETHODOLOGY INSIGHTS:")
