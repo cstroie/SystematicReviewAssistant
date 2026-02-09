@@ -2,63 +2,45 @@ ROLE: You are an expert academic researcher writing an original, insightful syst
 
 TASK: Generate a complete, publication-ready LaTeX academic article with fresh perspectives and critical analysis based on systematic review data and PRISMA 2020 framework.
 
+REVIEW DATA SUMMARY:
 {data_summary}
 
 KEY STUDY EXAMPLES:
-
 {study_examples}
 
 HIGH-IMPACT STUDIES:
-
 {high_impact_studies}
 
 PATTERN INSIGHTS:
-
 {pattern_insights}
 
 CHARACTERISTICS TABLE SUMMARY:
-
 {characteristics_summary}
 
-SYNTHESIS:
-
+THEMATIC SYNTHESIS:
 {synthesis_data}
 
+ARTICLE STRUCTURE & CONTENT:
 
-INSTRUCTIONS:
-
-1. ARTICLE STRUCTURE (in this exact order):
-   - Complete LaTeX document with proper preamble
+1. TITLE & ABSTRACT (300-400 words total)
    - Title: "{title}"
-   - Abstract (250-300 words)
-   - Introduction (1000-1200 words) with background, justification, and research questions
-   - Methods (1000-1500 words) with detailed protocol, search strategy, selection criteria, data extraction, quality assessment
-   - Results (1500-2500 words) with study characteristics, intervention types, diagnostic accuracy, implementation status, quality assessment
-   - Thematic Synthesis (1500-2000 words) analyzing major themes with quantitative and qualitative data based on these analysis points:
-{analysis_points}
-   - Discussion (1500-2000 words) interpreting findings, addressing implementation barriers and domain-specific considerations
-   - Conclusions (300-400 words) with actionable recommendations
-   - References in proper format
-
-2. CONTENT REQUIREMENTS:
-
-   ABSTRACT:
    - Background on {topic}
-   - PRESERVE LaTeX commands untouched (e.g. \\cite, \\ref, \\section)
-   - Escape special LaTeX characters: \\&, \\%, \\$, \\#, \\_
    - Systematic review objective
    - Methods (search, PRISMA, QUADAS-2)
    - Key results (numbers, performance ranges)
    - Conclusions with implications
+   - LaTeX escaping: \&, \%, \$, \#, \_
+   - Preserve LaTeX commands: \cite, \ref, \section
 
-   INTRODUCTION:
+2. INTRODUCTION (1000-1200 words)
    - Current state of research in {topic}
    - Key challenges in the field
    - Gaps in existing literature
    - Current landscape and deficiencies
    - Explicit research questions
+   - Justification for systematic review
 
-   METHODS:
+3. METHODS (1000-1500 words)
    - PubMed search strategy (exact query)
    - Date range: 2014-2024 (rationale)
    - Inclusion/exclusion criteria (explicit)
@@ -68,20 +50,20 @@ INSTRUCTIONS:
    - Analysis approach (quantitative + thematic)
    - PRISMA 2020 compliance statement
 
-   RESULTS:
+4. RESULTS (1500-2500 words)
    - Study selection numbers with percentages
    - Study characteristics (Table 1 reference)
-   - Intervention types and distribution (related to {topic})
+   - Intervention types and distribution
    - Breakdown by modality (CT, MRI, US, etc.)
    - Breakdown by clinical domain
    - Performance metrics (sensitivity, specificity, AUC) with ranges
-   - Cost-effectiveness analysis where available (report on ROI, cost per case)
+   - Cost-effectiveness analysis (ROI, cost per case)
    - Implementation status and challenges
    - User experience findings
    - Quality assessment distribution
-   - Successful implementation case studies (focus on deployed systems)
+   - High-impact studies analysis
 
-   THEMATIC SYNTHESIS:
+5. THEMATIC SYNTHESIS (1500-2000 words)
    - Major themes identified and analyzed:
       1. Technology Evolution (shift to AI/ML)
       2. Clinical Performance (diagnostic value)
@@ -91,30 +73,30 @@ INSTRUCTIONS:
       6. Evidence Gaps (research needs)
    - For each theme: evidence quality, frequency, clinical significance
    - Cross-cutting patterns and paradoxes
+   - Integration with quantitative findings
 
-   DISCUSSION:
+6. DISCUSSION (1500-2000 words)
    - Principal findings with fresh interpretation
-   - Discuss why implementation lags behind technical capabilities
-   - Analyze research paradoxes (e.g., strong performance metrics vs. poor adoption)
+   - Implementation vs. technical capability gap analysis
+   - Research paradoxes (strong metrics vs. poor adoption)
    - Quantitative limitations (heterogeneity, bias, gaps)
-   - Qualitative limitations (limited diversity, publication bias)
-   - Technical barriers (EHR integration, data standardization)
+   - Qualitative limitations (diversity, publication bias)
+   - Technical barriers (EHR integration, standardization)
    - Organizational barriers (cost, workflow, institutional factors)
    - Human factors (skepticism, trust, job concerns)
    - Healthcare system factors (regulation, liability, reimbursement)
    - Regulatory frameworks
-   - Specific challenges and opportunities
-   - Case studies highlighting novel implementation approaches
+   - Case studies highlighting novel approaches
    - Future research priorities with original proposals
-   - Clinical practice implications addressing real-world constraints
-   - Comparison with related reviews while highlighting unique contributions
-   - Innovative solutions for AI/ML transparency:
+   - Clinical practice implications
+   - Comparison with related reviews
+   - AI/ML transparency solutions:
       * Explainable AI (XAI) techniques
       * Model documentation standards
       * Open-source implementations
       * Independent validation protocols
 
-   CONCLUSIONS:
+7. CONCLUSIONS (300-400 words)
    - Summary of main findings
    - Clinical significance
    - Most critical research gap
@@ -126,66 +108,54 @@ INSTRUCTIONS:
       * Clinicians/institutions
       * Researchers
       * Industry/developers
-      * Policymakers (including regulatory frameworks)
+      * Policymakers (regulatory frameworks)
 
-3. QUALITY & STYLE:
-   - Professional academic tone with moderate stylistic variation
-   - Clear, concise writing that favors direct communication over filler phrases
-   - Evidence-based (all claims supported by data provided)
-   - Proper LaTeX escaping: use \& for &, \% for %, \$ for $, \# for #
-   - Preserve LaTeX commands like \cite, \\ref, \section exactly as generated
-   - Critical analysis (explain WHY findings matter)
-   - Use jargon strategically - explain technical terms if needed
-   - Vary sentence structure to avoid repetitive patterns
-   - Use active voice where appropriate
-   - Avoid passive voice when it weakens meaning
-   - Try to use an unconventional style, with large rhithm variations and sentence lengths, to make the article more engaging and less formulaic
-   - Include original insights from thematic synthesis
-   - Add unique research perspectives where appropriate
-   - Balance formality with natural phrasing
-   - Transparency about limitations and research paradoxes
-   - Actionable recommendations with practical implementation guidance
-   - PRISMA 2020 compliant
-   - Focus analysis on these key aspects defined in the review:
-{extract_fields}
+QUALITY & STYLE REQUIREMENTS:
+- Professional academic tone with stylistic variation
+- Clear, concise writing (avoid filler phrases)
+- Evidence-based (all claims supported by data)
+- Critical analysis (explain WHY findings matter)
+- Strategic jargon use (explain technical terms)
+- Varied sentence structure (avoid repetitive patterns)
+- Active voice where appropriate
+- Passive voice only when necessary
+- Rhythmic variation for engagement
+- Original insights from thematic synthesis
+- Unique research perspectives
+- Formal yet natural phrasing
+- Transparency about limitations
+- Actionable recommendations
+- PRISMA 2020 compliance
+- Focus on key aspects: {extract_fields}
 
-4. LATEX FORMATTING (XeLaTeX compatible):
-   - \\documentclass[12pt]{{article}}
-   - \\usepackage{{fontspec}}
-   - \\setmainfont{{Times New Roman}}
-   - \\usepackage{{polyglossia}}
-   - \\setmainlanguage{{english}}
-   - Proper math mode for statistics
-   - Tables with booktabs styling
-   - Figures referenced appropriately
-   - Hyperlinked references
-   - Proper bibliography
-   - Use \\nocite{{*}} to include all references
-   - Complete Unicode support
-   - Remove any pdflatex-specific packages
+LATEX FORMATTING (XeLaTeX compatible):
+- \\documentclass[12pt]{{article}}
+- \\usepackage{{fontspec}}
+- \\setmainfont{{Times New Roman}}
+- \\usepackage{{polyglossia}}
+- \\setmainlanguage{{english}}
+- Proper math mode for statistics
+- Tables with booktabs styling
+- Figures referenced appropriately
+- Hyperlinked references
+- Proper bibliography
+- \\nocite{{*}} for all references
+- Complete Unicode support
+- No pdflatex-specific packages
 
-5. SPECIFIC DATA TO INCLUDE:
-   - Screening numbers
-   - Study statistics
-   - Quality assessment summary
-   - Performance metrics ranges by modality
-   - Distribution of intervention types
-   - Years covered
-   - Key study examples and patterns (already provided above)
+TABLES & FIGURES TO REFERENCE:
+- Table 1: Study characteristics (from data provided)
+- Table 2: QUADAS-2 assessment summary
+- Table 3: Performance metrics by modality
+- Table 4: Studies by clinical domain
+- Figure 1: PRISMA flow diagram
+- Figure 2: Study distribution over time
+- Figure 3: Distribution of intervention types
 
-6. TABLES & FIGURES TO REFERENCE:
-   - Table 1: Study characteristics (reference the data provided)
-   - Table 2: QUADAS-2 assessment summary
-   - Table 3: Performance metrics by modality
-   - Table 4: Studies by clinical domain
-   - Figure 1: PRISMA flow diagram (describe)
-   - Figure 2: Study distribution over time
-   - Figure 3: Distribution of intervention types
-
-IMPORTANT:
+CRITICAL REQUIREMENTS:
 - Include all provided data meaningfully
 - Analyze and interpret, don't just list
-- Make it publication-ready for high-impact journals
+- Publication-ready for high-impact journals
 - Ensure proper LaTeX compilation
 - Word count: 8000-10000 words total
 - Professional, rigorous academic style

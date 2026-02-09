@@ -1283,14 +1283,14 @@ class LaTeXArticleGenerator:
             str: Comprehensive prompt string containing:
                 - Role definition and task instructions
                 - Data summary overview
-                - Complete extracted articles data
-                - Quality assessment results
-                - Characteristics table data
-                - Thematic synthesis content
-                - Detailed article structure requirements
-                - Section-specific content guidelines
-                - LaTeX formatting instructions
+                - Key study examples
+                - High-impact studies
+                - Pattern insights
+                - Characteristics table summary
+                - Thematic synthesis
+                - Article structure and content requirements
                 - Quality and style guidelines
+                - LaTeX formatting instructions
 
         Note:
             The prompt is designed to be comprehensive and provide clear
@@ -1306,29 +1306,16 @@ class LaTeXArticleGenerator:
             plan = self.data.get('plan', {})
             title = plan.get('title', 'Systematic Review')
             topic = plan.get('topic', 'the research topic')
-            analysis_points = plan.get('analysis', [])
             
-            # Generate data summary using the existing function
+            # Generate all data components
             data_summary = self._format_data_for_prompt()
-            
-            # Get key study examples (replaces full JSON list)
             study_examples = self._get_key_study_examples()
-            
-            # Get high-impact studies
             high_impact_studies = self._get_high_impact_studies()
-            
-            # Get pattern-based insights
             pattern_insights = self._extract_patterns_for_prompt()
-            
-            # Format quality data
-            quality_data = json.dumps(self.data.get('quality', {}), indent=2)
             characteristics_summary = self._format_characteristics_for_prompt()
             synthesis_data = self.data.get('synthesis', '')
             
-            # Format analysis points
-            analysis_points_str = '\n'.join(f'      * {point}' for point in analysis_points)
-            
-            # Format extract fields
+            # Format extract fields for quality requirements
             extract_fields = plan.get('extract', {})
             extract_fields_str = '\n'.join(f'      * {field.replace("_", " ")}: {desc}' for field, desc in extract_fields.items())
             
@@ -1343,10 +1330,8 @@ class LaTeXArticleGenerator:
                 study_examples=study_examples,
                 high_impact_studies=high_impact_studies,
                 pattern_insights=pattern_insights,
-                quality_data=quality_data,
                 characteristics_summary=characteristics_summary,
                 synthesis_data=synthesis_data,
-                analysis_points=analysis_points_str,
                 extract_fields=extract_fields_str
             )
             
@@ -1392,13 +1377,13 @@ class LaTeXArticleGenerator:
         if not extracted:
             return "No extracted data available"
         
-        # Take the first N examples (in practice, you might want to select
-        # based on diversity, impact, or representativeness)
+        # Take the first N examples
         examples = extracted[:max_examples]
         
-        lines = ["KEY STUDY EXAMPLES:", ""]
+        lines = []
         for i, study in enumerate(examples, 1):
             lines.append(f"Example Study {i}:")
+            
             # Use the improved characteristics data structure
             basic_info = study.get('basic_info', {})
             methodology = study.get('methodology', {})
@@ -1417,10 +1402,9 @@ class LaTeXArticleGenerator:
             else:
                 lines.append(f"  Sample: {sample_size}")
             
-            # Key findings
+            # Key findings (truncated if long)
             findings = study.get('key_findings', 'N/A')
             if findings and findings != 'N/A':
-                # Truncate long findings to fit in prompt
                 truncated = findings[:200] + '...' if len(findings) > 200 else findings
                 lines.append(f"  Key Findings: {truncated}")
             
@@ -1551,12 +1535,11 @@ class LaTeXArticleGenerator:
         
         if all_findings:
             patterns.append("KEY FINDINGS PATTERNS:")
-            # Simple pattern detection - look for common words/phrases
+            # Simple pattern detection - look for common words
             from collections import Counter
             word_counts = Counter()
             
             for finding in all_findings:
-                # Simple word extraction (in practice, you'd want more sophisticated NLP)
                 words = finding.split()
                 for word in words:
                     if len(word) > 3:  # Ignore very short words
@@ -1746,7 +1729,7 @@ class LaTeXArticleGenerator:
         process and reference during article generation.
 
         The summary includes screening results, study statistics, quality
-        assessment data, and key study examples with patterns.
+        assessment data, and key insights from the data.
 
         Returns:
             str: Formatted string containing organized data summary with
@@ -1756,16 +1739,13 @@ class LaTeXArticleGenerator:
                 - Sample size statistics
                 - Performance metrics
                 - Quality assessment summary
-                - Key study examples (representative studies)
-                - Pattern-based insights from the data
-                - Characteristics table summary
+                - Key insights from characteristics table
 
         Note:
             This method is designed to provide the LLM with a clear overview
             of the collected data without overwhelming it with raw JSON data.
             The summary highlights key patterns and statistics that are most
-            relevant for article generation, using representative examples
-            rather than the full dataset.
+            relevant for article generation.
         """
         lines = []
 
@@ -1794,15 +1774,6 @@ class LaTeXArticleGenerator:
         lines.append("  Clinical domains:")
         for domain, count in stats.get('domains', {}).items():
             lines.append(f"    - {domain}: {count}")
-
-        # Display extract fields statistics
-        extract_fields = stats.get('extract_fields', {})
-        if extract_fields:
-            lines.append("  Extract Fields:")
-            for field_name, field_stats in extract_fields.items():
-                lines.append(f"    {field_name}:")
-                for value, count in field_stats.items():
-                    lines.append(f"      - {value}: {count}")
 
         lines.append("  Study designs:")
         for design, count in stats.get('study_designs', {}).items():
@@ -1837,9 +1808,6 @@ class LaTeXArticleGenerator:
             lines.append(f"  - Moderate risk: {mod_risk} ({100*mod_risk//len(quality)}%)")
             lines.append(f"  - High risk: {high_risk} ({100*high_risk//len(quality)}%)")
         lines.append("")
-
-        # Add formatted characteristics
-        lines.append(self._format_characteristics_for_prompt())
 
         return "\n".join(lines)
 
