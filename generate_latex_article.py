@@ -1636,7 +1636,14 @@ class LaTeXArticleGenerator:
 
             # Format extract fields for quality requirements
             extract_fields = plan.get('extract', {})
-            extract_fields_str = '\n'.join(f'      * {field.replace("_", " ")}: {desc}' for field, desc in extract_fields.items())
+            extract_fields_str = '\n'.join(f'   * {field.replace("_", " ")}: {desc}' for field, desc in extract_fields.items())
+
+            # Extract analysis themes from the plan
+            analysis_themes = plan.get('analysis', [])
+            if analysis_themes:
+                analysis_themes_str = '\n'.join(f'      * {theme}' for theme in analysis_themes)
+            else:
+                analysis_themes_str = "      * No specific analysis themes defined"
 
             # Use template with placeholders
             prompt_template = self._get_prompt_template()
@@ -1651,7 +1658,8 @@ class LaTeXArticleGenerator:
                 pattern_insights=pattern_insights,
                 characteristics_summary=characteristics_summary,
                 synthesis_data=synthesis_data,
-                extract_fields=extract_fields_str
+                extract_fields=extract_fields_str,
+                analysis_themes=analysis_themes_str
             )
 
             return prompt
