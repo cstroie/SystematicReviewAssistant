@@ -1694,22 +1694,22 @@ class LaTeXArticleGenerator:
         lines.append("\nPERFORMANCE METRICS SUMMARY:")
         for metric, values in all_performance.items():
             if values:
-                values.sort()
-                median = values[len(values)//2]
-                min_val = min(values)
-                max_val = max(values)
-                lines.append(f"  - {metric.title()}:")
-                # Format median only if it's a number
-                if isinstance(median, (int, float)):
+                # Filter out non-numeric values before sorting
+                numeric_values = [v for v in values if isinstance(v, (int, float))]
+                if numeric_values:
+                    numeric_values.sort()
+                    median = numeric_values[len(numeric_values)//2]
+                    min_val = min(numeric_values)
+                    max_val = max(numeric_values)
+                    lines.append(f"  - {metric.title()}:")
                     lines.append(f"    Median: {median:.3f}")
-                else:
-                    lines.append(f"    Median: {median}")
-                # Format range only if values are numbers
-                if isinstance(min_val, (int, float)) and isinstance(max_val, (int, float)):
                     lines.append(f"    Range: {min_val:.3f}-{max_val:.3f}")
+                    lines.append(f"    Studies reported: {len(numeric_values)}")
                 else:
-                    lines.append(f"    Range: {min_val}-{max_val}")
-                lines.append(f"    Studies reported: {len(values)}")
+                    # Handle case where all values are non-numeric
+                    lines.append(f"  - {metric.title()}:")
+                    lines.append(f"    No numeric values found")
+                    lines.append(f"    Studies reported: {len(values)}")
         
         # Sample key findings
         lines.append("\nKEY FINDINGS SAMPLE:")
