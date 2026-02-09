@@ -80,16 +80,15 @@ ARTICLE STRUCTURE & CONTENT:
       - Thematic synthesis integration
 
 5. THEMATIC SYNTHESIS (1500-2000 words)
-   - Major themes identified and analyzed:
-      1. Technology Evolution (shift to AI/ML)
-      2. Clinical Performance (diagnostic value)
-      3. Implementation Challenges (barriers)
-      4. User Acceptance (human factors)
-      5. Pediatric Considerations (age-specific issues)
-      6. Evidence Gaps (research needs)
+   - Major themes identified and analyzed based on the analysis framework from 00_plan.json:
+      {analysis_themes}
    - For each theme: evidence quality, frequency, clinical significance
    - Cross-cutting patterns and paradoxes
    - Integration with quantitative findings
+   - Synthesis of key findings across all included studies
+   - Identification of overarching patterns and trends
+   - Critical evaluation of methodological approaches
+   - Assessment of clinical relevance and applicability
 
 6. DISCUSSION (1500-2000 words)
    - Principal findings with fresh interpretation
