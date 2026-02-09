@@ -1040,9 +1040,10 @@ IMPORTANT:
 
 def generate_article_main(workdir: str, provider: str = 'openrouter',
                          model: Optional[str] = None, api_url: Optional[str] = None,
-                         api_key: Optional[str] = None, stream: bool = False) -> Path:
+                         api_key: Optional[str] = None, stream: bool = False,
+                         temperature: float = 0.8) -> Path:
     """Main entry point for article generation
-    
+
     Args:
         workdir: Path to directory with pipeline output files
         provider: LLM provider name
@@ -1050,20 +1051,21 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
         api_url: Custom API URL (optional)
         api_key: API key (optional)
         stream: Whether to stream the response
-        
+        temperature: LLM temperature (default: 0.8)
+
     Returns:
         Path to generated LaTeX file
-        
+
     Raises:
         ValueError: If data collection fails or API errors occur
     """
-    
+
     workdir = Path(workdir)
-    
+
     # Collect data
     collector = ArticleDataCollector(str(workdir))
     data = collector.collect_all_data()
-    
+
     # Generate article
     generator = LaTeXArticleGenerator(
         data,
@@ -1072,8 +1074,8 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
         api_url=api_url,
         api_key=api_key
     )
-    
-    article_content = generator.generate_article(stream=stream)
+
+    article_content = generator.generate_article(stream=stream, temperature=temperature)
     
     # Save article
     output_file = workdir / '06_review.tex'
@@ -1113,9 +1115,10 @@ if __name__ == '__main__':
     parser.add_argument('--api-url', help='Custom API URL')
     parser.add_argument('--api-key', help='API key (uses env var if not specified)')
     parser.add_argument('--stream', action='store_true', help='Enable streaming response')
-    
+    parser.add_argument('--temperature', type=float, default=0.8, help='LLM temperature (default: 0.8)')
+
     args = parser.parse_args()
-    
+
     try:
         generate_article_main(
             args.workdir,
@@ -1123,7 +1126,8 @@ if __name__ == '__main__':
             model=args.model,
             api_url=args.api_url,
             api_key=args.api_key,
-            stream=args.stream
+            stream=args.stream,
+            temperature=args.temperature
         )
     except Exception as e:
         print(f"Error: {str(e)}")
