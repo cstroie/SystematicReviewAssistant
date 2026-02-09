@@ -874,6 +874,9 @@ INSTRUCTIONS:
    - Critical analysis (explain WHY findings matter)
    - Use jargon strategically - explain technical terms if needed
    - Vary sentence structure to avoid repetitive patterns
+   - Use active voice where appropriate
+   - Avoid passive voice when it weakens meaning
+   - Try to use an unconventional style, with large rhithm variations and sentence lengths, to make the article more engaging and less formulaic
    - Include original insights from thematic synthesis
    - Add unique research perspectives where appropriate
    - Balance formality with natural phrasing
@@ -894,6 +897,7 @@ INSTRUCTIONS:
    - Figures referenced appropriately
    - Hyperlinked references
    - Proper bibliography
+   - Use \\nocite{{*}} to include all references
    - Complete Unicode support
    - Remove any pdflatex-specific packages
 
