@@ -714,7 +714,9 @@ class LaTeXArticleGenerator:
                                             # Write to file and optionally print
                                             if file_handle:
                                                 file_handle.write(content)
-                                                file_handle.flush()
+                                                # Only flush if content contains a newline
+                                                if '\n' in content:
+                                                    file_handle.flush()
                                             if verbose:
                                                 print(content, end="", flush=True)
                                 except json.JSONDecodeError:
