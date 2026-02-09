@@ -1210,247 +1210,77 @@ class LaTeXArticleGenerator:
             The prompt size can be substantial (often 100KB+), so it's
             saved to disk for debugging purposes when generating articles.
         """
-        # Get review metadata
-        plan = self.data.get('plan', {})
-        title = plan.get('title', 'Systematic Review')
-        topic = plan.get('topic', 'the research topic')
-        analysis_points = plan.get('analysis', [])
-        
-        # Format data sections
-        extracted_data = json.dumps(self.data.get('extracted', {}), indent=2)
-        quality_data = json.dumps(self.data.get('quality', {}), indent=2)
-        characteristics_data = json.dumps(self.data.get('characteristics_table', {}), indent=2)
-        synthesis_data = self.data.get('synthesis', '')
-        screening_data = json.dumps(self.data.get('screening', {}), indent=2)
-        statistics_data = json.dumps(self.data.get('statistics', {}), indent=2)
-        quality_summary = self._format_quality_data()
-        year_range = self.data.get('statistics', {}).get('year_range', 'N/A')
-        
-        # Format analysis points
-        analysis_points_str = '\n'.join(f'      * {point}' for point in analysis_points)
-        
-        # Format extract fields
-        extract_fields = plan.get('extract', {})
-        extract_fields_str = '\n'.join(f'      * {field.replace("_", " ")}: {desc}' for field, desc in extract_fields.items())
-        
-        # Use template with placeholders
-        prompt_template = self._get_prompt_template()
-        
-        # Format the prompt with data
-        prompt = prompt_template.format(
-            title=title,
-            topic=topic,
-            extracted_data=extracted_data,
-            quality_data=quality_data,
-            characteristics_data=characteristics_data,
-            synthesis_data=synthesis_data,
-            analysis_points=analysis_points_str,
-            screening_data=screening_data,
-            statistics_data=statistics_data,
-            quality_summary=quality_summary,
-            year_range=year_range,
-            extract_fields=extract_fields_str
-        )
-        
-        return prompt
+        try:
+            # Get review metadata
+            plan = self.data.get('plan', {})
+            title = plan.get('title', 'Systematic Review')
+            topic = plan.get('topic', 'the research topic')
+            analysis_points = plan.get('analysis', [])
+            
+            # Format data sections
+            extracted_data = json.dumps(self.data.get('extracted', {}), indent=2)
+            quality_data = json.dumps(self.data.get('quality', {}), indent=2)
+            characteristics_data = json.dumps(self.data.get('characteristics_table', {}), indent=2)
+            synthesis_data = self.data.get('synthesis', '')
+            screening_data = json.dumps(self.data.get('screening', {}), indent=2)
+            statistics_data = json.dumps(self.data.get('statistics', {}), indent=2)
+            quality_summary = self._format_quality_data()
+            year_range = self.data.get('statistics', {}).get('year_range', 'N/A')
+            
+            # Format analysis points
+            analysis_points_str = '\n'.join(f'      * {point}' for point in analysis_points)
+            
+            # Format extract fields
+            extract_fields = plan.get('extract', {})
+            extract_fields_str = '\n'.join(f'      * {field.replace("_", " ")}: {desc}' for field, desc in extract_fields.items())
+            
+            # Use template with placeholders
+            prompt_template = self._get_prompt_template()
+            
+            # Format the prompt with data
+            prompt = prompt_template.format(
+                title=title,
+                topic=topic,
+                extracted_data=extracted_data,
+                quality_data=quality_data,
+                characteristics_data=characteristics_data,
+                synthesis_data=synthesis_data,
+                analysis_points=analysis_points_str,
+                screening_data=screening_data,
+                statistics_data=statistics_data,
+                quality_summary=quality_summary,
+                year_range=year_range,
+                extract_fields=extract_fields_str
+            )
+            
+            return prompt
+            
+        except (FileNotFoundError, IOError) as e:
+            print(f"Error loading prompt template: {str(e)}")
+            # Fallback to a simple prompt
+            return f"Generate a LaTeX article about {topic} with the following data:\n{self._format_data_for_prompt()}"
     
     def _get_prompt_template(self) -> str:
-        """Get the prompt template with placeholders.
+        """Load the prompt template from file.
         
         Returns:
             str: Template string with placeholders for dynamic content
+            
+        Raises:
+            FileNotFoundError: If the prompt template file cannot be found
+            IOError: If the prompt template file cannot be read
         """
-        return """
-ROLE: You are an expert academic researcher writing an original, insightful systematic review article on "{topic}".
-
-TASK: Generate a complete, publication-ready LaTeX academic article with fresh perspectives and critical analysis based on systematic review data and PRISMA 2020 framework.
-
-EXTRACTED ARTICLES:
-
-{extracted_data}
-
-QUALITY ASSESSMENT:
-
-{quality_data}
-
-CHARACTERISTICS TABLE:
-
-{characteristics_data}
-
-SYNTHESIS:
-
-{synthesis_data}
-
-
-INSTRUCTIONS:
-
-1. ARTICLE STRUCTURE (in this exact order):
-   - Complete LaTeX document with proper preamble
-   - Title: "{title}"
-   - Abstract (250-300 words)
-   - Introduction (1000-1200 words) with background, justification, and research questions
-   - Methods (1000-1500 words) with detailed protocol, search strategy, selection criteria, data extraction, quality assessment
-   - Results (1500-2500 words) with study characteristics, intervention types, diagnostic accuracy, implementation status, quality assessment
-   - Thematic Synthesis (1500-2000 words) analyzing major themes with quantitative and qualitative data based on these analysis points:
-{analysis_points}
-   - Discussion (1500-2000 words) interpreting findings, addressing implementation barriers and domain-specific considerations
-   - Conclusions (300-400 words) with actionable recommendations
-   - References in proper format
-
-2. CONTENT REQUIREMENTS:
-
-   ABSTRACT:
-   - Background on {topic}
-   - PRESERVE LaTeX commands untouched (e.g. \\cite, \\ref, \\section)
-   - Escape special LaTeX characters: \\&, \\%, \\$, \\#, \\_
-   - Systematic review objective
-   - Methods (search, PRISMA, QUADAS-2)
-   - Key results (numbers, performance ranges)
-   - Conclusions with implications
-
-   INTRODUCTION:
-   - Current state of research in {topic}
-   - Key challenges in the field
-   - Gaps in existing literature
-   - Current landscape and deficiencies
-   - Explicit research questions
-
-   METHODS:
-   - PubMed search strategy (exact query)
-   - Date range: 2014-2024 (rationale)
-   - Inclusion/exclusion criteria (explicit)
-   - Screening process (two-stage)
-   - Data extraction (standardized form)
-   - Quality assessment (QUADAS-2 details)
-   - Analysis approach (quantitative + thematic)
-   - PRISMA 2020 compliance statement
-
-   RESULTS:
-   - Study selection numbers with percentages
-   - Study characteristics (Table 1 reference)
-   - Intervention types and distribution (related to {topic})
-   - Breakdown by modality (CT, MRI, US, etc.)
-   - Breakdown by clinical domain
-   - Performance metrics (sensitivity, specificity, AUC) with ranges
-   - Cost-effectiveness analysis where available (report on ROI, cost per case)
-   - Implementation status and challenges
-   - User experience findings
-   - Quality assessment distribution
-   - Successful implementation case studies (focus on deployed systems)
-
-   THEMATIC SYNTHESIS:
-   - Major themes identified and analyzed:
-      1. Technology Evolution (shift to AI/ML)
-      2. Clinical Performance (diagnostic value)
-      3. Implementation Challenges (barriers)
-      4. User Acceptance (human factors)
-      5. Pediatric Considerations (age-specific issues)
-      6. Evidence Gaps (research needs)
-   - For each theme: evidence quality, frequency, clinical significance
-   - Cross-cutting patterns and paradoxes
-
-   DISCUSSION:
-   - Principal findings with fresh interpretation
-   - Discuss why implementation lags behind technical capabilities
-   - Analyze research paradoxes (e.g., strong performance metrics vs. poor adoption)
-   - Quantitative limitations (heterogeneity, bias, gaps)
-   - Qualitative limitations (limited diversity, publication bias)
-   - Technical barriers (EHR integration, data standardization)
-   - Organizational barriers (cost, workflow, institutional factors)
-   - Human factors (skepticism, trust, job concerns)
-   - Healthcare system factors (regulation, liability, reimbursement)
-   - Regulatory frameworks
-   - Specific challenges and opportunities
-   - Case studies highlighting novel implementation approaches
-   - Future research priorities with original proposals
-   - Clinical practice implications addressing real-world constraints
-   - Comparison with related reviews while highlighting unique contributions
-   - Innovative solutions for AI/ML transparency:
-      * Explainable AI (XAI) techniques
-      * Model documentation standards
-      * Open-source implementations
-      * Independent validation protocols
-
-   CONCLUSIONS:
-   - Summary of main findings
-   - Clinical significance
-   - Most critical research gap
-   - Recommendations for high-risk-of-bias study designs:
-      * Improved reporting standards
-      * Prospective validation studies
-      * Real-world performance monitoring
-   - Specific recommendations for:
-      * Clinicians/institutions
-      * Researchers
-      * Industry/developers
-      * Policymakers (including regulatory frameworks)
-
-3. QUALITY & STYLE:
-   - Professional academic tone with moderate stylistic variation
-   - Clear, concise writing that favors direct communication over filler phrases
-   - Evidence-based (all claims supported by data provided)
-   - Proper LaTeX escaping: use \& for &, \% for %, \$ for $, \# for #
-   - Preserve LaTeX commands like \cite, \\ref, \section exactly as generated
-   - Critical analysis (explain WHY findings matter)
-   - Use jargon strategically - explain technical terms if needed
-   - Vary sentence structure to avoid repetitive patterns
-   - Use active voice where appropriate
-   - Avoid passive voice when it weakens meaning
-   - Try to use an unconventional style, with large rhithm variations and sentence lengths, to make the article more engaging and less formulaic
-   - Include original insights from thematic synthesis
-   - Add unique research perspectives where appropriate
-   - Balance formality with natural phrasing
-   - Transparency about limitations and research paradoxes
-   - Actionable recommendations with practical implementation guidance
-   - PRISMA 2020 compliant
-   - Focus analysis on these key aspects defined in the review:
-{extract_fields}
-
-4. LATEX FORMATTING (XeLaTeX compatible):
-   - \\documentclass[12pt]{{article}}
-   - \\usepackage{{fontspec}}
-   - \\setmainfont{{Times New Roman}}
-   - \\usepackage{{polyglossia}}
-   - \\setmainlanguage{{english}}
-   - Proper math mode for statistics
-   - Tables with booktabs styling
-   - Figures referenced appropriately
-   - Hyperlinked references
-   - Proper bibliography
-   - Use \\nocite{{*}} to include all references
-   - Complete Unicode support
-   - Remove any pdflatex-specific packages
-
-5. SPECIFIC DATA TO INCLUDE:
-   - Screening numbers:
-{screening_data}
-   - Study statistics:
-{statistics_data}
-   - Quality assessment summary:
-{quality_summary}
-   - Performance metrics ranges by modality
-   - Distribution of intervention types
-   - Years covered: {year_range}
-
-6. TABLES & FIGURES TO REFERENCE:
-   - Table 1: Study characteristics (reference the data provided)
-   - Table 2: QUADAS-2 assessment summary
-   - Table 3: Performance metrics by modality
-   - Table 4: Studies by clinical domain
-   - Figure 1: PRISMA flow diagram (describe)
-   - Figure 2: Study distribution over time
-   - Figure 3: Distribution of intervention types
-
-IMPORTANT:
-- Include all provided data meaningfully
-- Analyze and interpret, don't just list
-- Make it publication-ready for high-impact journals
-- Ensure proper LaTeX compilation
-- Word count: 8000-10000 words total
-- Professional, rigorous academic style
-- Ready for peer review
-
-"""
+        # Get the directory containing this script
+        script_dir = Path(__file__).parent
+        prompt_file = script_dir / 'prompts' / 'latex_article_template.txt'
+        
+        try:
+            with open(prompt_file, 'r', encoding='utf-8') as f:
+                return f.read()
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Prompt template file not found: {prompt_file}")
+        except IOError as e:
+            raise IOError(f"Error reading prompt template file {prompt_file}: {str(e)}")
 
     def _format_data_for_prompt(self) -> str:
         """Create human-readable summary of collected data for inclusion in prompt.
