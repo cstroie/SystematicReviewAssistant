@@ -35,9 +35,9 @@ Features:
 - Multiple output formats
 
 Usage:
-    python generate_latex_article.py output_dir
-    python generate_latex_article.py output_dir --provider anthropic
-    python generate_latex_article.py output_dir --model claude-opus-4-5-20251101
+    python generate_latex_article.py workdir
+    python generate_latex_article.py workdir --provider anthropic
+    python generate_latex_article.py workdir --model claude-opus-4-5-20251101
 """
 
 import json
@@ -58,17 +58,17 @@ class ArticleDataCollector:
     of the literature review pipeline for use in article generation.
     
     Attributes:
-        output_dir: Path to the pipeline output directory
+        workdir: Path to the pipeline output directory
         data: Dictionary containing collected data
     """
     
-    def __init__(self, output_dir: str):
+    def __init__(self, workdir: str):
         """Initialize data collector with output directory
         
         Args:
-            output_dir: Path to directory containing pipeline output files
+            workdir: Path to directory containing pipeline output files
         """
-        self.output_dir = Path(output_dir)
+        self.workdir = Path(workdir)
         self.data = {
             'original_articles': []  # Articles from initial parsing
         }
@@ -87,7 +87,7 @@ class ArticleDataCollector:
         """
         
         print("Collecting data from pipeline outputs...")
-        self.data['output_dir'] = str(self.output_dir)
+        self.data['workdir'] = str(self.workdir)
         
         # Load screening results
         self._load_screening_results()
@@ -119,7 +119,7 @@ class ArticleDataCollector:
         Populates:
             self.data['screening'] with screening statistics and counts
         """
-        file_path = self.output_dir / "02_screening_results.json"
+        file_path = self.workdir / "02_screening_results.json"
         
         if not file_path.exists():
             print(f"Warning: {file_path} not found")
@@ -154,7 +154,7 @@ class ArticleDataCollector:
         Populates:
             self.data['extracted'] with list of extracted study data
         """
-        file_path = self.output_dir / "03_extracted_data.json"
+        file_path = self.workdir / "03_extracted_data.json"
         
         if not file_path.exists():
             print(f"Warning: {file_path} not found")
@@ -175,7 +175,7 @@ class ArticleDataCollector:
         Populates:
             self.data['quality'] with list of quality assessments
         """
-        file_path = self.output_dir / "04_quality_assessment.json"
+        file_path = self.workdir / "04_quality_assessment.json"
         
         if not file_path.exists():
             print(f"Warning: {file_path} not found")
@@ -195,7 +195,7 @@ class ArticleDataCollector:
         Populates:
             self.data['synthesis'] with synthesis text content
         """
-        file_path = self.output_dir / "05_thematic_synthesis.txt"
+        file_path = self.workdir / "05_thematic_synthesis.txt"
         
         if not file_path.exists():
             print(f"Warning: {file_path} not found")
@@ -213,7 +213,7 @@ class ArticleDataCollector:
         Populates:
             self.data['original_articles'] with list of parsed articles
         """
-        file_path = self.output_dir / "01_parsed_articles.json"
+        file_path = self.workdir / "01_parsed_articles.json"
         
         if not file_path.exists():
             print(f"Warning: {file_path} not found")
@@ -227,7 +227,7 @@ class ArticleDataCollector:
     
     def _load_review_topic(self) -> None:
         """Load review topic metadata"""
-        file_path = self.output_dir / "00_review_topic.json"
+        file_path = self.workdir / "00_review_topic.json"
         
         if not file_path.exists():
             print(f"Warning: {file_path} not found")
@@ -243,7 +243,7 @@ class ArticleDataCollector:
         Populates:
             self.data['characteristics_table'] with list of study characteristics
         """
-        file_path = self.output_dir / "summary_characteristics_table.csv"
+        file_path = self.workdir / "summary_characteristics_table.csv"
         
         if not file_path.exists():
             print(f"Warning: {file_path} not found")
@@ -680,7 +680,7 @@ class LaTeXArticleGenerator:
             prompt += f"\n\nAdditional Synthesis Content:\n{synthesis_trunc}"
         
         # Save prompt to filesystem for debugging
-        debug_dir = Path(self.data['output_dir']) / 'debug_prompts'
+        debug_dir = Path(self.data['workdir']) / 'debug_prompts'
         debug_dir.mkdir(exist_ok=True)
         timestamp = time.strftime('%Y%m%d_%H%M%S')
         prompt_file = debug_dir / f'prompt_{timestamp}.txt'
@@ -994,13 +994,13 @@ Generate the complete LaTeX document now:
         return json.dumps(summary, indent=2)
 
 
-def generate_article_main(output_dir: str, provider: str = 'anthropic',
+def generate_article_main(workdir: str, provider: str = 'openrouter',
                          model: Optional[str] = None, api_url: Optional[str] = None,
                          api_key: Optional[str] = None) -> Path:
     """Main entry point for article generation
     
     Args:
-        output_dir: Path to directory with pipeline output files
+        workdir: Path to directory with pipeline output files
         provider: LLM provider name
         model: Model name (optional)
         api_url: Custom API URL (optional)
@@ -1013,10 +1013,10 @@ def generate_article_main(output_dir: str, provider: str = 'anthropic',
         ValueError: If data collection fails or API errors occur
     """
     
-    output_dir = Path(output_dir)
+    workdir = Path(workdir)
     
     # Collect data
-    collector = ArticleDataCollector(str(output_dir))
+    collector = ArticleDataCollector(str(workdir))
     data = collector.collect_all_data()
     
     # Generate article
@@ -1031,8 +1031,8 @@ def generate_article_main(output_dir: str, provider: str = 'anthropic',
     article_content = generator.generate_article()
     
     # Save article
-    output_file = output_dir / 'systematic_review_article.tex'
-    bib_file = output_dir / 'systematic_review_article.bib'
+    output_file = workdir / '06_review.tex'
+    bib_file = workdir / 'references.bib'
     
     # Save LaTeX article
     with open(output_file, 'w', encoding='utf-8') as f:
@@ -1061,9 +1061,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Generate LaTeX systematic review article from pipeline outputs'
     )
-    parser.add_argument('output_dir', help='Directory with pipeline outputs')
+    parser.add_argument('workdir', help='Directory with pipeline outputs')
     parser.add_argument('--provider', choices=['anthropic', 'openrouter', 'together', 'groq', 'local'],
-                       default='anthropic', help='LLM provider')
+                       default='openrouter', help='LLM provider')
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
     parser.add_argument('--api-url', help='Custom API URL')
     parser.add_argument('--api-key', help='API key (uses env var if not specified)')
@@ -1072,7 +1072,7 @@ if __name__ == '__main__':
     
     try:
         generate_article_main(
-            args.output_dir,
+            args.workdir,
             provider=args.provider,
             model=args.model,
             api_url=args.api_url,
