@@ -1225,7 +1225,6 @@ class LaTeXArticleGenerator:
             quality_data = json.dumps(self.data.get('quality', {}), indent=2)
             characteristics_data = json.dumps(self.data.get('characteristics_table', {}), indent=2)
             synthesis_data = self.data.get('synthesis', '')
-            quality_summary = self._format_quality_data()
             
             # Format analysis points
             analysis_points_str = '\n'.join(f'      * {point}' for point in analysis_points)
@@ -1247,7 +1246,6 @@ class LaTeXArticleGenerator:
                 characteristics_data=characteristics_data,
                 synthesis_data=synthesis_data,
                 analysis_points=analysis_points_str,
-                quality_summary=quality_summary,
                 extract_fields=extract_fields_str
             )
             
@@ -1379,53 +1377,7 @@ class LaTeXArticleGenerator:
             lines.append(f"  - High risk: {high_risk} ({100*high_risk//len(quality)}%)")
         lines.append("")
 
-        # Thematic synthesis
-        synthesis = self.data.get('synthesis', '')
-        if synthesis:
-            lines.append("THEMATIC SYNTHESIS (extended excerpt):")
-            # Include first 6000 characters of synthesis
-            lines.append(synthesis[:6000])
-            if len(synthesis) > 6000:
-                lines.append("... [additional synthesis content available]")
-            lines.append("")
-
         return "\n".join(lines)
-
-    def _format_quality_data(self) -> str:
-        """Create summary of quality assessment for inclusion in prompt.
-
-        This method processes the quality assessment data to create a concise
-        summary suitable for inclusion in the LLM prompt. It calculates the
-        distribution of studies across different risk of bias categories.
-
-        The summary provides the LLM with context about the methodological
-        quality of the included studies, which is important for discussing
-        the strengths and limitations of the evidence in the article.
-
-        Returns:
-            str: JSON string containing quality assessment summary with:
-                - total_assessed: Total number of studies assessed
-                - low_risk: Number of studies with low risk of bias
-                - moderate_risk: Number of studies with moderate risk of bias
-                - high_risk: Number of studies with high risk of bias
-
-        Note:
-            If no quality assessment data is available, returns "No quality data"
-            string instead of JSON. This allows the prompt to handle missing
-            data gracefully.
-        """
-        quality = self.data.get('quality', [])
-        if not quality:
-            return "No quality data"
-
-        summary = {
-            'total_assessed': len(quality),
-            'low_risk': sum(1 for q in quality if q.get('overall_bias') == 'Low'),
-            'moderate_risk': sum(1 for q in quality if q.get('overall_bias') == 'Moderate'),
-            'high_risk': sum(1 for q in quality if q.get('overall_bias') == 'High'),
-        }
-
-        return json.dumps(summary, indent=2)
 
 
 def generate_article_main(workdir: str, provider: str = 'openrouter',

@@ -10,10 +10,6 @@ EXTRACTED ARTICLES:
 
 {extracted_data}
 
-QUALITY ASSESSMENT:
-
-{quality_data}
-
 CHARACTERISTICS TABLE:
 
 {characteristics_data}
@@ -163,15 +159,12 @@ INSTRUCTIONS:
    - Remove any pdflatex-specific packages
 
 5. SPECIFIC DATA TO INCLUDE:
-   - Screening numbers:
-{screening_data}
-   - Study statistics:
-{statistics_data}
-   - Quality assessment summary:
-{quality_summary}
+   - Screening numbers
+   - Study statistics
+   - Quality assessment summary
    - Performance metrics ranges by modality
    - Distribution of intervention types
-   - Years covered: {year_range}
+   - Years covered
 
 6. TABLES & FIGURES TO REFERENCE:
    - Table 1: Study characteristics (reference the data provided)
