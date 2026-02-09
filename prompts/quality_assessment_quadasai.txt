@@ -1,0 +1,31 @@
+Assess AI study quality using Quadas-AI framework.
+
+PMID: {pmid}
+TITLE: {title}
+ABSTRACT: {abstract}
+
+Evaluate these Quadas-AI domains (answer: High|Moderate|Low):
+
+1. DATA QUALITY (appropriateness and preprocessing of dataset)
+2. MODEL VALIDITY (suitability of AI architecture for problem)
+3. TRAINING PROTOCOL (adequacy of training procedures)
+4. EVALUATION METHODS (correctness of metrics and validation)
+5. CLINICAL RELEVANCE (addresses real clinical need)
+6. BIAS ANALYSIS (handling of data/methodological biases)
+7. REPRODUCIBILITY (documentation for replication)
+
+Return ONLY JSON:
+{{
+  "pmid": "{pmid}",
+  "domains": {{
+    "data_quality": "High|Moderate|Low",
+    "model_validity": "High|Moderate|Low",
+    "training_protocol": "High|Moderate|Low",
+    "evaluation_methods": "High|Moderate|Low",
+    "clinical_relevance": "High|Moderate|Low",
+    "bias_analysis": "High|Moderate|Low",
+    "reproducibility": "High|Moderate|Low"
+  }},
+  "overall_quality": "High|Moderate|Low",
+  "notes": "brief justification"
+}}
