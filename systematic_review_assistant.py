@@ -1289,7 +1289,6 @@ class CDSSLitReviewProcessor:
         screening = plan.get('screening', {})
         inclusion = screening.get('inclusion', [])
         exclusion = screening.get('exclusion', [])
-        quality_tool = plan.get('quality', 'quadas2').lower()
 
         if not inclusion:
             raise ValueError("Screening criteria missing inclusion list in topic file")
@@ -1311,7 +1310,7 @@ class CDSSLitReviewProcessor:
                 topic=sanitize_api_input(topic),
                 inclusion=sanitize_api_input(inclusion_str),
                 exclusion=sanitize_api_input(exclusion_str),
-                pmid=article['pmid'],  # PMID is numeric so safe
+                pmid=article['pmid'],
                 title=safe_title,
                 abstract=safe_abstract
             )
@@ -1321,13 +1320,7 @@ class CDSSLitReviewProcessor:
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Screening failed for PMID {article['pmid']}: {sanitized_err}")
-                return {
-                    'pmid': article['pmid'],
-                    'decision': 'UNCERTAIN',
-                    'confidence': 0.0,
-                    'reasoning': f'Processing error: {sanitized_err[:100]}',
-                    'key_terms': []
-                }
+                return None
 
             try:
                 # Attempt multiple JSON extraction patterns
@@ -1370,7 +1363,6 @@ class CDSSLitReviewProcessor:
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Screening error for PMID {article['pmid']}: {sanitized_err}")
-                print(f"Response snippet: {response_text[:300]}")
                 return {
                     'pmid': article['pmid'],
                     'decision': 'UNCERTAIN',
@@ -1419,12 +1411,7 @@ class CDSSLitReviewProcessor:
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}")
-                print(f"Response snippet: {response_text[:300]}")
-                return {
-                    'pmid': article['pmid'],
-                    'title': article['title'],
-                    'extraction_error': sanitized_err[:200]
-                }
+                return None
 
             try:
                 # Attempt multiple JSON extraction patterns
@@ -1464,12 +1451,7 @@ class CDSSLitReviewProcessor:
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}")
-                print(f"Response snippet: {response_text[:300]}")
-                return {
-                    'pmid': article['pmid'],
-                    'title': article['title'],
-                    'extraction_error': sanitized_err[:200]
-                }
+                return None
 
         return self._process_with_caching(
             cache_file=extraction_file,
@@ -1502,7 +1484,12 @@ class CDSSLitReviewProcessor:
 
             try:
                 response_text = self.llm.call(prompt)
+            except Exception as e:
+                sanitized_err = sanitize_error_message(str(e))
+                print(f"Quality assessment failed for PMID {article['pmid']}: {sanitized_err}")
+                return None
                 
+            try:
                 # Attempt multiple JSON extraction patterns
                 json_match = re.search(r'```json\s*({.*?})\s*```', response_text, re.DOTALL)
                 if not json_match:
@@ -1521,11 +1508,7 @@ class CDSSLitReviewProcessor:
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Quality assessment failed for PMID {article['pmid']}: {sanitized_err}")
-                print(f"Response snippet: {response_text[:300]}")
-                return {
-                    'pmid': article['pmid'],
-                    'assessment_error': sanitized_err[:200]
-                }
+                return None
 
         return self._process_with_caching(
             cache_file=quality_file,
@@ -1724,7 +1707,8 @@ class CDSSLitReviewProcessor:
 
         for i, item in enumerate(new_items):
             result = process_fn(item)
-            results.append(result)
+            if result:
+                results.append(result)
 
             # Save periodically
             if (i + 1) % 10 == 0 or i == total_new - 1:
