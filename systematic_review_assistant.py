@@ -1555,12 +1555,18 @@ class CDSSLitReviewProcessor:
         }
 
         # Validate and prepare analysis themes
-        if 'analysis' not in topic_data:
-            raise ValueError("Missing required 'analysis' field in review metadata")
+        analysis_themes = topic_data.get('analysis', [])
+        if not isinstance(analysis_themes, list):
+            analysis_themes = []
         
-        analysis_themes = topic_data['analysis']
-        if not isinstance(analysis_themes, list) or len(analysis_themes) == 0:
-            raise ValueError("'analysis' field must be a non-empty list of themes")
+        # If no analysis themes provided, use default themes
+        if not analysis_themes:
+            analysis_themes = [
+                "Key findings and patterns",
+                "Methodological quality assessment", 
+                "Clinical implications",
+                "Research gaps and limitations"
+            ]
         
         # Format analysis themes for the template
         analysis_themes_formatted = '\n'.join(f'   - {theme}' for theme in analysis_themes)
