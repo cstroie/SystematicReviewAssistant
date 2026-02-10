@@ -1621,29 +1621,40 @@ class LaTeXArticleGenerator:
             print(f"Prompt length: {len(prompt)} characters")
         """
         try:
-            # Get review metadata
+            # Get plan data
             plan = self.data.get('plan', {})
             title = plan.get('title', 'Systematic Review')
             topic = plan.get('topic', 'the research topic')
+            quality_tool = plan.get('quality', 'GRADE') 
 
-            # Generate all data components
+            # Get data summary
             data_summary = self._format_data_for_prompt()
+
+            # Get key study examples
             study_examples = self._get_key_study_examples()
+
+            # Get high-impact studies
             high_impact_studies = self._get_high_impact_studies()
+
+            # Get pattern insights
             pattern_insights = self._extract_patterns_for_prompt()
+
+            # Format characteristics table as markdown
             characteristics_table = self._format_characteristics_as_markdown()
+
+            # Get synthesis data
             synthesis_data = self.data.get('synthesis', '')
 
             # Format extract fields for quality requirements
-            extract_fields = plan.get('extract', {})
-            extract_fields_str = '\n'.join(f'   * {field.replace("_", " ")}: {desc}' for field, desc in extract_fields.items())
+            extract = plan.get('extract', {})
+            extract_fields = '\n'.join(f'   * {field.replace("_", " ").title()}: {desc}' for field, desc in extract.items())
 
             # Extract analysis themes from the plan
-            analysis_themes = plan.get('analysis', [])
-            if analysis_themes:
-                analysis_themes_str = '\n'.join(f'      * {theme}' for theme in analysis_themes)
+            analysis = plan.get('analysis', [])
+            if analysis:
+                analysis_points = '\n'.join(f'      * {point}' for point in analysis)
             else:
-                analysis_themes_str = "      * No specific analysis themes defined"
+                analysis_points = "      * No specific analysis themes defined"
 
             # Use template with placeholders
             prompt_template = self._get_prompt_template()
@@ -1658,10 +1669,12 @@ class LaTeXArticleGenerator:
                 pattern_insights=pattern_insights,
                 characteristics_table=characteristics_table,
                 synthesis_data=synthesis_data,
-                extract_fields=extract_fields_str,
-                analysis_themes=analysis_themes_str
+                extract_fields=extract_fields,
+                analysis_points=analysis_points,
+                quality_tool=quality_tool
             )
 
+            # Return the fully formatted prompt
             return prompt
 
         except (FileNotFoundError, IOError) as e:

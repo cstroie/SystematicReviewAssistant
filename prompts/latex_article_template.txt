@@ -76,7 +76,7 @@ ARTICLE STRUCTURE & CONTENT:
 
 5. THEMATIC SYNTHESIS (1500-2000 words)
    - Major themes identified and analyzed based on the analysis framework from 00_plan.json:
-{analysis_themes}
+{analysis_points}
    - For each theme: evidence quality, frequency, clinical significance
    - Cross-cutting patterns and paradoxes
    - Integration with quantitative findings
