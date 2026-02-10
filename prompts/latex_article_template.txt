@@ -1,269 +1,408 @@
-ROLE: You are an expert academic researcher writing an original, insightful systematic review article on "{topic}".
+ROLE: You are an expert systematic review researcher writing a publication-ready article 
+on "{topic}" for high-impact medical imaging or healthcare AI journals.
 
-TASK: Generate a complete, publication-ready LaTeX academic article with fresh perspectives and critical analysis based on systematic review data and PRISMA 2020 framework.
+TASK: Generate a complete LaTeX article synthesizing systematic review data using PRISMA 
+2020 framework with rigorous analysis and actionable insights.
 
-This article should be suitable for submission to high-impact medical imaging or AI-in-healthcare journals. The content must be rigorous, evidence-based, and include critical analysis of the findings.
+INPUT DATA:
+{data_summary}          — Overall review statistics and summary findings
+{study_examples}        — Representative examples (typically 3-5 key studies)
+{high_impact_studies}   — Studies with notable results or methodological quality
+{pattern_insights}      — Identified trends and patterns across studies
+{characteristics_table} — Compiled study characteristics
+{synthesis_data}        — Thematic synthesis analysis
+{extract_fields}        — Topic-specific extraction focus areas
 
-{data_summary}
+---
 
-{study_examples}
+ARTICLE STRUCTURE (8000-10000 words total):
 
-{high_impact_studies}
-
-{pattern_insights}
-
-{characteristics_table}
-
-{synthesis_data}
-
-ARTICLE STRUCTURE & CONTENT:
-
-1. TITLE & ABSTRACT (300-400 words total)
-   - Title: "{title}"
-   - Background on {topic}
-   - Systematic review objective
-   - Methods (search, PRISMA, QUADAS-2)
-   - Key results (numbers, performance ranges)
-   - Conclusions with implications
-   - LaTeX escaping: \&, \%, \$, \#, \_
-   - Preserve LaTeX commands: \cite, \ref, \section
+1. TITLE & ABSTRACT (350 words: ~50 title + 300 abstract)
+   Title: "{title}"
+   
+   Abstract must contain:
+   - BACKGROUND: Current state of {topic}, clinical need, evidence gap
+   - OBJECTIVE: Clear research question being addressed
+   - METHODS: PubMed search scope (2014-2024), inclusion/exclusion criteria, {quality_tool} assessment
+   - RESULTS: 
+     * N studies included (breakdown by design if relevant)
+     * Key performance metrics (sensitivity/specificity ranges, AUC values from {data_summary})
+     * Major findings from {pattern_insights}
+   - CONCLUSIONS: Main takeaway, clinical implications, next steps
+   
+   LaTeX notes: Escape special characters: \\& \\% \\$ \\# \\_
+   Format as: \\begin{{abstract}}...\\end{{abstract}}
 
 2. INTRODUCTION (1000-1200 words)
-   - Current state of research in {topic}
-   - Key challenges in the field
-   - Gaps in existing literature
-   - Current landscape and deficiencies
-   - Explicit research questions
-   - Justification for systematic review
+   Structure:
+   - Opening (150 words): Clinical context and why {topic} matters
+   - Current landscape (250 words): What's known about {topic}, current approaches
+   - Gap analysis (250 words): What's missing (use {pattern_insights} to identify gaps)
+   - Research questions (200 words): Explicit questions your review answers
+   - Justification (150 words): Why systematic review now, PRISMA 2020 compliance
+   
+   Critical elements:
+   - Ground claims in current literature/data
+   - End with explicit research questions
+   - Avoid stating results (save for Results section)
 
-3. METHODS (1000-1500 words)
-   - PubMed search strategy (exact query)
-   - Date range: 2014-2024 (rationale)
-   - Inclusion/exclusion criteria (explicit)
-   - Screening process (two-stage)
-   - Data extraction (standardized form)
-   - Quality assessment using {quality_tool} framework
-   - Risk of bias analysis with structured reporting:
-     * {quality_tool}: Risk of bias domains with detailed judgments
-     * Overall risk of bias summary with visual representation
-     * Impact assessment on study results
-   - Analysis approach (quantitative + thematic)
-   - PRISMA 2020 compliance statement
+3. METHODS (1200-1500 words)
+   
+   3.1 Search Strategy & Study Selection
+   - Exact PubMed query (from {data_summary})
+   - Date range: 2014-2024 with rationale (relevance to current practice)
+   - Databases searched: PubMed, [others if applicable]
+   - Inclusion criteria (explicitly stated, numbered)
+   - Exclusion criteria (explicitly stated, numbered)
+   - Study selection process: two-stage (title/abstract → full-text) with agreement metrics
+   
+   3.2 Quality Assessment
+   - Tool: {quality_tool}
+   - Key domains assessed:
+     * [Domain 1 with brief definition]
+     * [Domain 2 with brief definition]
+     * [Domain 3 with brief definition]
+   - Risk of bias judgment categories (Low/Moderate/High/Unclear)
+   - How quality influenced analysis (e.g., sensitivity analysis of high-quality studies)
+   
+   3.3 Data Extraction
+   - Standardized extraction form (describe key fields)
+   - Extracted fields aligned with {extract_fields}
+   - Duplicate extraction for subset (confirm reliability)
+   
+   3.4 Analysis Approach
+   - Quantitative: Performance metrics synthesis (specify if meta-analysis or descriptive)
+   - Qualitative: Thematic analysis approach from {synthesis_data}
+   - Mixed methods justification (why both needed)
+   
+   3.5 PRISMA 2020 Compliance
+   - Brief statement: "This review followed PRISMA 2020 guidelines..."
+   - Note: Flow diagram, checklist in supplementary materials
 
 4. RESULTS (1500-2500 words)
-   4.1 Study Selection
-      - PRISMA flow diagram results (Figure 1 reference)
-      - Numbers and percentages at each stage
-      - Reasons for exclusion at full-text stage
+
+   4.1 Study Selection (300 words)
+   - Use exact numbers from {data_summary}
+   - Reference: "See Figure \\ref{{fig:prisma}} for flow diagram"
+   - Key statistics:
+     * Initial records identified: [N]
+     * Records after deduplication: [N]
+     * Records screened: [N]
+     * Records excluded at screening: [N] (%)
+     * Full-text articles assessed: [N]
+     * Full-text excluded: [N] with [breakdown of reasons]
+     * Final included: [N] studies
+   - Agreement between reviewers (kappa coefficient if applicable)
    
-   4.2 Study Characteristics
-      - Table 1: Detailed study characteristics
-      - Study design distribution
-      - Sample size statistics
-      - Geographic and temporal distribution
-      - Intervention types and distribution
-      - Breakdown by modality (CT, MRI, US, etc.)
-      - Breakdown by clinical domain
+   4.2 Study Characteristics (600 words)
+   - Overview paragraph: Study designs, geographic distribution, timeframe
+   - Reference: "See Table \\ref{{table:characteristics}} for detailed characteristics"
+   - Key statistics from {characteristics_table}:
+     * Study design breakdown (N RCTs, N retrospective, N prospective, etc.)
+     * Sample sizes: median [X], range [min-max]
+     * Clinical domains (Table \\ref{{table:domains}})
+     * Imaging modalities (Figure \\ref{{fig:modalities}})
+     * Publication timeline (Figure \\ref{{fig:timeline}})
    
-   4.3 Synthesis of Results
-      - Performance metrics (sensitivity, specificity, AUC) with ranges
-      - Cost-effectiveness analysis (ROI, cost per case)
-      - Implementation status and challenges
-      - User experience findings
-      - Quality assessment distribution (Table 2 reference)
-      - High-impact studies analysis
-      - Thematic synthesis integration
+   4.3 Quality Assessment (400 words)
+   - Summary of risk of bias across included studies
+   - Reference: "See Table \\ref{{table:quality}} for detailed assessment"
+   - Key findings:
+     * Proportion at Low/Moderate/High risk of bias
+     * Most common limitations
+     * Relationship between quality and effect size (if applicable)
+   
+   4.4 Synthesis of Results (700-1000 words)
+   
+   Performance Metrics (reference {data_summary}):
+   - Sensitivity: Range [min-max]%, Median [median]%, N=[N studies reporting]
+   - Specificity: Range [min-max]%, Median [median]%, N=[N studies]
+   - AUC: Range [min-max], Median [median], N=[N studies]
+   - Accuracy: Range [min-max]%, Median [median]%, N=[N studies]
+   
+   Performance by Subgroup (use {pattern_insights}):
+   - By clinical domain: [Domain A: N studies, performance range] 
+   - By imaging modality: [Modality X: N studies, performance range]
+   - By study design: [RCTs: N studies, Observational: N studies, performance comparison]
+   - By year: Trend analysis from Figure \\ref{{fig:timeline}}
+   
+   Key Studies (from {high_impact_studies}):
+   - Best performing: [Study citation] reported [metrics] because [what made it successful]
+   - Most rigorous: [Study citation] used [methodology] and found [results]
+   - Most novel: [Study citation] introduced [innovation] with [outcomes]
+   
+   Synthesis Integration (from {synthesis_data}):
+   - Connect quantitative findings to thematic patterns
+   - Example: "Performance metrics align with {analysis_points}, where [pattern] was observed"
 
 5. THEMATIC SYNTHESIS (1500-2000 words)
-   - Major themes identified and analyzed:
-{analysis_points}
-   - For each theme: evidence quality, frequency, clinical significance
-   - Cross-cutting patterns and paradoxes
-   - Integration with quantitative findings
-   - Synthesis of key findings across all included studies
-   - Identification of overarching patterns and trends
-   - Critical evaluation of methodological approaches
-   - Assessment of clinical relevance and applicability
+   
+   Introduction to themes:
+   - [N] major themes identified across studies
+   - Themes derived from {analysis_points}
+   - Organization: [Thematic approach used]
+   
+   For EACH theme (subsection \\subsection{{Theme Name}}):
+   1. What is it? (definition, why it matters)
+   2. Evidence: How many studies address it? Quality of evidence?
+   3. Findings: What do studies show? Use examples from {study_examples}
+   4. Patterns: Convergence or divergence?
+   5. Clinical significance: Why does this matter for practice/research?
+   
+   Cross-cutting patterns:
+   - Meta-themes (patterns across multiple themes)
+   - Paradoxes or surprising findings (e.g., high metrics but low adoption)
+   - Integration with quantitative results
+   
+   Critical gaps identified:
+   - What's not being studied?
+   - What questions remain unanswered?
+   - Based on {extract_fields}, what's missing?
 
 6. DISCUSSION (1500-2000 words)
-   - Principal findings with fresh interpretation
-   - Implementation vs. technical capability gap analysis
-   - Research paradoxes (strong metrics vs. poor adoption)
-   - 6.1 Methodological Limitations
-      - Heterogeneity in study designs and methodologies
-      - Variability in quality assessment tools across studies
-      - Potential selection bias in included literature
-      - Limitations of single-arm study designs
-      - Challenges in comparing across different clinical contexts
-      - Temporal limitations (2014-2024 timeframe)
+
+   6.1 Principal Findings (400 words)
+   - What did the review find? (Main takeaways from Results + Synthesis)
+   - How does this advance knowledge? (Answer research questions from Introduction)
+   - Compare to prior reviews: How do findings align with/diverge from earlier work?
+   - Use {pattern_insights} to highlight original contributions
    
-   - 6.2 Reporting Limitations
-      - Incomplete reporting of methodological details
-      - Publication bias favoring positive results
-      - Limited availability of raw data for reanalysis
-      - Inconsistent reporting of performance metrics
-      - Underreporting of implementation challenges and failures
-      - Missing data on long-term outcomes
+   6.2 Critical Analysis & Barriers (600 words)
    
-   - 6.3 Applicability Limitations
-      - Geographic and institutional bias in included studies
-      - Limited diversity in patient populations
-      - Challenges in generalizing to resource-limited settings
-      - Limited real-world implementation data
-      - Gaps in pediatric and geriatric populations
-      - Regulatory and reimbursement barriers to adoption
-      - Healthcare system-specific implementation challenges
+   Methodological Limitations of Included Studies:
+   - Study designs: What types were/weren't included? Why does it matter?
+   - Quality issues: Most common limitations? Impact on findings?
+   - Heterogeneity: Why do studies vary? How does it affect synthesis?
+   - Generalizability: Populations studied vs. real-world diversity?
    
-   - 6.4 Technical and Implementation Barriers
-      - EHR integration challenges
-      - Standardization and interoperability issues
-      - Data quality and availability constraints
-      - Computational resource requirements
-      - Model maintenance and update challenges
+   Implementation Gap Analysis:
+   - Technical capability: What metrics show studies can do?
+   - Adoption reality: What adoption/implementation data exists?
+   - Barriers: Why aren't high-performing approaches widely adopted?
+     * Organizational (workflow integration, cost, training)
+     * Regulatory (approval, liability, reimbursement)
+     * Human factors (clinician trust, job displacement concerns)
+     * Data/technical (EHR integration, standardization, maintenance)
    
-   - 6.5 Organizational and Human Factors
-      - Cost and resource constraints
-      - Workflow integration challenges
-      - Institutional resistance to change
-      - Clinician skepticism and trust issues
-      - Training and education requirements
-      - Job displacement and role change concerns
+   Publication & Reporting Biases:
+   - Positive results bias: Do published studies report better metrics than unpublished?
+   - Data availability: How many studies provide raw data? Code availability?
+   - Outcome reporting: Are metrics selected/reported consistently?
    
-   - 6.6 Healthcare System Factors
-      - Regulatory framework limitations
-      - Liability and malpractice concerns
-      - Reimbursement and payment challenges
-      - Healthcare policy and guideline development
-      - Ethical and governance considerations
-   - Case studies highlighting novel approaches
-   - Future research priorities with original proposals
-   - Clinical practice implications
-   - Comparison with related reviews
-   - AI/ML transparency solutions:
-      * Explainable AI (XAI) techniques
-      * Model documentation standards
-      * Open-source implementations
-      * Independent validation protocols
+   6.3 Implications & Recommendations (500 words)
+   
+   For Clinicians & Healthcare Systems:
+   - What evidence supports clinical adoption? Quality level?
+   - What barriers need addressing before implementation?
+   - Specific recommendations (if evidence is strong enough)
+   
+   For Researchers:
+   - Methodological priorities (study designs, population diversity, etc.)
+   - Outcome standardization needs
+   - Implementation/real-world validation gaps
+   - Specific research questions from {extract_fields} that need addressing
+   
+   For Industry & Developers:
+   - Transparency & validation standards (explainability, documentation)
+   - Clinical validation before market entry
+   - Post-market surveillance and monitoring
+   
+   For Policymakers:
+   - Regulatory framework considerations
+   - Reimbursement models aligned with evidence
+   - Guidance development needs
 
 7. CONCLUSIONS (300-400 words)
-   - Summary of main findings
+   - Summary of main findings (1 sentence per major finding)
+   - Strength of evidence assessment
    - Clinical significance
-   - Most critical research gap
-   - Recommendations for high-risk-of-bias study designs:
-      * Improved reporting standards
-      * Prospective validation studies
-      * Real-world performance monitoring
-   - Specific recommendations for:
-      * Clinicians/institutions
-      * Researchers
-      * Industry/developers
-      * Policymakers (regulatory frameworks)
+   - Most critical next steps (highest-priority research gaps)
+   - Statement on limitations and generalizability
+   - Final perspective: Why this review matters now
 
-8. FUNDING AND CONFLICTS OF INTEREST
-   - Funding sources disclosure:
-      * All funding sources for the research
-      * Grant numbers and funding agencies
-      * Role of funders in study design, data collection, analysis, interpretation
-      * Final approval of manuscript
-   - Conflicts of interest disclosure:
-      * Financial conflicts (consulting fees, stock ownership, patents)
-      * Non-financial conflicts (personal relationships, academic competition)
-      * Institutional conflicts (departmental relationships)
-      * Solutions for managing conflicts (independent review, data sharing)
-   - Author contributions:
-      * Individual author contributions to conception, design, data collection, analysis, interpretation
-      * Drafting and critical revision of manuscript
-      * Final approval of version to be published
-   - Acknowledgments:
-      * Technical assistance
-      * Statistical advice
-      * Writing assistance
-      * Other support (equipment, materials)
-   - Ethical approval statement if applicable
-   - Data availability statement
+8. DECLARATIONS (300-500 words)
+
+   Funding and Conflicts of Interest:
+   - Funding sources: [Specific grants, agencies, amounts]
+   - Conflict of interest: [None / or specific financial/academic conflicts]
+   - Author contributions: [Specific roles for each author]
+   - Data availability: [Where data/code available, or statement that it's available on request]
+   - Ethical approval: [If applicable to the review process]
+   
+   Format as:
+   \\section{{Funding and Declarations}}
+   \\subsection{{Funding}}
+   [Text]
+   \\subsection{{Conflicts of Interest}}
+   [Text]
+   etc.
+
+---
 
 QUALITY & STYLE REQUIREMENTS:
-- Professional academic tone with stylistic variation
-- Clear, concise writing (avoid filler phrases)
-- Evidence-based (all claims supported by data)
-- Critical analysis (explain WHY findings matter)
-- Strategic jargon use (explain technical terms)
-- Varied sentence structure (avoid repetitive patterns)
-- Active voice where appropriate
-- Passive voice only when necessary
-- Rhythmic variation for engagement
-- Original insights from thematic synthesis
-- Unique research perspectives
-- Formal yet natural phrasing
-- Transparency about limitations
-- Actionable recommendations
-- PRISMA 2020 compliance
-- Focus on key aspects:
-{extract_fields}
 
-LATEX FORMATTING (XeLaTeX compatible):
-- \\documentclass[12pt]{{article}}
-- \\usepackage{{fontspec}}
-- \\setromanfont{{TeX Gyre Pagella}}
-- \\usepackage{{polyglossia}}
-- \\setmainlanguage{{english}}
-- Proper math mode for statistics
-- Tables with booktabs styling
-- Figures referenced appropriately
-- Hyperlinked references
-- Proper bibliography
-- \\nocite{{*}} for all references
-- Complete Unicode support
-- No pdflatex-specific packages
+Critical Analysis Framework:
+- Don't just report findings; explain significance
+- Pattern examples:
+  * "Despite achieving [high metrics], adoption remains low. This suggests [barrier analysis]..."
+  * "Heterogeneity in [metric] correlates with [variable]. This indicates [interpretation]..."
+  * "Best-performing studies share [characteristic]. Future work should [recommendation]..."
 
-FIGURE AND CITATION FORMATTING:
-- Use predictable figure names: fig:prisma, fig:timeline, fig:intervention_types, fig:performance_metrics, fig:clinical_domains
-- Use figure captions as: \\caption{{Figure X: [Descriptive caption]}}
-- Reference figures as: \\ref{{fig:prisma}}, \\ref{{fig:timeline}}, etc.
-- Use numeric citations in square brackets: \\cite{{author2023}}, \\cite{{smith2022,jones2021}}
-- Use \\bibliographystyle{{plainnat}} for bibliography
-- Include all references in \\bibliography{{references.bib}}
+Writing Standards:
+- Avoid filler: "It is worth noting that" → Direct statement
+- Active voice preferred: "Studies show" not "It has been shown"
+- Vary sentence length: 15-25 words average, mix with 10-word and 35-word sentences
+- Clear transitions: Use thematic connections, not repetitive linking phrases
+- Evidence-based: Every claim traceable to data or citations
 
-TABLES & FIGURES TO REFERENCE:
-- Table 1: Study characteristics table with columns for: study ID, year, country, sample size, modality, clinical domain, study design, key findings, quality score
-- Table 2: QUADAS-2 assessment summary showing risk of bias domains (patient selection, index test, reference standard, flow/timing) with detailed judgments for each study
-- Table 3: Performance metrics table with columns for: modality, sensitivity (range), specificity (range), AUC (range), PPV, NPV, with statistical summaries
-- Table 4: Studies by clinical domain showing distribution across: cardiology, neurology, oncology, pediatrics, emergency medicine, surgery, with counts and percentages
-- Figure 1: PRISMA 2020 flow diagram with four quadrants showing:
-  * Top-left: Identification phase - total records identified from databases with exact number
-  * Top-right: Screening phase - records screened after duplicate removal with exclusion count
-  * Bottom-left: Eligibility phase - full-text articles assessed with reasons for exclusion
-  * Bottom-right: Inclusion phase - final included studies with key characteristics
-  * Include exact numbers and percentages at each stage with clear arrows between phases
-- Figure 2: Study distribution over time showing annual publication trend from 2014-2024 with peaks and notable increases
-- Figure 3: Distribution of intervention types as pie chart/bar graph showing: AI algorithms, traditional ML, deep learning, hybrid approaches with percentages
+Data Integration:
+- {data_summary}: Use for overview statistics, context-setting, Results section backbone
+- {study_examples}: Cite specific examples in Synthesis, Discussion, Implications
+- {high_impact_studies}: Highlight in Results 4.4, use as best-practice examples
+- {pattern_insights}: Use in Thematic Synthesis, Discussion analysis, gaps identification
+- {characteristics_table}: Reference for Table 1, support Results 4.2
+- {synthesis_data}: Core of section 5, integration in Results 4.4
+- {extract_fields}: Guide focus of entire review, structure Results and Discussion
 
-SUPPLEMENTARY MATERIALS:
-- Search strategy documentation with full PubMed query syntax
-- Complete PRISMA flow diagram with detailed exclusion reasons
-- Full quality assessment tables for all included studies
-- Individual study data extraction forms
-- Statistical analysis code and scripts
-- Additional performance metrics not included in main text
-- Subgroup analysis results
-- Sensitivity analysis outcomes
-- Risk of bias assessment details for each study
-- Forest plots and meta-analysis results (if applicable)
-- Individual patient data characteristics
-- Additional thematic analysis findings
-- Extended discussion of limitations
-- Data availability statements
-- Code availability for AI/ML models
-- Model performance details on test sets
-- Implementation guidelines and protocols
-- Patient consent forms and ethical approvals
-- Conflict of interest statements for all authors
+---
+
+LATEX FORMATTING (XeLaTeX):
+
+Document structure:
+\\documentclass[12pt,a4paper]{{article}}
+\\usepackage[margin=1in]{{geometry}}
+\\usepackage{{fontspec}}
+\\setromanfont{{TeX Gyre Termes}}  % or Pagella
+\\usepackage[hidelinks]{{hyperref}}
+\\usepackage{{booktabs}}
+\\usepackage{{graphicx}}
+\\usepackage{{natbib}}
+\\usepackage{{amsmath}}
+\\usepackage{{amssymb}}
+
+Figures & Tables:
+- Figure references: \\ref{{fig:prisma}}, \\ref{{fig:timeline}}, \\ref{{fig:modalities}}, \\ref{{fig:quality_summary}}
+- Table references: \\ref{{table:characteristics}}, \\ref{{table:quality}}, \\ref{{table:performance}}, \\ref{{table:domains}}
+- Figure captions: \\caption{{Figure X: [Specific, descriptive caption]}}
+- Table captions: \\caption{{Table X: [Specific, descriptive caption]}}
+- All figures/tables placed with [htb] positioning (\\begin{{figure}}[htb]..., \\begin{{table}}[htb]...)
+
+Citations:
+- Numeric style: Use \\cite{{smith2023}} for in-text citations (generates [1], [2], etc.)
+- Multiple citations: \\cite{{smith2023,jones2022,brown2021}}
+- Bibliography: Use \\bibliographystyle{{plainnat}} and \\bibliography{{references}}
+- Do NOT use \\nocite{{*}} (generates unwanted citations)
+
+Special characters:
+- Escape: \\& for &, \\% for %, \\$ for $, \\# for #, \\_ for _
+- Math mode: Use \\$ ... \\$ for inline, \\[ ... \\] for display math
+- Ranges: Use \\textendash for ranges (e.g., 85\\textendash 95\\%)
+
+---
+
+FIGURE & TABLE SPECIFICATIONS:
+
+Table 1: Study Characteristics
+- Columns: Study ID | Year | Country | N Patients | Modality | Domain | Design | Quality | Key Finding
+- Rows: One per included study
+- Use booktabs formatting (\\toprule, \\midrule, \\bottomrule)
+- Minimum 10 rows, maximum 30 rows (if >30, note that full table is in supplementary)
+
+Table 2: Quality Assessment Summary
+- Columns: Study ID | Patient Selection | Index Test | Reference Standard | Flow/Timing | Overall Risk
+- Rows: One per included study, color-code or use symbols: L=Low, M=Moderate, H=High
+- Include summary row with counts (e.g., 20 Low, 8 Moderate, 5 High)
+
+Table 3: Performance Metrics by Clinical Domain (if applicable)
+- Columns: Domain | N Studies | Sensitivity (Min-Max) | Specificity (Min-Max) | AUC (Min-Max)
+- Rows: One per clinical domain
+- Include summary row with overall ranges
+
+Table 4: Studies by Modality (if multiple modalities)
+- Columns: Modality | N Studies | N Patients | Year Range | Key Findings
+- Rows: One per modality
+
+Figure 1: PRISMA 2020 Flow Diagram
+- Four boxes in sequence with arrows
+- Box 1 (Identification): Records identified (database, hand search)
+- Box 2 (Screening): Records after deduplication → Records screened → Excluded
+- Box 3 (Eligibility): Full-text assessed → Excluded with reasons
+- Box 4 (Inclusion): Studies included in review
+- Include exact numbers and percentages
+
+Figure 2: Study Timeline
+- X-axis: Years 2014-2024
+- Y-axis: Number of studies
+- Bar or line graph showing publication trend
+- Highlight any peaks or notable increases
+
+Figure 3: Distribution by Clinical Domain or Modality
+- Pie chart or horizontal bar chart
+- Show: Domain/Modality names and percentages
+- Highlight if concentrated in one domain
+
+---
+
+SUPPLEMENTARY MATERIALS (Provide as separate document or appendix):
+
+Required:
+- PRISMA 2020 Checklist (completed)
+- Search strategy documentation (full PubMed syntax)
+- Quality assessment details for each study
+- Data extraction form (blank template)
+
+Optional (include if data available):
+- Forest plots (if meta-analysis performed)
+- Sensitivity analyses results
+- Subgroup analysis data
+- Risk of bias figures (Cochrane-style graphs)
+- Extended data tables
+- Implementation guidelines
+- Code/model documentation (if AI review)
+
+Note: Do NOT include in supplementary (these are outside scope of systematic review):
+- Patient consent forms, institutional approvals (not relevant)
+- Individual study datasets (privacy)
+- Full raw data unless de-identified
+
+---
 
 CRITICAL REQUIREMENTS:
-- Include all provided data meaningfully
-- Analyze and interpret, don't just list
-- Publication-ready for high-impact journals
-- Ensure proper LaTeX compilation
-- Word count: 8000-10000 words total
-- Professional, rigorous academic style
-- Ready for peer review
+
+Content:
+✓ Include all input data meaningfully (not as list, but integrated)
+✓ Original analysis and interpretation, not just compilation
+✓ Critical evaluation, not uncritical acceptance of findings
+✓ Actionable recommendations based on evidence gaps
+✓ PRISMA 2020 compliance demonstrated
+
+Technical:
+✓ XeLaTeX compilable (test before submission)
+✓ Word count: 8000-10000 words (excluding abstract, figures, tables, references)
+✓ All figures and tables properly referenced and captioned
+✓ All citations in bibliography
+✓ No orphaned sections or dangling references
+
+Style:
+✓ Academic tone appropriate for high-impact journals
+✓ Clear, concise, evidence-based
+✓ Critical analysis evident (not descriptive)
+✓ Original insights from {pattern_insights} and {synthesis_data}
+✓ Transparent about limitations
+✓ Actionable implications
+
+---
+
+COMPLETION CHECKLIST:
+
+- [ ] Abstract complete with BACKGROUND/OBJECTIVE/METHODS/RESULTS/CONCLUSIONS
+- [ ] Introduction establishes context, identifies gap, states research questions
+- [ ] Methods section: Search strategy, inclusion/exclusion, quality assessment, analysis approach all explicit
+- [ ] Results: Organized in 4.1-4.4 with clear data integration
+- [ ] Thematic Synthesis: 5+ major themes with findings, patterns, clinical significance
+- [ ] Discussion: Principal findings, critical analysis of barriers, specific recommendations for stakeholders
+- [ ] Conclusions: Summary, evidence quality, next steps
+- [ ] All tables and figures referenced correctly
+- [ ] All citations formatted correctly
+- [ ] LaTeX compiles without errors
+- [ ] Word count 8000-10000 words
