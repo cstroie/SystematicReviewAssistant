@@ -95,6 +95,7 @@ import json
 import csv
 import urllib.request
 import urllib.error
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import argparse
@@ -1010,10 +1011,10 @@ class ArticleDataCollector:
         parsed articles when available, falling back to extracted data for
         missing fields.
 
-        The method creates unique citation keys using a hierarchical approach:
-        1. Uses PMID if available and valid
-        2. Falls back to DOI if available
-        3. Creates author-year-index key as final fallback
+        The method creates unique citation keys using a consistent format
+        that works with the plainnat bibliography style and numeric citations:
+        1. Uses author-year format (e.g., smith2023)
+        2. Adds numeric suffix for duplicate keys (e.g., smith2023_01, smith2023_02)
 
         The method handles various edge cases including missing metadata,
         special characters in fields, and different author name formats.
@@ -1026,12 +1027,13 @@ class ArticleDataCollector:
         - Publication details (volume, issue, pages)
         - Digital identifiers (DOI, PMID, URL)
         - Proper entry type (@article)
+        - Consistent citation format for use with plainnat style
 
         Returns:
             str: Complete BibTeX entries as a string, with each entry
                 separated by double newlines. Each entry includes:
                 - Proper @article{} entry type
-                - Unique citation key
+                - Unique citation key in author-year format
                 - Title, author, journal, year
                 - Volume, issue, pages if available
                 - DOI, PMID, URL if available
@@ -1052,6 +1054,9 @@ class ArticleDataCollector:
         extracted = self.data.get('extracted', [])
         original_articles = {art['title']: art for art in self.data.get('original_articles', [])}
 
+        # Track citation keys to handle duplicates
+        citation_keys = {}
+
         for i, study in enumerate(extracted):
             try:
                 # Get original article details for more complete metadata
@@ -1068,19 +1073,25 @@ class ArticleDataCollector:
                 url = original.get('url', study.get('url', ''))
                 year = original.get('year', study.get('year', '0000'))
 
-                # Create unique citation key - prioritize PMID
-                citation_key = ""
-                if pmid and pmid.strip() and pmid != 'N/A':
-                    citation_key = f"pmid{pmid.strip()}"
-                elif doi and doi.strip() and doi != 'N/A':
-                    citation_key = doi.strip()
+                # Create citation key in author-year format
+                if isinstance(authors, list) and authors:
+                    first_author_last = authors[0].split()[-1]
                 else:
-                    # Fallback to author-year-index if no PMID/DOI
-                    if isinstance(authors, list):
-                        first_author_last = authors[0].split()[-1] if authors else 'Unknown'
-                    else:
-                        first_author_last = authors.split()[0] if authors else 'Unknown'
-                    citation_key = f"{first_author_last}{year}{i:02d}".lower()
+                    first_author_last = 'Unknown'
+                
+                # Clean author name for citation key
+                first_author_last = re.sub(r'[^a-zA-Z]', '', first_author_last).lower()
+                
+                # Create base citation key
+                base_key = f"{first_author_last}{year}"
+                
+                # Handle duplicate keys by adding numeric suffix
+                if base_key in citation_keys:
+                    citation_keys[base_key] += 1
+                    citation_key = f"{base_key}_{citation_keys[base_key]:02d}"
+                else:
+                    citation_keys[base_key] = 1
+                    citation_key = base_key
 
                 # Format authors for BibTeX
                 if isinstance(authors, list):
