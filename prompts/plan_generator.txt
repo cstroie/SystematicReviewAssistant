@@ -1,80 +1,88 @@
-Generate a systematic literature review components based on this research topic description:
-"{request}"
+TASK: Extract systematic review components from a research topic description.
+OUTPUT: Valid JSON only (no markdown, no prose).
 
-Return JSON with these keys:
-1. "query" - a properly formatted PubMed search query using MeSH terms and keywords
-2. "topic" - a short formal topic description for documentation
-3. "title" - a LaTeX-formatted title for the review article
-4. "screening" - contains two sub-keys:
-   - "inclusion" - list of 3-5 criteria for including articles
-   - "exclusion" - list of 3-5 criteria for excluding articles
-5. "quality" - select the most appropriate quality assessment tool from: GRADE, ROBINS-I, RE-AIM, QUADAS-2, QUADAS-AI
-6. "extract" - dictionary of 1-3 field names and descriptions for key topic-specific data to extract.
-                Choose field names that capture essential characteristics of interventions/outcomes.
-                Fields should be specific, well-defined, and directly relevant to answering
-                the review's research questions.
-7. "analysis" - Markdown-formatted bullet points for the later text synthesis section using the fields from "extract".
-                Example: "analysis": ["Distribution by `field1`", "Trends in `field2` over time", "Clinical impact of `field3`"]
+INPUT: {request}
 
-Tool selection guidance:
-- GRADE: For overall evidence quality of randomized trials
-- ROBINS-I: Observational interventions with control/comparison groups
-- RE-AIM: Implementation feasibility studies
-- QUADAS-2: Diagnostic/precision medicine accuracy studies
-- QUADAS-AI: AI/ML algorithm validation studies
+REQUIRED FIELDS (must all be present):
+1. query (string): PubMed search string
+   - Must include 3+ MeSH terms in [MAJR] or [Title/Abstract] tags
+   - Must use AND/OR/NOT operators with proper parentheses
+   - Must be executable in PubMed (test format: "(term1[MAJR]) AND (term2[Title/Abstract])")
+   
+2. topic (string, 5-15 words): Formal, specific description of the review scope
+   - Must be suitable for documentation/methods sections
+   - Format: "[Population] [Intervention/Domain] [Context]"
+   
+3. title (string): LaTeX-formatted review title
+   - Must include "Systematic Review" or "Meta-analysis"
+   - Special characters escaped: \textit{}, \textbf{}, etc. as needed
+   - Format: "{Main Topic}: A Systematic Review of {Methodology}"
+   
+4. screening (object):
+   - inclusion (array, 3-5 items): Studies TO include
+   - exclusion (array, 3-5 items): Studies TO exclude
+   - RULE: Each criterion must be mutually exclusive with at least one exclusion criterion
+   - RULE: Criteria must address: study design, population, intervention, outcomes
+   - RULE: Each criterion is 1 sentence, specific and measurable
+   
+5. quality (string): SINGLE value from enum
+   - Valid values: "GRADE" | "ROBINS-I" | "RE-AIM" | "QUADAS-2" | "QUADAS-AI"
+   - Selection rule: Choose based on primary study types expected
+     * GRADE: RCTs/meta-analyses of interventions
+     * ROBINS-I: Observational with control groups
+     * RE-AIM: Implementation/feasibility studies
+     * QUADAS-2: Diagnostic accuracy studies
+     * QUADAS-AI: AI/ML validation studies
+   
+6. extract (object): 1-3 key data fields
+   - Field naming: snake_case, max 20 chars
+   - Value: (string) Description of expected data type/values (1-2 sentences)
+   - Fields must directly answer the implicit research questions
+   - Field names must be extractable from full-text articles (avoid broad concepts)
+   
+7. analysis (array of strings, 2-4 items): Analysis plan bullet points
+   - Must reference AT LEAST 2 fields from "extract"
+   - Format: "Distribution/Trends/Comparison by `fieldname` [and other_field]"
+   - No markdown backticks in output JSON values (use field names directly)
+   - Each describes a specific synthesis approach
 
-First deeply understand the research topic and domain to create meaningful criteria that address:
-- Study designs/methodology
-- Population/interventions
-- Outcomes/measurements
-- Clinical applications
-- Technical implementations
+QUALITY CHECKS:
+- JSON must be valid and parseable
+- Arrays cannot be empty
+- No null or undefined values
+- String values stripped of leading/trailing whitespace
+- Query must contain at least 2 boolean operators
 
-Inclusion and exclusions criteria should be:
-- Specific and measurable
-- Mutually exclusive between inclusion/exclusion
-- Relevant to the review's research questions
-- Free from implementation bias
-
-Follow these guidelines for the query:
-- Include MeSH terms and keywords
-- Use appropriate field tags like [Title/Abstract], [MAJR], etc
-- Apply proper boolean operators
-- Include publication date filters when appropriate
-- Use parentheses for proper operator precedence
-
-For the title:
-- Use LaTeX formatting for any special characters or capitalization
-- Include the main topic and methodology ("systematic review" or "meta-analysis")
-
-Example valid JSON response:
-{{
-  "query": "(clinical decision support system[Title/Abstract]) AND (medical imaging[MAJR] OR radiology[MAJR]) AND (\"artificial intelligence\"[Title/Abstract] OR \"machine learning\"[Title/Abstract])",
-  "topic": "Clinical Decision Support Systems in Medical Imaging/Radiology",
-  "title": "A Systematic Review of Clinical Decision Support Systems in Medical Imaging",
-  "screening": {{
+EXAMPLE RESPONSE:
+{
+  "query": "(deep learning[Title/Abstract] OR neural networks[MAJR]) AND (radiology[MAJR] OR medical imaging[Title/Abstract]) AND (diagnostic accuracy[Title/Abstract] OR sensitivity[Title/Abstract])",
+  "topic": "Deep learning diagnostic accuracy in radiology",
+  "title": "Deep Learning Algorithms in Diagnostic Radiology: A Systematic Review of Diagnostic Accuracy Studies",
+  "screening": {
     "inclusion": [
-      "Primary research studies evaluating clinical decision support systems",
-      "Applied to medical imaging interpretation (radiology, CT, MRI, etc)",
-      "Reports diagnostic accuracy metrics (sensitivity, specificity)",
-      "Includes human clinical validation"
+      "Peer-reviewed primary research studies evaluating deep learning algorithms",
+      "Reports diagnostic accuracy metrics (sensitivity, specificity, AUC)",
+      "Compares deep learning results to clinical gold standard or expert interpretation",
+      "Studies in clinical radiology settings or clinical-grade imaging"
     ],
     "exclusion": [
-      "Studies focused only on imaging physics/reconstruction",
-      "Non-clinical applications (e.g., industrial imaging)",
-      "Literature reviews without primary data",
-      "Animal or phantom studies only"
+      "Review articles, editorials, or commentaries without primary data",
+      "Studies using only synthetic or phantom images without clinical validation",
+      "Focus on image reconstruction or technical aspects only, not diagnostic interpretation",
+      "Studies without quantitative accuracy metrics or expert comparison"
     ]
-  }},
-  "extract": {{
-    "cdss_type": "AI/ML-based|Rule-based|Hybrid|Statistical",
-    "integration_level": "PACS/RIS integration level (none/basic/full)"
-  }},
+  },
+  "quality": "QUADAS-AI",
+  "extract": {
+    "algorithm_type": "Architecture type (CNN, transformer, ensemble, hybrid) and learning approach (supervised, semi-supervised)",
+    "clinical_task": "Specific diagnostic task (detection, classification, localization, prognostication)",
+    "performance_auc": "Area Under ROC Curve (AUC) or C-statistic reported for primary outcome"
+  },
   "analysis": [
-      "Distribution by CDSS type",
-      "Integration level trends",
-      "Clinical impact of integration level"
+    "Algorithm types used in the literature with trends over time",
+    "Clinical task distribution and associated performance metrics (AUC, sensitivity)",
+    "Comparison of algorithm performance across imaging modalities and anatomical regions"
   ]
-}}
+}
 
-Respond ONLY with valid JSON in this structure. Do not include markdown formatting.
+END RESPONSE.
