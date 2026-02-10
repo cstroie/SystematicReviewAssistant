@@ -1932,8 +1932,7 @@ Supported Providers:
     parser.add_argument('workdir', help='Working directory containing pipeline outputs')
     parser.add_argument('--plan', help='Free-text research topic description (generates PubMed query and metadata)')
     parser.add_argument('--download', action='store_true', help='Download PubMed articles matching query in file')
-    parser.add_argument('--preprints', action='store_true', help='Download preprints from medRxiv and bioRxiv')
-    parser.add_argument('--query', help='Search query for preprints (required with --preprints)')
+    parser.add_argument('--preprints', action='store_true', help='Download preprints from medRxiv and bioRxiv using query from 00_plan.json')
     parser.add_argument('--provider', choices=list(API_CONFIGS.keys()),
                        default='openrouter', help='LLM provider')
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
@@ -1980,10 +1979,6 @@ def main():
 
     # Handle preprint download
     if args.preprints:
-        if not args.query:
-            print("Error: --query required for preprint download")
-            sys.exit(1)
-        
         if not args.workdir:
             print("Error: --workdir required for preprint download")
             sys.exit(1)
@@ -1992,10 +1987,26 @@ def main():
         workdir_path = Path(args.workdir)
         workdir_path.mkdir(parents=True, exist_ok=True)
         
+        # Get query from plan file in working directory
+        plan_file = workdir_path / "00_plan.json"
+        if not plan_file.exists():
+            print(f"Error: Plan file '{plan_file}' not found in working directory")
+            print("Please run with --plan first to generate the plan file")
+            sys.exit(1)
+        
+        # Read query from plan file
+        with open(plan_file, 'r', encoding='utf-8') as f:
+            plan_data = json.load(f)
+        
+        query = plan_data.get('query', '')
+        if not query:
+            print("Error: No query found in plan file")
+            sys.exit(1)
+        
         # Download preprints
-        print(f"\nDownloading preprints for query: {args.query}")
+        print(f"\nDownloading preprints for query: {query}")
         downloader = PreprintDownloader()
-        results = downloader.search_multiple_sources(args.query, args.workdir)
+        results = downloader.search_multiple_sources(query, args.workdir)
         
         # Check if any downloads succeeded
         if any(results.values()):
