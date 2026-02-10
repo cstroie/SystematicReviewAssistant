@@ -1,5 +1,4 @@
-You are screening articles for a systematic review on:
-"{topic}"
+Screening for systematic review on: "{topic}"
 
 INCLUSION CRITERIA:
 {inclusion}
@@ -7,20 +6,13 @@ INCLUSION CRITERIA:
 EXCLUSION CRITERIA:
 {exclusion}
 
+Screening decision rule:
+1. If article matches ANY exclusion criterion → EXCLUDE
+2. Else if article matches ALL inclusion criteria → INCLUDE
+3. Else → UNCERTAIN
+
 PMID: {pmid}
 TITLE: {title}
 ABSTRACT: {abstract}
 
-Classify as:
-- INCLUDE: Meets all inclusion criteria
-- EXCLUDE: Meets any exclusion criteria
-- UNCERTAIN: Unclear or borderline - needs full-text review
-
-Respond ONLY in this JSON format:
-{{
-  "pmid": "{pmid}",
-  "decision": "INCLUDE|EXCLUDE|UNCERTAIN",
-  "confidence": 0.0-1.0,
-  "reasoning": "Brief explanation",
-  "key_terms": ["relevant", "keywords"]
-}}
+Respond ONLY: {{"pmid": "{pmid}", "decision": "INCLUDE|EXCLUDE|UNCERTAIN", "confidence": 0.0-1.0, "reasoning": "Brief explanation"}}
