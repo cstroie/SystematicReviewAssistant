@@ -42,10 +42,9 @@ ARTICLE STRUCTURE & CONTENT:
    - Inclusion/exclusion criteria (explicit)
    - Screening process (two-stage)
    - Data extraction (standardized form)
-   - Quality assessment (GRADE, QUADAS-2, RE-AIM, ROBINS-I)
+   - Quality assessment using {quality_tool} framework
    - Risk of bias analysis with structured reporting:
-     * QUADAS-2: Risk of bias domains (patient selection, index test, reference standard, flow/timing) with detailed judgments
-     * ROBINS-I: Risk of bias domains (pre-intervention confounding, selection bias, classification bias, deviation from intended, missing data, measurement bias, reporting bias) with detailed judgments
+     * {quality_tool}: Risk of bias domains with detailed judgments
      * Overall risk of bias summary with visual representation
      * Impact assessment on study results
    - Analysis approach (quantitative + thematic)
