@@ -1489,6 +1489,7 @@ class LitReviewProcessor:
                 abstract=safe_abstract
             )
 
+            response_text = ""
             try:
                 response_text = self.llm.call(prompt)
             except Exception as e:
@@ -1586,6 +1587,7 @@ class LitReviewProcessor:
                 abstract=safe_abstract
             )
 
+            response_text = ""
             try:
                 response_text = self.llm.call(prompt)
             except Exception as e:
@@ -1672,6 +1674,7 @@ class LitReviewProcessor:
                 abstract=article['abstract']
             )
 
+            response_text = ""
             try:
                 response_text = self.llm.call(prompt)
                 
