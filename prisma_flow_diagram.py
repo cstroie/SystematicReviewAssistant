@@ -479,6 +479,63 @@ class PRISMADiagramTikZ:
                         f"Included studies (n={self.numbers.studies_included_qualitative})")
 
 
+class PRISMADiagramDOT:
+    """Generate PRISMA 2020 flow diagram as Graphviz DOT code"""
+    
+    def __init__(self, numbers: DiagramNumbers):
+        self.numbers = numbers
+        
+    def generate(self) -> str:
+        """Generate complete DOT diagram code"""
+        dot_elements = [
+            'digraph PRISMA_Flow_Diagram {',
+            '    rankdir=TB;',
+            '    node [shape=box, style=rounded, fontname="Arial"];',
+            '    edge [fontname="Arial"];',
+            '',
+            '    // Define styles',
+            '    node [fillcolor="#E8F4F8", color="#2C3E50", style="rounded,filled"];',
+            '    identification [label="IDENTIFICATION\\nRecords identified\\nn = ' + str(self.numbers.records_identified) + '"];',
+            '',
+            '    node [fillcolor="#D4E8F0"];',
+            '    screening [label="SCREENING\\nRecords screened\\nn = ' + str(self.numbers.records_screened) + '"];',
+            '    excluded_screening [label="Records excluded\\nn = ' + str(self.numbers.records_excluded) + '"];',
+            '',
+            '    node [fillcolor="#C0DCE8"];',
+            '    eligibility [label="ELIGIBILITY\\nFull-text articles assessed\\nn = ' + str(self.numbers.full_text_retrieved) + '"];',
+            '    excluded_eligibility [label="Full-text articles excluded\\nn = ' + str(self.numbers.full_text_excluded) + '"];',
+            '',
+            '    node [fillcolor="#ACE0E0"];',
+            '    inclusion [label="INCLUSION\\nStudies included in qualitative synthesis\\nn = ' + str(self.numbers.studies_included_qualitative) + '"];',
+        ]
+        
+        # Add quantitative synthesis if available
+        if self.numbers.studies_included_quantitative is not None:
+            dot_elements.append('    inclusion_quant [label="Studies included in quantitative synthesis\\nn = ' + str(self.numbers.studies_included_quantitative) + '\\n(meta-analysis)"];')
+        
+        # Add edges
+        dot_elements.extend([
+            '',
+            '    // Connections',
+            '    identification -> screening [label="Duplicates removed"];',
+            '    screening -> eligibility [label="Full-text articles retrieved"];',
+            '    screening -> excluded_screening [label="Excluded"];',
+            '    eligibility -> inclusion [label="Included"];',
+            '    eligibility -> excluded_eligibility [label="Excluded"];',
+        ])
+        
+        # Connect quantitative synthesis if available
+        if self.numbers.studies_included_quantitative is not None:
+            dot_elements.extend([
+                '    inclusion -> inclusion_quant [label="Meta-analysis subset"];',
+                '    {rank=same; inclusion inclusion_quant};'
+            ])
+        
+        dot_elements.append('}')
+        
+        return '\n'.join(dot_elements)
+
+
 class PRISMADiagramHTML:
     """Generate PRISMA 2020 flow diagram as interactive HTML"""
     
@@ -689,6 +746,16 @@ def create_diagram_from_results(
         output_files['tikz'] = str(tex_file)
         print(f"✓ TikZ diagram saved: {tex_file}")
     
+    # Generate DOT (Graphviz)
+    if 'dot' in formats:
+        dot_generator = PRISMADiagramDOT(numbers)
+        dot_content = dot_generator.generate()
+        dot_file = output_dir / 'prisma_flow_diagram.dot'
+        with open(dot_file, 'w') as f:
+            f.write(dot_content)
+        output_files['dot'] = str(dot_file)
+        print(f"✓ DOT diagram saved: {dot_file}")
+    
     # Generate HTML
     if 'html' in formats:
         html_generator = PRISMADiagramHTML(numbers)
@@ -705,6 +772,13 @@ def create_diagram_from_results(
         print("  - Online: https://convertio.co/svg-png/")
         print("  - Or use 'inkscape prisma_flow_diagram.svg --export-png=diagram.png'")
     
+    # DOT generation note
+    if 'dot' in formats:
+        print("ℹ DOT format: Use Graphviz to render to other formats")
+        print("  - Convert to PNG: 'dot -Tpng prisma_flow_diagram.dot -o diagram.png'")
+        print("  - Convert to SVG: 'dot -Tsvg prisma_flow_diagram.dot -o diagram.svg'")
+        print("  - Convert to PDF: 'dot -Tpdf prisma_flow_diagram.dot -o diagram.pdf'")
+    
     return output_files
 
 
@@ -717,7 +791,7 @@ def main():
         print("  python prisma_flow_diagram.py <screening_results.json>")
         print("  python prisma_flow_diagram.py <screening_results.json> --format svg")
         print("  python prisma_flow_diagram.py <screening_results.json> --format all")
-        print("\nFormats: svg (default), html, png, tikz, all")
+        print("\nFormats: svg (default), html, png, tikz, dot, all")
         print("\nExample:")
         print("  python prisma_flow_diagram.py output/02_screening_results.json --format all")
         sys.exit(1)
