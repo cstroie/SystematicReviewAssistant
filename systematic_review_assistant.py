@@ -315,13 +315,17 @@ class PreprintDownloader:
         if source not in self.base_urls:
             raise ValueError(f"Unsupported source: {source}. Use 'medrxiv' or 'biorxiv'")
         
+        # Simplify query by removing square bracket terms like [MeSH Terms]
+        simplified_query = re.sub(r'\[.*?\]', '', query)
+        simplified_query = re.sub(r'\s+', ' ', simplified_query).strip()
+        
         # Sanitize query for URL
-        safe_query = urllib.parse.quote(query)
+        safe_query = urllib.parse.quote(simplified_query)
         
         # Build API URL
         url = f"{self.base_urls[source]}?search={safe_query}&limit={max_results}"
         
-        print(f"Querying {source} with: {query}")
+        print(f"Querying {source} with: {simplified_query}")
         
         try:
             with urllib.request.urlopen(url, timeout=30) as response:
