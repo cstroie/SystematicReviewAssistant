@@ -1999,48 +1999,6 @@ def main():
             print(f"Creating work directory: {args.workdir}")
             workdir_path.mkdir(parents=True, exist_ok=True)
 
-    # Handle preprint download
-    if args.preprints:
-        if not args.workdir:
-            print("Error: workdir required for preprint download")
-            sys.exit(1)
-        
-        # Ensure workdir exists
-        workdir_path = Path(args.workdir)
-        workdir_path.mkdir(parents=True, exist_ok=True)
-        
-        # Get query from plan file in working directory
-        plan_file = workdir_path / "00_plan.json"
-        if not plan_file.exists():
-            print(f"Error: Plan file '{plan_file}' not found in working directory")
-            sys.exit(1)
-        
-        # Read query from plan file
-        with open(plan_file, 'r', encoding='utf-8') as f:
-            plan_data = json.load(f)
-        
-        query = plan_data.get('query', '')
-        if not query:
-            print("Error: No query found in plan file")
-            sys.exit(1)
-        
-        # Download preprints
-        print(f"\nDownloading preprints for query: {query}")
-        downloader = PreprintDownloader()
-        results = downloader.search_multiple_sources(query, args.workdir)
-        
-        # Check if any downloads succeeded
-        if any(results.values()):
-            print("\n✓ Preprint download complete!")
-            for source, path in results.items():
-                if path:
-                    print(f"  - {source.capitalize()}: {Path(path).name}")
-            print("\nYou can now process these files with:")
-            print(f"  python systematic_review_assistant.py {args.workdir}")
-        else:
-            print("❌ No preprints were downloaded")
-        sys.exit(0)
-
     # Handle article download
     if args.download or  args.preprints:
         if not args.workdir:
@@ -2064,35 +2022,53 @@ def main():
         
         query = plan_data.get('query', '')
         if not query:
-            print("Error: No PubMed query found in plan file")
+            print("Error: No query found in plan file")
             sys.exit(1)
         
-        # Check if articles.txt already exists
-        output_file = Path(args.workdir) / "articles.txt"
-        if output_file.exists():
-            print(f"✓ Articles file already exists: {output_file}")
-            print("You can now process this file with:")
+        if args.download:
+            # Check if pubmed.txt already exists
+            output_file = Path(args.workdir) / "pubmed.txt"
+            if output_file.exists():
+                print(f"✓ Articles file already exists: {output_file}")
+                print("You can now process this file with:")
+                print(f"  python systematic_review_assistant.py {args.workdir}")
+                sys.exit(0)
+            
+            # Download articles to working directory
+            print(f"Downloading PubMed articles for query: {query[:100]}...")
+            downloader = PubMedDownloader(api_key=os.getenv('NCBI_API_KEY'))
+            pmids = downloader.search_pubmed(query)
+            
+            if not pmids:
+                print("No articles found for this query")
+                sys.exit(1)
+            
+            downloader.download_medline(pmids, str(output_file))
+            print(f"\n✓ Download complete! {len(pmids)} articles saved to {output_file}")
+            print("\nYou can now process this file with:")
             print(f"  python systematic_review_assistant.py {args.workdir}")
-            sys.exit(0)
-        
-        # Download articles to working directory
-        print(f"Downloading PubMed articles for query: {query[:100]}...")
-        downloader = PubMedDownloader(api_key=os.getenv('NCBI_API_KEY'))
-        pmids = downloader.search_pubmed(query)
-        
-        if not pmids:
-            print("No articles found for this query")
-            sys.exit(1)
-        
-        downloader.download_medline(pmids, str(output_file))
-        print(f"\n✓ Download complete! {len(pmids)} articles saved to {output_file}")
-        print("\nYou can now process this file with:")
-        print(f"  python systematic_review_assistant.py {args.workdir}")
-        sys.exit(0)
+
+        if args.preprints:
+            # Download preprints
+            print(f"\nDownloading preprints for query: {query}")
+            downloader = PreprintDownloader()
+            results = downloader.search_multiple_sources(query, args.workdir)
+            
+            # Check if any downloads succeeded
+            if any(results.values()):
+                print("\n✓ Preprint download complete!")
+                for source, path in results.items():
+                    if path:
+                        print(f"  - {source.capitalize()}: {Path(path).name}")
+                print("\nYou can now process these files with:")
+                print(f"  python systematic_review_assistant.py {args.workdir}")
+            else:
+                print("❌ No preprints were downloaded")
+
 
     # Validate input file exists if required
     if not args.plan:
-        input_path = Path(args.workdir) / "articles.txt"
+        input_path = Path(args.workdir) / "pubmed.txt"
         if not input_path.exists():
             print(f"Error: Input file '{input_path}' not found in work directory")
             sys.exit(1)
@@ -2132,7 +2108,7 @@ def main():
             workdir=args.workdir,
             log_verbose=not args.quiet
         )
-        input_path = Path(args.workdir) / "articles.txt"
+        input_path = Path(args.workdir) / "pubmed.txt"
         processor.run_complete_pipeline(str(input_path))
 
     except APIKeyError as e:
