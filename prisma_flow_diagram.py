@@ -703,7 +703,7 @@ def create_diagram_from_results(
     Args:
         screening_results_json: Path to 02_screening_results.json from pipeline
         output_dir: Directory to save outputs
-        formats: List of formats to generate ('svg', 'html', 'png', 'all')
+        formats: List of formats to generate ('svg', 'html', 'png', 'tikz', 'dot')
     
     Returns:
         Dictionary with paths to generated files
@@ -713,7 +713,7 @@ def create_diagram_from_results(
         formats = ['svg', 'html']
     
     if 'all' in formats:
-        formats = ['svg', 'html', 'png', 'tikz']
+        formats = ['svg', 'html', 'png', 'tikz', 'dot']
     
     # Load screening results
     with open(screening_results_json, 'r') as f:
