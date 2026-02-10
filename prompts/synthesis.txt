@@ -74,7 +74,7 @@ WRITE THESE SECTIONS:
    - Important caveats from divergent findings
    - Unexpected or counterintuitive findings
 
-6. EVIDENCE QUALITY & CONFIDENCE
+6. EVIDENCE QUALITY AND CONFIDENCE
    Using {quality_tool} framework:
    - Overall confidence rating (High/Moderate/Low/Very Low)
    - For each quality domain, explain factors:
@@ -82,10 +82,6 @@ WRITE THESE SECTIONS:
      * Inconsistency: I² values? Do results point same direction?
      * Indirectness: Are study populations/interventions close to clinical question?
      * Imprecision: Are confidence intervals wide? Sample sizes adequate?
-     * Publication bias: {publication_bias_guidance}
-   
-   Publication Bias Assessment:
-   {publication_bias_conditional}
 
 7. METHODOLOGICAL QUALITY TRENDS
    - Common strengths (what do well-conducted studies do?)
@@ -99,7 +95,7 @@ WRITE THESE SECTIONS:
    - Evidence gaps for clinical deployment (what would change practice?)
    - Relevant context from lower-confidence evidence (pilot studies, feasibility work)
 
-9. RESEARCH GAPS & FUTURE DIRECTIONS
+9. RESEARCH GAPS AND FUTURE DIRECTIONS
    - Clinical domains underrepresented (which applications have few studies?)
    - Methodological gaps (standardization issues? study design gaps?)
    - Emerging approaches (new methods, modalities, applications?)

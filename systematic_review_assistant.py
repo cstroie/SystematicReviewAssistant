@@ -482,6 +482,8 @@ class DirectAPIClient:
         body = self.body_fn(prompt, self.model)
         if hasattr(body, '__setitem__'):  # Check if body is mutable
             body['temperature'] = temperature
+            if stream:
+                body['stream'] = stream
             body_json = json.dumps(body).encode('utf-8')
         else:
             body_json = json.dumps(body).encode('utf-8')
@@ -1630,7 +1632,6 @@ class CDSSLitReviewProcessor:
 
         try:
             if stream:
-                print("Performing thematic synthesis with streaming...")
                 # Call LLM API with streaming to file
                 synthesis_text = self.llm.call(synthesis_prompt, stream=stream, output_file=output_file)
                 # Response is empty when streaming to file
