@@ -289,6 +289,117 @@ class APIKeyError(Exception):
         self.env_var = env_var
 
 
+class PreprintDownloader:
+    """Download articles from medRxiv and bioRxiv preprint servers"""
+    
+    def __init__(self):
+        self.base_urls = {
+            'medrxiv': 'https://api.medrxiv.org/details/',
+            'biorxiv': 'https://api.biorxiv.org/details/'
+        }
+    
+    def download_preprints(self, query: str, output_dir: str, source: str = 'medrxiv', 
+                          max_results: int = 100) -> str:
+        """
+        Download preprints from medRxiv or bioRxiv
+        
+        Args:
+            query: Search query string
+            output_dir: Directory to save results
+            source: 'medrxiv' or 'biorxiv'
+            max_results: Maximum number of results to retrieve
+            
+        Returns:
+            Path to saved JSON file
+        """
+        if source not in self.base_urls:
+            raise ValueError(f"Unsupported source: {source}. Use 'medrxiv' or 'biorxiv'")
+        
+        # Sanitize query for URL
+        safe_query = urllib.parse.quote(query)
+        
+        # Build API URL
+        url = f"{self.base_urls[source]}?search={safe_query}&limit={max_results}"
+        
+        print(f"Querying {source} with: {query}")
+        
+        try:
+            with urllib.request.urlopen(url, timeout=30) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                
+                # Extract articles from response
+                articles = []
+                for item in data.get('collection', []):
+                    article = {
+                        'pmid': '',  # Preprints don't have PMIDs
+                        'title': item.get('title', ''),
+                        'abstract': item.get('abstract', ''),
+                        'authors': self._format_authors(item.get('authors', [])),
+                        'journal': f"{source.capitalize()} Preprint Server",
+                        'pub_date': item.get('date', ''),
+                        'doi': item.get('doi', ''),
+                        'url': item.get('url', ''),
+                        'source': source,
+                        'version': item.get('version', ''),
+                        'license': item.get('license', '')
+                    }
+                    articles.append(article)
+                
+                # Save to JSON
+                output_path = Path(output_dir) / f"{source}Rxiv.json"
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    json.dump(articles, f, indent=2, ensure_ascii=False)
+                
+                print(f"✓ Downloaded {len(articles)} articles from {source}Rxiv")
+                return str(output_path)
+                
+        except urllib.error.HTTPError as e:
+            raise ValueError(f"API error from {source}: {e.code} - {e.reason}")
+        except Exception as e:
+            raise ValueError(f"Error downloading from {source}: {str(e)}")
+    
+    def _format_authors(self, authors_data: List[Dict]) -> str:
+        """Format author list from API response"""
+        if not authors_data:
+            return ""
+        
+        author_names = []
+        for author in authors_data:
+            if 'name' in author:
+                author_names.append(author['name'])
+        
+        return ', '.join(author_names)
+    
+    def search_multiple_sources(self, query: str, output_dir: str, 
+                               max_results: int = 100) -> Dict[str, str]:
+        """
+        Search both medRxiv and bioRxiv
+        
+        Args:
+            query: Search query string
+            output_dir: Directory to save results
+            max_results: Maximum results per source
+            
+        Returns:
+            Dictionary with paths to downloaded files
+        """
+        output_dir = Path(output_dir)
+        output_dir.mkdir(exist_ok=True)
+        
+        results = {}
+        
+        # Download from both sources
+        for source in ['medrxiv', 'biorxiv']:
+            try:
+                file_path = self.download_preprints(query, output_dir, source, max_results)
+                results[source] = file_path
+            except Exception as e:
+                print(f"❌ Failed to download from {source}: {str(e)}")
+                results[source] = None
+        
+        return results
+
+
 class PubMedDownloader:
     """Download PubMed articles in MEDLINE format using NCBI E-utilities"""
     
@@ -1137,6 +1248,9 @@ class CDSSLitReviewProcessor:
         self.workdir.mkdir(exist_ok=True)
         self.log_verbose = log_verbose
         self.start_time = datetime.now()
+        
+        # Initialize preprint downloader
+        self.preprint_downloader = PreprintDownloader()
 
         # Initialize log file
         print(f"Pipeline initialized at {self.start_time}")
@@ -1160,19 +1274,31 @@ class CDSSLitReviewProcessor:
         try:
             # Step 1: Load from cache or parse PubMed export
             articles_file = self.workdir / "01_parsed_articles.json"
+            all_articles = []
+            
+            # Load PubMed articles
             if articles_file.exists():
                 print("\n[STEP 1/6] Loading parsed articles from cache...")
                 try:
-                    articles = self._load_file(articles_file)
-                    print(f"✓ Loaded {len(articles)} articles from {articles_file.name}")
+                    pubmed_articles = self._load_file(articles_file)
+                    print(f"✓ Loaded {len(pubmed_articles)} articles from {articles_file.name}")
+                    all_articles.extend(pubmed_articles)
                 except Exception as e:
                     print(f"Cache read error: {str(e)}, re-parsing file")
-                    articles = self._parse_pubmed_export(pubmed_file)
-                    self._save_file(articles, articles_file)
+                    pubmed_articles = self._parse_pubmed_export(pubmed_file)
+                    self._save_file(pubmed_articles, articles_file)
+                    all_articles.extend(pubmed_articles)
             else:
                 print("\n[STEP 1/6] Parsing PubMed export...")
-                articles = self._parse_pubmed_export(pubmed_file)
-                self._save_file(articles, articles_file)
+                pubmed_articles = self._parse_pubmed_export(pubmed_file)
+                self._save_file(pubmed_articles, articles_file)
+                all_articles.extend(pubmed_articles)
+            
+            # Load preprint articles if they exist
+            preprint_articles = self._load_preprint_articles()
+            if preprint_articles:
+                print(f"✓ Loaded {len(preprint_articles)} preprint articles")
+                all_articles.extend(preprint_articles)
 
             # Step 2: Screen articles (cache-aware)
             screening_file = self.workdir / "02_screening_results.json"
@@ -1236,6 +1362,27 @@ class CDSSLitReviewProcessor:
             import traceback
             print(traceback.format_exc(), "ERROR")
             raise
+
+    def _load_preprint_articles(self, preprint_dir: str = "preprints") -> List[Dict]:
+        """Load articles from preprint sources (medRxiv, bioRxiv)"""
+        preprint_dir = Path(self.workdir) / preprint_dir
+        preprint_dir.mkdir(exist_ok=True)
+        
+        all_articles = []
+        
+        # Check for preprint files
+        for source in ['medrxiv', 'biorxiv']:
+            preprint_file = preprint_dir / f"{source}Rxiv.json"
+            if preprint_file.exists():
+                try:
+                    with open(preprint_file, 'r', encoding='utf-8') as f:
+                        articles = json.load(f)
+                        all_articles.extend(articles)
+                        print(f"✓ Loaded {len(articles)} articles from {source}Rxiv")
+                except Exception as e:
+                    print(f"❌ Error loading {source}Rxiv articles: {str(e)}")
+        
+        return all_articles
 
     def _parse_pubmed_export(self, file_path: str) -> List[Dict]:
         """
@@ -1770,6 +1917,9 @@ Examples:
   # Download PubMed articles (requires NCBI API key):
   %(prog)s --download
 
+  # Download preprints from medRxiv and bioRxiv:
+  %(prog)s --preprints --query "clinical decision support"
+
 Supported Providers:
   anthropic   - Anthropic Claude (default)
   openrouter  - OpenRouter (100+ models)
@@ -1779,9 +1929,11 @@ Supported Providers:
         """
     )
 
-    parser.add_argument('workdir', help='Working directory containing pipeline outputs (expects articles.txt for processing)')
-    parser.add_argument('--plan', help='Free-text research topic description (generates PubMed query and metadata - requires no input file)')
+    parser.add_argument('workdir', help='Working directory containing pipeline outputs')
+    parser.add_argument('--plan', help='Free-text research topic description (generates PubMed query and metadata)')
     parser.add_argument('--download', action='store_true', help='Download PubMed articles matching query in file')
+    parser.add_argument('--preprints', action='store_true', help='Download preprints from medRxiv and bioRxiv')
+    parser.add_argument('--query', help='Search query for preprints (required with --preprints)')
     parser.add_argument('--provider', choices=list(API_CONFIGS.keys()),
                        default='openrouter', help='LLM provider')
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
@@ -1825,6 +1977,37 @@ def main():
         if not workdir_path.exists():
             print(f"Creating work directory: {args.workdir}")
             workdir_path.mkdir(parents=True, exist_ok=True)
+
+    # Handle preprint download
+    if args.preprints:
+        if not args.query:
+            print("Error: --query required for preprint download")
+            sys.exit(1)
+        
+        if not args.workdir:
+            print("Error: --workdir required for preprint download")
+            sys.exit(1)
+        
+        # Ensure workdir exists
+        workdir_path = Path(args.workdir)
+        workdir_path.mkdir(parents=True, exist_ok=True)
+        
+        # Download preprints
+        print(f"\nDownloading preprints for query: {args.query}")
+        downloader = PreprintDownloader()
+        results = downloader.search_multiple_sources(args.query, args.workdir)
+        
+        # Check if any downloads succeeded
+        if any(results.values()):
+            print("\n✓ Preprint download complete!")
+            for source, path in results.items():
+                if path:
+                    print(f"  - {source.capitalize()}: {Path(path).name}")
+            print("\nYou can now process these files with:")
+            print(f"  python systematic_review_assistant.py {args.workdir}")
+        else:
+            print("❌ No preprints were downloaded")
+        sys.exit(0)
 
     # Handle PubMed download
     if args.download:
