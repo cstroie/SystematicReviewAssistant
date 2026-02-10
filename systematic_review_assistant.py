@@ -1832,8 +1832,12 @@ def main():
             print("Error: --workdir required for download mode")
             sys.exit(1)
         
+        # Ensure workdir exists
+        workdir_path = Path(args.workdir)
+        workdir_path.mkdir(parents=True, exist_ok=True)
+        
         # Get query from plan file in working directory
-        plan_file = Path(args.workdir) / "00_plan.json"
+        plan_file = workdir_path / "00_plan.json"
         if not plan_file.exists():
             print(f"Error: Plan file '{plan_file}' not found in working directory")
             sys.exit(1)
