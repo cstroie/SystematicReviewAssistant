@@ -294,8 +294,8 @@ class PreprintDownloader:
     
     def __init__(self):
         self.base_urls = {
-            'medrxiv': 'https://api.medrxiv.org/details',
-            'biorxiv': 'https://api.biorxiv.org/details'
+            'medrxiv': 'https://api.medrxiv.org/details/medrxiv',
+            'biorxiv': 'https://api.biorxiv.org/details/biorxiv'
         }
     
     def download_preprints(self, query: str, output_dir: str, source: str = 'medrxiv', 
@@ -326,7 +326,7 @@ class PreprintDownloader:
         # Format: /details/medrxiv/{from_date}/{to_date}?query=YOUR_QUERY
         # For now, use a reasonable date range if not specified
         from_date = "2020-01-01"
-        to_date = "2024-12-31"
+        to_date = "2025-12-31"
         url = f"{self.base_urls[source]}/{from_date}/{to_date}?query={safe_query}&limit={max_results}"
         
         print(f"Querying {source} with: {simplified_query}")
