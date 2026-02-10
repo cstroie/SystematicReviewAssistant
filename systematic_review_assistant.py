@@ -294,8 +294,8 @@ class PreprintDownloader:
     
     def __init__(self):
         self.base_urls = {
-            'medrxiv': 'https://api.medrxiv.org/details/',
-            'biorxiv': 'https://api.biorxiv.org/details/'
+            'medrxiv': 'https://api.medrxiv.org/details',
+            'biorxiv': 'https://api.biorxiv.org/details'
         }
     
     def download_preprints(self, query: str, output_dir: str, source: str = 'medrxiv', 
@@ -328,12 +328,17 @@ class PreprintDownloader:
         print(f"Querying {source} with: {simplified_query}")
         
         try:
+            print(f"  - Querying URL: {url}")
             with urllib.request.urlopen(url, timeout=30) as response:
                 data = json.loads(response.read().decode('utf-8'))
+                print(f"  - Response data keys: {list(data.keys())}")
                 
                 # Extract articles from response
                 articles = []
-                for item in data.get('collection', []):
+                collection = data.get('collection', [])
+                print(f"  - Found {len(collection)} items in collection")
+                
+                for item in collection:
                     article = {
                         'pmid': '',  # Preprints don't have PMIDs
                         'title': item.get('title', ''),
@@ -358,8 +363,21 @@ class PreprintDownloader:
                 return str(output_path)
                 
         except urllib.error.HTTPError as e:
+            print(f"  - HTTP Error {e.code}: {e.reason}")
+            print(f"  - URL that failed: {url}")
+            # Try to get more error details
+            try:
+                error_body = e.read().decode('utf-8')
+                print(f"  - Error body: {error_body}")
+            except:
+                pass
             raise ValueError(f"API error from {source}: {e.code} - {e.reason}")
+        except urllib.error.URLError as e:
+            print(f"  - URL Error: {e.reason}")
+            print(f"  - URL that failed: {url}")
+            raise ValueError(f"Network error from {source}: {str(e.reason)}")
         except Exception as e:
+            print(f"  - Unexpected error: {str(e)}")
             raise ValueError(f"Error downloading from {source}: {str(e)}")
     
     def _format_authors(self, authors_data: List[Dict]) -> str:
@@ -1995,7 +2013,6 @@ def main():
         plan_file = workdir_path / "00_plan.json"
         if not plan_file.exists():
             print(f"Error: Plan file '{plan_file}' not found in working directory")
-            print("Please run with --plan first to generate the plan file")
             sys.exit(1)
         
         # Read query from plan file
@@ -2024,8 +2041,8 @@ def main():
             print("❌ No preprints were downloaded")
         sys.exit(0)
 
-    # Handle PubMed download
-    if args.download:
+    # Handle article download
+    if args.download or  args.preprints:
         if not args.workdir:
             print("Error: workdir required for download mode")
             sys.exit(1)
@@ -2038,6 +2055,7 @@ def main():
         plan_file = workdir_path / "00_plan.json"
         if not plan_file.exists():
             print(f"Error: Plan file '{plan_file}' not found in working directory")
+            print("Please run with --plan first to generate the plan file")
             sys.exit(1)
         
         # Read query from plan file
