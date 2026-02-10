@@ -1215,9 +1215,12 @@ class CDSSLitReviewProcessor:
                 print(f"✓ Loaded {len(synthesis)} characters from existing file")
             else:
                 print("\n[STEP 5/6] Performing thematic synthesis...")
-                synthesis = self._perform_synthesis(extracted_data)
-                synthesis_file.write_text(synthesis)
-                print(f"✓ Synthesis complete - {len(synthesis)} characters written")
+                synthesis = self._perform_synthesis(extracted_data, stream=True, output_file=synthesis_file)
+                if not synthesis:  # Empty when streaming to file
+                    print(f"✓ Synthesis complete - streamed to {synthesis_file}")
+                else:
+                    synthesis_file.write_text(synthesis)
+                    print(f"✓ Synthesis complete - {len(synthesis)} characters written")
 
             # Step 6: Generate summary table
             print("\n[STEP 6/6] Generating summary table...")
@@ -1518,8 +1521,17 @@ class CDSSLitReviewProcessor:
             cache_label='quality assessments'
         )
 
-    def _perform_synthesis(self, extracted_data: List[Dict]) -> str:
-        """Perform thematic synthesis and identify patterns"""
+    def _perform_synthesis(self, extracted_data: List[Dict], stream: bool = False, output_file: Optional[Path] = None) -> str:
+        """Perform thematic synthesis and identify patterns with optional streaming support
+
+        Args:
+            extracted_data: List of extracted study data
+            stream: Whether to enable streaming mode
+            output_file: Optional file path to write streaming output to
+
+        Returns:
+            Synthesis text (empty if streaming to file)
+        """
 
         # Load review topic from metadata
         plan_file = self.workdir / "00_plan.json"
@@ -1562,9 +1574,17 @@ class CDSSLitReviewProcessor:
         )
 
         try:
-            response_text = self.llm.call(synthesis_prompt)
-            synthesis_text = response_text.strip()
-            return synthesis_text
+            if stream:
+                print("Performing thematic synthesis with streaming...")
+                # Call LLM API with streaming to file
+                synthesis_text = self.llm.call(synthesis_prompt, stream=stream, output_file=output_file)
+                # Response is empty when streaming to file
+                return ""
+            else:
+                # Call LLM API normally
+                response_text = self.llm.call(synthesis_prompt)
+                synthesis_text = response_text.strip()
+                return synthesis_text
 
         except Exception as e:
             sanitized_err = sanitize_error_message(str(e))
