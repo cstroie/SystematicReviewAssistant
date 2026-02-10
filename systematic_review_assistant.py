@@ -322,8 +322,8 @@ class PreprintDownloader:
         # Sanitize query for URL
         safe_query = urllib.parse.quote(simplified_query)
         
-        # Build API URL
-        url = f"{self.base_urls[source]}?search={safe_query}&limit={max_results}"
+        # Build API URL using the correct endpoint format
+        url = f"{self.base_urls[source]}/{safe_query}?limit={max_results}"
         
         print(f"Querying {source} with: {simplified_query}")
         
