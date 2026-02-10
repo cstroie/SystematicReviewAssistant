@@ -1819,10 +1819,12 @@ def main():
 
     args = parser.parse_args()
 
-    # Validate workdir exists if specified
-    if args.workdir and not Path(args.workdir).exists():
-        print(f"Error: Work directory '{args.workdir}' not found")
-        sys.exit(1)
+    # Validate workdir exists if specified, create if it doesn't
+    if args.workdir:
+        workdir_path = Path(args.workdir)
+        if not workdir_path.exists():
+            print(f"Creating work directory: {args.workdir}")
+            workdir_path.mkdir(parents=True, exist_ok=True)
 
     # Handle PubMed download
     if args.download:
