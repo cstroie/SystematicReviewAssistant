@@ -450,16 +450,19 @@ class DirectAPIClient:
 
         self.request_times.append(time.time())
 
-    def call(self, prompt: str, max_retries: int = 3) -> str:
+    def call(self, prompt: str, max_retries: int = 3, stream: bool = False, temperature: float = 0.8, output_file: Optional[Path] = None) -> str:
         """
         Call LLM API with direct HTTP request and retry logic
 
         Args:
             prompt: Input text to send to LLM
             max_retries: Number of retry attempts on failure
+            stream: Whether to enable streaming mode
+            temperature: Temperature parameter for LLM generation
+            output_file: Optional file path to write streaming output to
 
         Returns:
-            Validated and sanitized model response text
+            Validated and sanitized model response text (empty if streaming to file)
 
         Raises:
             ValueError: On persistent API failures or security issues
@@ -474,8 +477,14 @@ class DirectAPIClient:
         # Prepare request with types
         headers_dict = self.headers_fn(self.api_key, self.model)
         headers = {str(k): str(v) for k,v in headers_dict.items()}
+        
+        # Add temperature to body if supported
         body = self.body_fn(prompt, self.model)
-        body_json = json.dumps(body).encode('utf-8')
+        if hasattr(body, '__setitem__'):  # Check if body is mutable
+            body['temperature'] = temperature
+            body_json = json.dumps(body).encode('utf-8')
+        else:
+            body_json = json.dumps(body).encode('utf-8')
 
         # Retry loop
         for attempt in range(max_retries):
@@ -491,18 +500,59 @@ class DirectAPIClient:
                     method='POST'
                 )
 
-                # Make request
-                with urllib.request.urlopen(req, timeout=self.timeout) as response:
-                    response_data = json.loads(response.read().decode('utf-8'))
-                    result = self.response_fn(response_data)
+                if stream:
+                    # Handle streaming response
+                    response = urllib.request.urlopen(req, timeout=self.timeout)
+                    full_response = ""
 
-                    if not result:
-                        raise ValueError("Empty response from API")
+                    # Open output file if provided
+                    file_handle = None
+                    if output_file:
+                        output_file.parent.mkdir(parents=True, exist_ok=True)
+                        file_handle = open(output_file, 'w', encoding='utf-8')
 
-                    # Validate and sanitize response for security
-                    validated_result = self.validate_api_response(result)
+                    try:
+                        for line in response:
+                            data_str = line.decode('utf-8').strip()
+                            if data_str.startswith('data: '):
+                                data_str = data_str[6:]
+                                try:
+                                    chunk_data = json.loads(data_str)
+                                    if "choices" in chunk_data and len(chunk_data["choices"]) > 0:
+                                        delta = chunk_data["choices"][0].get("delta", {})
+                                        if "content" in delta:
+                                            content = delta["content"]
+                                            full_response += content
 
-                    return validated_result
+                                            # Write to file and optionally print
+                                            if file_handle:
+                                                file_handle.write(content)
+                                                # Only flush if content contains a newline
+                                                if '\n' in content:
+                                                    file_handle.flush()
+                                            if self.verbose:
+                                                print(content, end="", flush=True)
+                                except json.JSONDecodeError:
+                                    # Skip invalid JSON lines
+                                    pass
+                    finally:
+                        if file_handle:
+                            file_handle.close()
+
+                    return full_response
+                else:
+                    # Handle non-streaming response
+                    with urllib.request.urlopen(req, timeout=self.timeout) as response:
+                        response_data = json.loads(response.read().decode('utf-8'))
+                        result = self.response_fn(response_data)
+
+                        if not result:
+                            raise ValueError("Empty response from API")
+
+                        # Validate and sanitize response for security
+                        validated_result = self.validate_api_response(result)
+
+                        return validated_result
 
             except urllib.error.HTTPError as e:
                 error_body = e.read().decode('utf-8')
