@@ -1,42 +1,49 @@
-Extract structured information from this research article.
-Return ONLY valid JSON with no markdown formatting.
+Extract study data from PMID {pmid}.
 
 ARTICLE:
-PMID: {pmid}
-TITLE: {title}
-ABSTRACT: {abstract}
+Title: {title}
+Abstract: {abstract}
 
-Extract and return this JSON structure (use null for unavailable data):
-{{
+EXTRACT THESE FIELDS:
+{extract}
+
+GENERAL EXTRACTION GUIDANCE:
+- year: Publication year (YYYY format) or null
+- study_design: State explicitly or infer from "retrospective/prospective/RCT"
+- sample_size_patients: Primary cohort N only (ignore validation sets). Look for "N=X", "n participants", "enrolled"
+- sample_size_images: Total images/scans if stated separately, otherwise null
+- clinical_domain: SPECIFIC application (e.g., "Breast Cancer Detection", not just "Cancer")
+- imaging_modality: ALL modalities mentioned - CT, MRI, X-ray, Ultrasound, PET, etc.
+- primary_outcomes: Main measured metrics (Sensitivity, AUC, Accuracy) - NOT methods (CNN, cross-validation)
+- sensitivity/specificity/auc/accuracy: Decimal format 0-1 (e.g., 0.92 not 92%), or null
+- comparison_standard: What is reference? (radiologist, biopsy, gold standard, clinical follow-up) - CRITICAL for interpretation
+- main_findings: 1-2 sentences of key results with metric values
+- limitations: Author-stated or methodologically obvious
+- clinical_implications: Stated in discussion or null
+- statistical_tests: Formal tests (t-test, chi-square, logistic regression) - NOT software
+- analysis_methods: Approaches (5-fold cross-validation, ROC curve, stratified analysis)
+- software: Languages/frameworks (Python, R, TensorFlow, PyTorch, scikit-learn)
+
+Return ONLY valid JSON (null for missing fields):
+{
   "pmid": "{pmid}",
-  "title": "{title}",
-  "year": "publication year (integer)",
+  "year": <integer or null>,
   "study_design": "RCT|Retrospective|Prospective|Case Series|Cross-sectional|Other",
-  "sample_size": {{
-    "total_patients": "number or null",
-    "total_images": "number or null"
-  }},
-  "clinical_domain": "specific clinical application (e.g., 'Breast Cancer Detection')",
-  "imaging_modality": ["list", "of", "modalities"],
-  "primary_outcomes": ["list", "of", "outcome", "measures"],
-  "key_metrics": {{
-    "sensitivity": "value or null",
-    "specificity": "value or null",
-    "auc": "value or null",
-    "accuracy": "value or null"
-  }},
-  "extract": {extract},
-  "comparison": "compared against what? (e.g., radiologist alone, standard of care)",
-  "main_findings": "1-2 sentence summary of key results",
-  "limitations": ["list", "of", "limitations"],
-  "clinical_implications": "stated implications or clinical impact",
-  "funding_conflicts": {{
-    "funding_sources": ["list", "of", "funding", "sources"],
-    "conflicts_of_interest": ["list", "of", "conflicts", "of", "interest"]
-  }},
-  "statistical_methods": {{
-    "statistical_tests_used": ["list", "of", "statistical", "tests"],
-    "analysis_methods": ["list", "of", "analysis", "methods"],
-    "software_used": ["list", "of", "statistical", "software"]
-  }}
-}}
+  "sample_size_patients": <integer or null>,
+  "sample_size_images": <integer or null>,
+  "clinical_domain": "<specific application or null>",
+  "imaging_modality": ["modality1"] or null,
+  "primary_outcomes": ["outcome1"] or null,
+  "sensitivity": <decimal 0-1 or null>,
+  "specificity": <decimal 0-1 or null>,
+  "auc": <decimal 0-1 or null>,
+  "accuracy": <decimal 0-1 or null>,
+  "comparison_standard": "<reference standard or null>",
+  "main_findings": "<1-2 sentence summary or null>",
+  "limitations": ["limit1"] or null,
+  "clinical_implications": "<impact or null>",
+  "statistical_tests": ["test1"] or null,
+  "analysis_methods": ["method1"] or null,
+  "software": ["software1"] or null,
+  "study_specific": {extract}
+}
