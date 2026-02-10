@@ -1564,13 +1564,17 @@ class CDSSLitReviewProcessor:
                 "Research gaps and limitations"
             ]
         
+        # Get quality assessment tool from plan
+        quality_tool = plan.get('quality', 'GRADE').upper()
+        
         # Build synthesis prompt
         synthesis_template = self._load_prompt('synthesis')
         synthesis_prompt = synthesis_template.format(
             topic=topic,
             total_studies=len(extracted_data),
             data_sample=json.dumps(summary_dict, indent=2),
-            analysis_points='\n'.join(f'   - {point}' for point in analysis_points)
+            analysis_points='\n'.join(f'   - {point}' for point in analysis_points),
+            quality_tool=quality_tool
         )
 
         try:
