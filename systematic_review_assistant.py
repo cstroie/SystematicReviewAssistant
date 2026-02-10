@@ -1984,7 +1984,7 @@ def main():
     # Handle preprint download
     if args.preprints:
         if not args.workdir:
-            print("Error: --workdir required for preprint download")
+            print("Error: workdir required for preprint download")
             sys.exit(1)
         
         # Ensure workdir exists
@@ -2027,7 +2027,7 @@ def main():
     # Handle PubMed download
     if args.download:
         if not args.workdir:
-            print("Error: --workdir required for download mode")
+            print("Error: workdir required for download mode")
             sys.exit(1)
         
         # Ensure workdir exists
