@@ -22,7 +22,7 @@ Based on this analysis and typical patterns in this field, provide a comprehensi
    - If narrative synthesis was used, describe the thematic analysis approach
 
 3. ANALYSIS
-{analysis}
+{analysis_points}
 
 4. CLINICAL PERFORMANCE
    - Range of reported metrics (sensitivity, specificity, AUC)

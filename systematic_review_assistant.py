@@ -1283,13 +1283,13 @@ class CDSSLitReviewProcessor:
             raise ValueError(f"Review topic file {plan_file.name} not found - run with --plan first")
 
         with open(plan_file, 'r', encoding='utf-8') as f:
-            topic_data = json.load(f)
+            plan = json.load(f)
 
         # Validate required criteria
-        screening = topic_data.get('screening', {})
+        screening = plan.get('screening', {})
         inclusion = screening.get('inclusion', [])
         exclusion = screening.get('exclusion', [])
-        quality_tool = topic_data.get('quality', 'quadas2').lower()
+        quality_tool = plan.get('quality', 'quadas2').lower()
 
         if not inclusion:
             raise ValueError("Screening criteria missing inclusion list in topic file")
@@ -1299,7 +1299,7 @@ class CDSSLitReviewProcessor:
         # Format criteria
         inclusion_str = "\n- ".join([""] + inclusion)
         exclusion_str = "\n- ".join([""] + exclusion)
-        topic = topic_data['topic']
+        topic = plan['topic']
         screening_prompt = self._load_prompt('screening')
 
         def process_article(article):
@@ -1395,8 +1395,8 @@ class CDSSLitReviewProcessor:
         if plan_file.exists():
             try:
                 with open(plan_file, 'r', encoding='utf-8') as f:
-                    topic_data = json.load(f)
-                extract = topic_data.get('extract', {})
+                    plan = json.load(f)
+                extract = plan.get('extract', {})
                 extract_json = json.dumps(extract, indent=2)
             except Exception as e:
                 print(f"Error loading extract fields: {str(e)} - using empty template")
@@ -1486,10 +1486,10 @@ class CDSSLitReviewProcessor:
             raise ValueError(f"Review plan file {plan_file.name} not found")
 
         with open(plan_file, 'r', encoding='utf-8') as f:
-            topic_data = json.load(f)
+            plan = json.load(f)
         
         # Normalize quality tool name - lowercase and remove non-alphanumeric
-        quality_tool = re.sub(r'[^a-z0-9]', '', topic_data.get('quality', 'grade').lower())
+        quality_tool = re.sub(r'[^a-z0-9]', '', plan.get('quality', 'grade').lower())
         quality_prompt = self._load_prompt(f'quality_assessment_{quality_tool}')
 
         def process_article(article):
@@ -1540,12 +1540,12 @@ class CDSSLitReviewProcessor:
         # Load review topic from metadata
         plan_file = self.workdir / "00_plan.json"
         if not plan_file.exists():
-            raise ValueError(f"Review topic file {plan_file.name} not found - run with --plan first")
+            raise ValueError(f"Plan file {plan_file.name} not found")
 
         with open(plan_file, 'r', encoding='utf-8') as f:
-            topic_data = json.load(f)
+            plan = json.load(f)
 
-        topic = topic_data['topic']
+        topic = plan['topic']
 
         # Prepare summary of extracted data
         summary_dict = {
@@ -1554,22 +1554,15 @@ class CDSSLitReviewProcessor:
             'total_count': len(extracted_data)
         }
 
-        # Validate and prepare analysis themes
-        analysis_themes = topic_data.get('analysis', [])
-        if not isinstance(analysis_themes, list):
-            analysis_themes = []
-        
-        # If no analysis themes provided, use default themes
-        if not analysis_themes:
-            analysis_themes = [
+        # Validate and prepare analysis points
+        analysis_points = plan.get('analysis', [])
+        if not isinstance(analysis_points, list):
+            analysis_points = [
                 "Key findings and patterns",
                 "Methodological quality assessment", 
                 "Clinical implications",
                 "Research gaps and limitations"
             ]
-        
-        # Format analysis themes for the template
-        analysis_themes_formatted = '\n'.join(f'   - {theme}' for theme in analysis_themes)
         
         # Build synthesis prompt
         synthesis_template = self._load_prompt('synthesis')
@@ -1577,7 +1570,7 @@ class CDSSLitReviewProcessor:
             topic=topic,
             total_studies=len(extracted_data),
             data_sample=json.dumps(summary_dict, indent=2),
-            analysis_themes=analysis_themes_formatted
+            analysis_points='\n'.join(f'   - {point}' for point in analysis_points)
         )
 
         try:
