@@ -315,12 +315,8 @@ class PreprintDownloader:
         if source not in self.base_urls:
             raise ValueError(f"Unsupported source: {source}. Use 'medrxiv' or 'biorxiv'")
         
-        # Simplify query by removing square bracket terms like [MeSH Terms]
-        simplified_query = re.sub(r'\[.*?\]', '', query)
-        simplified_query = re.sub(r'\s+', ' ', simplified_query).strip()
-        
         # Sanitize query for URL
-        safe_query = urllib.parse.quote(simplified_query)
+        safe_query = urllib.parse.quote(query)
         
         # Build API URL using the correct endpoint format
         # Format: /details/medrxiv/{from_date}/{to_date}?query=YOUR_QUERY
@@ -329,18 +325,18 @@ class PreprintDownloader:
         to_date = "2025-12-31"
         url = f"{self.base_urls[source]}/{from_date}/{to_date}?query={safe_query}&limit={max_results}"
         
-        print(f"Querying {source} with: {simplified_query}")
+        print(f"Querying {source}...")
         
         try:
-            print(f"  - Querying URL: {url}")
+            #print(f"  - Querying URL: {url}")
             with urllib.request.urlopen(url, timeout=30) as response:
                 data = json.loads(response.read().decode('utf-8'))
-                print(f"  - Response data keys: {list(data.keys())}")
+                #print(f"  - Response data keys: {list(data.keys())}")
                 
                 # Extract articles from response
                 articles = []
                 collection = data.get('collection', [])
-                print(f"  - Found {len(collection)} items in collection")
+                #print(f"  - Found {len(collection)} items in collection")
                 
                 for item in collection:
                     article = {
@@ -365,23 +361,8 @@ class PreprintDownloader:
                 
                 print(f"✓ Downloaded {len(articles)} articles from {source}Rxiv")
                 return str(output_path)
-                
-        except urllib.error.HTTPError as e:
-            print(f"  - HTTP Error {e.code}: {e.reason}")
-            print(f"  - URL that failed: {url}")
-            # Try to get more error details
-            try:
-                error_body = e.read().decode('utf-8')
-                print(f"  - Error body: {error_body}")
-            except:
-                pass
-            raise ValueError(f"API error from {source}: {e.code} - {e.reason}")
-        except urllib.error.URLError as e:
-            print(f"  - URL Error: {e.reason}")
-            print(f"  - URL that failed: {url}")
-            raise ValueError(f"Network error from {source}: {str(e.reason)}")
+
         except Exception as e:
-            print(f"  - Unexpected error: {str(e)}")
             raise ValueError(f"Error downloading from {source}: {str(e)}")
     
     def _format_authors(self, authors_data: List[Dict]) -> str:
@@ -1947,7 +1928,7 @@ Examples:
   %(prog)s --download
 
   # Download preprints from medRxiv and bioRxiv:
-  %(prog)s --preprints --query "clinical decision support"
+  %(prog)s --preprints
 
 Supported Providers:
   anthropic   - Anthropic Claude (default)
@@ -2055,11 +2036,14 @@ def main():
             print("\nYou can now process this file with:")
             print(f"  python systematic_review_assistant.py {args.workdir}")
 
-        if args.preprints:
+        if args.preprints:      
+            # Simplify query by removing square bracket terms like [MeSH Terms]
+            simplified_query = re.sub(r'\[.*?\]', '', query)
+            simplified_query = re.sub(r'\s+', ' ', simplified_query).strip()
             # Download preprints
-            print(f"\nDownloading preprints for query: {query}")
+            print(f"\nDownloading preprints for query: {simplified_query[:100]}...")
             downloader = PreprintDownloader()
-            results = downloader.search_multiple_sources(query, args.workdir)
+            results = downloader.search_multiple_sources(simplified_query, args.workdir)
             
             # Check if any downloads succeeded
             if any(results.values()):
@@ -2071,7 +2055,9 @@ def main():
                 print(f"  python systematic_review_assistant.py {args.workdir}")
             else:
                 print("❌ No preprints were downloaded")
-
+        
+        # Stop after download
+        sys.exit(0)
 
     # Validate input file exists if required
     if not args.plan:
