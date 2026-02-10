@@ -1200,8 +1200,13 @@ class CDSSLitReviewProcessor:
         except IOError as e:
             raise ValueError(f"Failed to load prompt '{name}': {str(e)}") from e
 
-    def run_complete_pipeline(self, pubmed_file: str):
-        """Execute the complete workflow from CSV to synthesis"""
+    def run_complete_pipeline(self, pubmed_file: str, stream: bool = False):
+        """Execute the complete workflow from CSV to synthesis
+        
+        Args:
+            pubmed_file: Path to PubMed export file
+            stream: Whether to enable streaming mode for synthesis
+        """
 
         print("="*70)
         print("LITERATURE REVIEW PROCESSING PIPELINE")
@@ -1265,7 +1270,7 @@ class CDSSLitReviewProcessor:
                 print(f"✓ Loaded {len(synthesis)} characters from existing file")
             else:
                 print("\n[STEP 5/6] Performing thematic synthesis...")
-                synthesis = self._perform_synthesis(extracted_data, stream=True, output_file=synthesis_file)
+                synthesis = self._perform_synthesis(extracted_data, stream=stream, output_file=synthesis_file)
                 if not synthesis:  # Empty when streaming to file
                     print(f"✓ Synthesis complete - streamed to {synthesis_file}")
                 else:
@@ -1837,6 +1842,7 @@ Supported Providers:
     parser.add_argument('workdir', help='Working directory containing pipeline outputs (expects articles.txt for processing)')
     parser.add_argument('--plan', help='Free-text research topic description (generates PubMed query and metadata - requires no input file)')
     parser.add_argument('--download', action='store_true', help='Download PubMed articles matching query in file')
+    parser.add_argument('--stream', action='store_true', help='Enable streaming mode for synthesis generation')
     parser.add_argument('--provider', choices=list(API_CONFIGS.keys()),
                        default='openrouter', help='LLM provider')
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
@@ -1951,6 +1957,10 @@ def main():
             api_url=args.api_url,
             api_key=args.api_key
         )
+        
+        # Set verbose flag for streaming output
+        if hasattr(args, 'stream') and args.stream:
+            llm_client.verbose = True
 
         # Generate plan components if plan description provided
         workdir = Path(args.workdir)
@@ -1972,7 +1982,7 @@ def main():
             log_verbose=not args.quiet
         )
         input_path = Path(args.workdir) / "articles.txt"
-        processor.run_complete_pipeline(str(input_path))
+        processor.run_complete_pipeline(str(input_path), stream=args.stream)
 
     except APIKeyError as e:
         print("\n" + "="*70)
