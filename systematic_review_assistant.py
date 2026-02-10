@@ -1093,7 +1093,7 @@ class PubMedParser:
         }
 
 
-class CDSSLitReviewProcessor:
+class LitReviewProcessor:
     """
     Main pipeline processor for systematic literature review workflow
 
@@ -1237,7 +1237,7 @@ class PlanGenerator:
             raise ValueError(f"Plan generation failed: {sanitized_err}") from None
 
 
-class CDSSLitReviewProcessor:
+class LitReviewProcessor:
     """Main pipeline processor for systematic literature review"""
 
     def __init__(self, llm_client: DirectAPIClient, workdir: str = "output",
@@ -1303,7 +1303,7 @@ class CDSSLitReviewProcessor:
             # Step 2: Screen articles (cache-aware)
             screening_file = self.workdir / "02_screening_results.json"
             print("\n[STEP 2/6] Screening titles and abstracts...")
-            screening_results = self._screen_articles(articles, screening_file)
+            screening_results = self._screen_articles(all_articles, screening_file)
 
             include_count = sum(1 for r in screening_results if r['decision'] == 'INCLUDE')
             exclude_count = sum(1 for r in screening_results if r['decision'] == 'EXCLUDE')
@@ -1317,7 +1317,7 @@ class CDSSLitReviewProcessor:
             # Step 3: Extract data from included articles
             extraction_file = self.workdir / "03_extracted_data.json"
             included_pmids = {r['pmid'] for r in screening_results if r['decision'] == 'INCLUDE'}
-            included_articles = [a for a in articles if a['pmid'] in included_pmids]
+            included_articles = [a for a in all_articles if a['pmid'] in included_pmids]
 
             if not included_articles:
                 print("ERROR: No articles included after screening. Aborting.", "ERROR")
@@ -2094,7 +2094,7 @@ def main():
 
         # Run full pipeline
         print(f"\nStarting full pipeline...\n")
-        processor = CDSSLitReviewProcessor(
+        processor = LitReviewProcessor(
             llm_client=llm_client,
             workdir=args.workdir,
             log_verbose=not args.quiet
