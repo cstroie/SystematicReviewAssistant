@@ -323,7 +323,11 @@ class PreprintDownloader:
         safe_query = urllib.parse.quote(simplified_query)
         
         # Build API URL using the correct endpoint format
-        url = f"{self.base_urls[source]}/{safe_query}?limit={max_results}"
+        # Format: /details/medrxiv/{from_date}/{to_date}?query=YOUR_QUERY
+        # For now, use a reasonable date range if not specified
+        from_date = "2020-01-01"
+        to_date = "2024-12-31"
+        url = f"{self.base_urls[source]}/{from_date}/{to_date}?query={safe_query}&limit={max_results}"
         
         print(f"Querying {source} with: {simplified_query}")
         
