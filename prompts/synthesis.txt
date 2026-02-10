@@ -35,7 +35,7 @@ Based on this analysis and typical patterns in this field, provide a comprehensi
    - Important variations and contradictions
 
 6. EVIDENCE QUALITY ASSESSMENT
-   - Confidence in the body of evidence using GRADE or similar framework
+   - Confidence in the body of evidence using {quality_tool} framework
    - Key factors influencing confidence (risk of bias, inconsistency, indirectness, imprecision)
    - Assessment of publication bias (funnel plots, Egger's test if applicable)
 
