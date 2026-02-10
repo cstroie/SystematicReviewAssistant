@@ -106,8 +106,16 @@ WRITE THESE SECTIONS:
    - Recommendations for future research based on identified gaps
 
 PRESENTATION:
-- Write in clear prose suitable for peer-reviewed publication
+- Write in clear markdown-formatted prose suitable for peer-reviewed publication.
 - Use concrete examples: cite PMIDs, specific findings from studies
 - Quantify patterns: "X of Y studies (Z%)" rather than vague language
 - Explain contradictions rather than averaging them away
 - Connect synthesis to your analysis plan - don't treat it as separate
+
+OUTPUT FORMAT:
+Return as a markdown document with proper heading hierarchy:
+- # for main title
+- ## for each section (STUDY CHARACTERISTICS, DATA SYNTHESIS, etc.)
+- ### for subsections where needed
+Use **bold** for key findings, *italics* for caveats, `code` for metrics.
+Cite studies as [PMID: 35234521].
