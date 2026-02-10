@@ -1413,6 +1413,7 @@ class CDSSLitReviewProcessor:
                 abstract=safe_abstract
             )
 
+            response_text = ""
             try:
                 response_text = self.llm.call(prompt)
             except Exception as e:
