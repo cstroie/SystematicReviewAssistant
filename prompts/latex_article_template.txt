@@ -216,6 +216,14 @@ LATEX FORMATTING (XeLaTeX compatible):
 - Complete Unicode support
 - No pdflatex-specific packages
 
+FIGURE AND CITATION FORMATTING:
+- Use predictable figure names: fig:prisma, fig:timeline, fig:intervention_types, fig:performance_metrics, fig:clinical_domains
+- Use figure captions as: \\caption{{Figure X: [Descriptive caption]}}
+- Reference figures as: \\ref{{fig:prisma}}, \\ref{{fig:timeline}}, etc.
+- Use numeric citations in square brackets: \\cite{{author2023}}, \\cite{{smith2022,jones2021}}
+- Use \\bibliographystyle{{plainnat}} for bibliography
+- Include all references in \\bibliography{{references.bib}}
+
 TABLES & FIGURES TO REFERENCE:
 - Table 1: Study characteristics table with columns for: study ID, year, country, sample size, modality, clinical domain, study design, key findings, quality score
 - Table 2: QUADAS-2 assessment summary showing risk of bias domains (patient selection, index test, reference standard, flow/timing) with detailed judgments for each study
