@@ -778,7 +778,7 @@ class PMCArticleDownloader:
         # Build request URL
         params = {
             'id': pmid,
-            'format': 'pdf'
+            'format': 'xml'  # Get XML response to extract PDF URL
         }
         
         if self.api_key:
@@ -787,21 +787,66 @@ class PMCArticleDownloader:
         query = urllib.parse.urlencode(params)
         url = f"{self.base_url}?{query}"
 
-        print(url)
+        print(f"Querying PMC API for PMID {pmid}...")
         
         try:
+            # First, get the XML response to find the PDF URL
             with urllib.request.urlopen(url) as response:
-                content = response.read().decode('utf-8')
+                xml_content = response.read().decode('utf-8')
                 
-                # Save to file
-                output_path = Path(output_dir) / f"pmc_{pmid}.xml"
-                with open(output_path, 'w', encoding='utf-8') as f:
-                    f.write(content)
+                # Parse XML to extract PDF URL
+                pdf_url = self._extract_pdf_url_from_xml(xml_content, pmid)
                 
+                if not pdf_url:
+                    print(f"No PDF link found for PMID {pmid}")
+                    return None
+                
+                # Download the PDF
+                output_path = Path(output_dir) / f"pmc_{pmid}.pdf"
+                print(f"Downloading PDF from: {pdf_url}")
+                
+                with urllib.request.urlopen(pdf_url) as pdf_response:
+                    pdf_content = pdf_response.read()
+                    
+                    with open(output_path, 'wb') as f:
+                        f.write(pdf_content)
+                
+                print(f"✓ Downloaded PDF to: {output_path}")
                 return str(output_path)
                 
         except Exception as e:
             print(f"Failed to download PMC article {pmid}: {str(e)}")
+            return None
+    
+    def _extract_pdf_url_from_xml(self, xml_content: str, pmid: str) -> Optional[str]:
+        """
+        Extract PDF URL from PMC XML response
+        
+        Args:
+            xml_content: XML response from PMC API
+            pmid: PubMed ID for error messages
+            
+        Returns:
+            PDF URL string or None if not found
+        """
+        try:
+            # Parse XML
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(xml_content)
+            
+            # Find the record with matching PMID
+            for record in root.findall('.//record'):
+                if record.get('id') == f'PMC{pmid}':
+                    # Find PDF link
+                    for link in record.findall('.//link[@format="pdf"]'):
+                        href = link.get('href')
+                        if href:
+                            return href
+            
+            return None
+            
+        except Exception as e:
+            print(f"Error parsing XML for PMID {pmid}: {str(e)}")
             return None
     
     def download_full_text_batch(self, pmids: List[str], output_dir: str) -> Dict[str, Optional[str]]:
