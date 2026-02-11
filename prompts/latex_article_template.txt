@@ -19,19 +19,25 @@ HIGH-IMPACT STUDIES:
 
 {high_impact_studies}
 
+PATTERNS:
+
 {pattern_insights}
 
 CHARACTERISTICS TABLE:
 
 {characteristics_table}
 
-SYNTHESIS:
-
-{synthesis_data}
-
 EXTRACT FIELDS:
 
 {extract_fields}
+
+ANALYSIS POINTS:
+
+{analysis_points}
+
+SYNTHESIS:
+
+{synthesis_data}
 
 ---
 
@@ -140,32 +146,32 @@ ARTICLE STRUCTURE (8000-10000 words total):
    - AUC: Range [min-max], Median [median], N=[N studies]
    - Accuracy: Range [min-max]%, Median [median]%, N=[N studies]
    
-   Performance by Subgroup (use {pattern_insights}):
+   Performance by Subgroup:
    - By clinical domain: [Domain A: N studies, performance range] 
    - By imaging modality: [Modality X: N studies, performance range]
    - By study design: [RCTs: N studies, Observational: N studies, performance comparison]
    - By year: Trend analysis from Figure \\ref{{fig:timeline}}
    
-   Key Studies (from {high_impact_studies}):
+   Key Studies (from HIGH-IMPACT STUDIES):
    - Best performing: [Study citation] reported [metrics] because [what made it successful]
    - Most rigorous: [Study citation] used [methodology] and found [results]
    - Most novel: [Study citation] introduced [innovation] with [outcomes]
    
    Synthesis Integration (from SYNTHESIS):
    - Connect quantitative findings to thematic patterns
-   - Example: "Performance metrics align with {analysis_points}, where [pattern] was observed"
+   - Example: "Performance metrics align with [ANALYSIS POINT], where [pattern] was observed"
 
 5. THEMATIC SYNTHESIS (1500-2000 words)
    
    Introduction to themes:
    - [N] major themes identified across studies
-   - Themes derived from {analysis_points}
+   - Themes derived from ANALYSIS POINTS
    - Organization: [Thematic approach used]
    
    For EACH theme (subsection \\subsection{{Theme Name}}):
    1. What is it? (definition, why it matters)
    2. Evidence: How many studies address it? Quality of evidence?
-   3. Findings: What do studies show? Use examples from {study_examples}
+   3. Findings: What do studies show? Use examples from KEY STUDY EXAMPLES
    4. Patterns: Convergence or divergence?
    5. Clinical significance: Why does this matter for practice/research?
    
@@ -185,7 +191,7 @@ ARTICLE STRUCTURE (8000-10000 words total):
    - What did the review find? (Main takeaways from Results + Synthesis)
    - How does this advance knowledge? (Answer research questions from Introduction)
    - Compare to prior reviews: How do findings align with/diverge from earlier work?
-   - Use {pattern_insights} to highlight original contributions
+   - Use KEY FINDINGS PATTERNS, IMAGING MODALITIES and CLINICAL DOMAINS to highlight original contributions
    
    6.2 Critical Analysis & Barriers (600 words)
    
@@ -277,9 +283,9 @@ Writing Standards:
 
 Data Integration:
 - DATA SUMMARY: Use for overview statistics, context-setting, Results section backbone
-- {study_examples}: Cite specific examples in Synthesis, Discussion, Implications
-- {high_impact_studies}: Highlight in Results 4.4, use as best-practice examples
-- {pattern_insights}: Use in Thematic Synthesis, Discussion analysis, gaps identification
+- KEY STUDY EXAMPLES: Cite specific examples in Synthesis, Discussion, Implications
+- HIGH-IMPACT STUDIES: Highlight in Results 4.4, use as best-practice examples
+- KEY FINDINGS PATTERNS, IMAGING MODALITIES and CLINICAL DOMAINS: Use in Thematic Synthesis, Discussion analysis, gaps identification
 - CHARACTERISTICS TABLE: Reference for Table 1, support Results 4.2
 - SYNTHESIS: Core of section 5, integration in Results 4.4
 - EXTRACT FIELDS: Guide focus of entire review, structure Results and Discussion
@@ -292,7 +298,7 @@ Document structure:
 \\documentclass[12pt,a4paper]{{article}}
 \\usepackage[margin=1in]{{geometry}}
 \\usepackage{{fontspec}}
-\\setromanfont{{TeX Gyre Termes}}  % or Pagella
+\\setromanfont{{TeX Gyre Pagella}}
 \\usepackage[hidelinks]{{hyperref}}
 \\usepackage{{booktabs}}
 \\usepackage{{graphicx}}
@@ -407,7 +413,7 @@ Style:
 ✓ Academic tone appropriate for high-impact journals
 ✓ Clear, concise, evidence-based
 ✓ Critical analysis evident (not descriptive)
-✓ Original insights from {pattern_insights} and SYNTHESIS
+✓ Original insights from KEY FINDINGS PATTERNS, IMAGING MODALITIES,CLINICAL DOMAINS and SYNTHESIS
 ✓ Transparent about limitations
 ✓ Actionable implications
 

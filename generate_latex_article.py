@@ -1636,16 +1636,16 @@ class LaTeXArticleGenerator:
         # Format extract fields for quality requirements
         extract = plan.get('extract', {})
         if extract:
-            extract_fields = '\n'.join([f'   - {field.replace("_", " ").title()}: {desc}' for field, desc in extract.items()])
+            extract_fields = '\n'.join([f'  - {field.replace("_", " ").title()}: {desc}' for field, desc in extract.items()])
         else:
             extract_fields = "No specific fields defined"
 
         # Extract analysis themes from the plan
         analysis = plan.get('analysis', [])
         if analysis:
-            analysis_points = '\n'.join(f'      * {point}' for point in analysis)
+            analysis_points = '\n'.join(f'  - {point}' for point in analysis)
         else:
-            analysis_points = "      * No specific analysis themes defined"
+            analysis_points = "No specific analysis points defined"
 
         # Use template with placeholders
         prompt_template = self._get_prompt_template()
@@ -1963,7 +1963,7 @@ class LaTeXArticleGenerator:
                 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both',
                 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor',
                 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't',
-                'can', 'will', 'just', 'don', 'should', 'now'
+                'can', 'will', 'just', 'don', 'should', 'now', 'within'
             }
 
             for finding in all_findings:
@@ -1981,6 +1981,7 @@ class LaTeXArticleGenerator:
             for ngram, count in common_patterns:
                 if count >= 2:  # Only show patterns that appear in multiple studies
                     patterns.append(f"  - '{ngram}' appears in {count} studies")
+            patterns.append("")
 
         # Extract methodology insights
         modalities = {}
@@ -1991,11 +1992,13 @@ class LaTeXArticleGenerator:
             basic_info = study.get('basic_info', {})
             methodology = study.get('methodology', {})
 
-            modality = methodology.get('imaging_modality', basic_info.get('imaging_modality', study.get('imaging_modality', 'Unknown'))).title()
+            modality = methodology.get('imaging_modality', basic_info.get('imaging_modality', study.get('imaging_modality', 'Unknown')))
             if isinstance(modality, list):
                 for m in modality:
+                    m = m.lower()
                     modalities[m] = modalities.get(m, 0) + 1
             elif modality:
+                modality = modality.lower()
                 modalities[modality] = modalities.get(modality, 0) + 1
 
             domain = basic_info.get('clinical_domain', study.get('clinical_domain', 'Unknown')).lower()
@@ -2003,12 +2006,14 @@ class LaTeXArticleGenerator:
 
         patterns.append("IMAGING MODALITIES:")
         for mod, count in sorted(modalities.items(), key=lambda x: x[1], reverse=True):
-            patterns.append(f"    - {mod}: {count} studies")
+            if mod != 'unknown' and count > 1:
+                patterns.append(f"  - {mod}: {count} studies")
         patterns.append("")
 
         patterns.append("CLINICAL DOMAINS:")
         for domain, count in sorted(domains.items(), key=lambda x: x[1], reverse=True):
-            patterns.append(f"  - {domain}: {count} studies")
+            if domain != 'unknown' and count > 1:
+                patterns.append(f"  - {domain}: {count} studies")
         patterns.append("")
 
         return "\n".join(patterns)
