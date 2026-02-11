@@ -790,19 +790,33 @@ class PMCArticleDownloader:
         print(f"Querying PMC API for PMID {pmid}...")
         
         try:
-            # First, get the XML response to find the PDF URL
+            # First, get the XML response to find the PDF URL and record ID
             with urllib.request.urlopen(url) as response:
                 xml_content = response.read().decode('utf-8')
                 
-                # Parse XML to extract PDF URL
-                pdf_url = self._extract_pdf_url_from_xml(xml_content, pmid)
+                # Parse XML to extract PDF URL and record ID
+                result = self._extract_pdf_url_and_record_id(xml_content, pmid)
                 
-                if not pdf_url:
+                if not result:
                     print(f"No PDF link found for PMID {pmid}")
                     return None
                 
+                pdf_url, record_id = result
+                
+                # Use record ID as filename if available, otherwise use PMID
+                if record_id:
+                    filename = f"{record_id}.pdf"
+                else:
+                    filename = f"pmc_{pmid}.pdf"
+                
+                output_path = Path(output_dir) / filename
+                
+                # Check if file already exists
+                if output_path.exists():
+                    print(f"✓ File already exists: {output_path}")
+                    return str(output_path)
+                
                 # Download the PDF
-                output_path = Path(output_dir) / f"pmc_{pmid}.pdf"
                 print(f"Downloading PDF from: {pdf_url}")
                 
                 with urllib.request.urlopen(pdf_url) as pdf_response:
@@ -818,16 +832,16 @@ class PMCArticleDownloader:
             print(f"Failed to download PMC article {pmid}: {str(e)}")
             return None
     
-    def _extract_pdf_url_from_xml(self, xml_content: str, pmid: str) -> Optional[str]:
+    def _extract_pdf_url_and_record_id(self, xml_content: str, pmid: str) -> Optional[tuple]:
         """
-        Extract PDF URL from PMC XML response
+        Extract PDF URL and record ID from PMC XML response
         
         Args:
             xml_content: XML response from PMC API
             pmid: PubMed ID for error messages
             
         Returns:
-            PDF URL string or None if not found
+            Tuple of (pdf_url, record_id) or None if not found
         """
         try:
             # Parse XML
@@ -836,12 +850,13 @@ class PMCArticleDownloader:
             
             # Find the record with matching PMID
             for record in root.findall('.//record'):
-                if record.get('id') == f'PMC{pmid}':
-                    # Find PDF link
-                    for link in record.findall('.//link[@format="pdf"]'):
-                        href = link.get('href')
-                        if href:
-                            return href
+                record_id = record.get('id')
+                
+                # Find PDF link
+                for link in record.findall('.//link[@format="pdf"]'):
+                    href = link.get('href')
+                    if href:
+                        return href, record_id
             
             return None
             
