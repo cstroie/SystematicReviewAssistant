@@ -762,7 +762,7 @@ class PMCArticleDownloader:
     
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key
-        self.base_url = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa"
+        self.base_url = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"
     
     def download_full_text(self, pmid: str, output_dir: str) -> Optional[str]:
         """
@@ -778,7 +778,7 @@ class PMCArticleDownloader:
         # Build request URL
         params = {
             'id': pmid,
-            'format': 'xml'  # PMC provides XML format
+            'format': 'pdf'
         }
         
         if self.api_key:
@@ -786,6 +786,8 @@ class PMCArticleDownloader:
         
         query = urllib.parse.urlencode(params)
         url = f"{self.base_url}?{query}"
+
+        print(url)
         
         try:
             with urllib.request.urlopen(url) as response:
