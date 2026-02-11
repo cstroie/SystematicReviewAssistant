@@ -816,16 +816,41 @@ class PMCArticleDownloader:
                     print(f"✓ File already exists: {output_path}")
                     return str(output_path)
                 
-                # Download the PDF
-                print(f"Downloading PDF from: {pdf_url}")
+                # Download the file (could be tgz or PDF)
+                print(f"Downloading from: {pdf_url}")
                 
-                with urllib.request.urlopen(pdf_url) as pdf_response:
-                    pdf_content = pdf_response.read()
+                with urllib.request.urlopen(pdf_url) as response:
+                    content = response.read()
                     
-                    with open(output_path, 'wb') as f:
-                        f.write(pdf_content)
-                
-                print(f"✓ Downloaded PDF to: {output_path}")
+                    # Determine file extension based on URL or content type
+                    if pdf_url.endswith('.tgz') or pdf_url.endswith('.tar.gz'):
+                        # For tgz files, extract and save as PDF
+                        import tarfile
+                        import io
+                        
+                        # Extract tar.gz in memory
+                        with tarfile.open(fileobj=io.BytesIO(content), mode='r:gz') as tar:
+                            # Find PDF files in the archive
+                            pdf_files = [f for f in tar.getnames() if f.endswith('.pdf')]
+                            
+                            if not pdf_files:
+                                print(f"❌ No PDF files found in tgz archive for PMID {pmid}")
+                                return None
+                            
+                            # Extract the first PDF file
+                            pdf_file = pdf_files[0]
+                            pdf_content = tar.extractfile(pdf_file).read()
+                            
+                            # Save as PDF
+                            with open(output_path, 'wb') as f:
+                                f.write(pdf_content)
+                            
+                            print(f"✓ Extracted PDF from tgz: {pdf_file}")
+                    else:
+                        # Save as PDF directly
+                        with open(output_path, 'wb') as f:
+                            f.write(content)
+                        print(f"✓ Downloaded PDF to: {output_path}")
                 return str(output_path)
                 
         except Exception as e:
@@ -834,14 +859,14 @@ class PMCArticleDownloader:
     
     def _extract_pdf_url_and_record_id(self, xml_content: str, pmid: str) -> Optional[tuple]:
         """
-        Extract PDF URL and record ID from PMC XML response
+        Extract download URL and record ID from PMC XML response, preferring tgz format
         
         Args:
             xml_content: XML response from PMC API
             pmid: PubMed ID for error messages
             
         Returns:
-            Tuple of (pdf_url, record_id) or None if not found
+            Tuple of (download_url, record_id) or None if not found
         """
         try:
             # Parse XML
@@ -852,11 +877,25 @@ class PMCArticleDownloader:
             for record in root.findall('.//record'):
                 record_id = record.get('id')
                 
-                # Find PDF link
-                for link in record.findall('.//link[@format="pdf"]'):
+                # Look for tgz format first, then PDF
+                tgz_url = None
+                pdf_url = None
+                
+                for link in record.findall('.//link'):
                     href = link.get('href')
-                    if href:
-                        return href, record_id
+                    if not href:
+                        continue
+                        
+                    format_attr = link.get('format', '').lower()
+                    if format_attr == 'tgz':
+                        tgz_url = href
+                    elif format_attr == 'pdf':
+                        pdf_url = href
+                
+                # Prefer tgz if available, otherwise use PDF
+                download_url = tgz_url or pdf_url
+                if download_url:
+                    return download_url, record_id
             
             return None
             
