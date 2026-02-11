@@ -1950,12 +1950,30 @@ class LaTeXArticleGenerator:
             from collections import Counter
             ngram_counts = Counter()
 
+            # Common English stop words
+            stop_words = {
+                'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+                'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
+                'before', 'after', 'above', 'below', 'between', 'among', 'this', 'that',
+                'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me',
+                'him', 'her', 'us', 'them', 'my', 'your', 'his', 'its', 'our', 'their',
+                'mine', 'yours', 'hers', 'ours', 'theirs', 'am', 'is', 'are', 'was',
+                'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
+                'will', 'would', 'shall', 'should', 'can', 'could', 'may', 'might', 'must',
+                'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both',
+                'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor',
+                'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't',
+                'can', 'will', 'just', 'don', 'should', 'now'
+            }
+
             for finding in all_findings:
                 words = finding.split()
+                # Remove stop words
+                filtered_words = [word for word in words if word.lower() not in stop_words]
                 # Generate n-grams of different lengths
                 for n in [3, 4, 5]:
-                    for i in range(len(words) - n + 1):
-                        ngram = ' '.join(words[i:i+n])
+                    for i in range(len(filtered_words) - n + 1):
+                        ngram = ' '.join(filtered_words[i:i+n])
                         ngram_counts[ngram] += 1
 
             # Get most common patterns
