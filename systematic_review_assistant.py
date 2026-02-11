@@ -778,7 +778,7 @@ class PMCArticleDownloader:
         # Build request URL
         params = {
             'id': pmid,
-            'format': 'xml'  # Get XML response to extract PDF URL
+            #'format': 'xml'  # Get XML response to extract PDF URL
         }
         
         if self.api_key:
@@ -795,17 +795,17 @@ class PMCArticleDownloader:
                 xml_content = response.read().decode('utf-8')
                 
                 # Parse XML to extract PDF URL and record ID
-                result = self._extract_pdf_url_and_record_id(xml_content, pmid)
+                result = self._extract_url_and_record_id(xml_content, pmid)
                 
                 if not result:
                     print(f"No PDF link found for PMID {pmid}")
                     return None
                 
-                pdf_url, record_id = result
+                download_url, record_id, format_attr = result
                 
                 # Use record ID as filename if available, otherwise use PMID
                 if record_id:
-                    filename = f"{record_id}.pdf"
+                    filename = f"{record_id}.{format_attr}"
                 else:
                     filename = f"pmc_{pmid}.pdf"
                 
@@ -817,13 +817,13 @@ class PMCArticleDownloader:
                     return str(output_path)
                 
                 # Download the file (could be tgz or PDF)
-                print(f"Downloading from: {pdf_url}")
+                print(f"Downloading from: {download_url}")
                 
-                with urllib.request.urlopen(pdf_url) as response:
+                with urllib.request.urlopen(download_url) as response:
                     content = response.read()
                     
                     # Determine file extension based on URL or content type
-                    if pdf_url.endswith('.tgz') or pdf_url.endswith('.tar.gz'):
+                    if download_url.endswith('.tgz') or download_url.endswith('.tar.gz'):
                         # For tgz files, extract and save as PDF
                         import tarfile
                         import io
@@ -857,7 +857,7 @@ class PMCArticleDownloader:
             print(f"Failed to download PMC article {pmid}: {str(e)}")
             return None
     
-    def _extract_pdf_url_and_record_id(self, xml_content: str, pmid: str) -> Optional[tuple]:
+    def _extract_url_and_record_id(self, xml_content: str, pmid: str) -> Optional[tuple]:
         """
         Extract download URL and record ID from PMC XML response, preferring tgz format
         
@@ -879,7 +879,7 @@ class PMCArticleDownloader:
                 
                 # Look for tgz format first, then PDF
                 tgz_url = None
-                pdf_url = None
+                download_url = None
                 
                 for link in record.findall('.//link'):
                     href = link.get('href')
@@ -890,12 +890,12 @@ class PMCArticleDownloader:
                     if format_attr == 'tgz':
                         tgz_url = href
                     elif format_attr == 'pdf':
-                        pdf_url = href
+                        download_url = href
                 
                 # Prefer tgz if available, otherwise use PDF
-                download_url = tgz_url or pdf_url
+                download_url = tgz_url or download_url
                 if download_url:
-                    return download_url, record_id
+                    return download_url, record_id, format_attr
             
             return None
             
@@ -1554,7 +1554,7 @@ class LitReviewProcessor:
             included_pmids = {r['pmid'] for r in screening_results if r['decision'] == 'INCLUDE'}
             
             if included_pmids:
-                print("\n[STEP 3/6] Downloading full-text articles from PMC...")
+                print("\n[STEP 2/6] Downloading full-text articles from PMC...")
                 pmc_results = self.pmc_downloader.download_full_text_batch(
                     list(included_pmids), 
                     str(pmc_dir)
@@ -1563,29 +1563,29 @@ class LitReviewProcessor:
                 successful_downloads = sum(1 for path in pmc_results.values() if path is not None)
                 print(f"✓ Downloaded {successful_downloads}/{len(included_pmids)} full-text articles from PMC")
             else:
-                print("\n[STEP 3/6] No included articles - skipping PMC download")
+                print("\n[STEP 2/6] No included articles - skipping PMC download")
                 pmc_results = {}
 
             # Step 4: Extract data from included articles
-            extraction_file = self.workdir / "04_extracted_data.json"
+            extraction_file = self.workdir / "03_extracted_data.json"
             included_articles = [a for a in all_articles if a['pmid'] in included_pmids]
 
             if not included_articles:
                 print("ERROR: No articles included after screening. Aborting.", "ERROR")
                 return
 
-            print("\n[STEP 4/6] Extracting data from included articles...")
+            print("\n[STEP 3/6] Extracting data from included articles...")
             extracted_data = self._extract_article_data(included_articles, extraction_file, pmc_results)
             print(f"✓ Extracted data from {len(extracted_data)} articles")
 
             # Step 5: Assess study quality
-            quality_file = self.workdir / "05_quality_assessment.json"
-            print("\n[STEP 5/6] Assessing study quality...")
+            quality_file = self.workdir / "04_quality_assessment.json"
+            print("\n[STEP 4/6] Assessing study quality...")
             quality_assessments = self._assess_quality(included_articles, quality_file)
             print(f"✓ Quality assessment complete for {len(quality_assessments)} studies")
 
             # Step 6: Synthesis
-            synthesis_file = self.workdir / "06_thematic_synthesis.txt"
+            synthesis_file = self.workdir / "05_thematic_synthesis.txt"
             if synthesis_file.exists():
                 print("\n[STEP 5/6] Using existing thematic synthesis")
                 synthesis = synthesis_file.read_text(encoding='utf-8')
