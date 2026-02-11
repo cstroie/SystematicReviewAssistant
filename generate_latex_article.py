@@ -1056,13 +1056,13 @@ class DataCollector:
                     first_author_last = authors[0].split()[-1]
                 else:
                     first_author_last = 'Unknown'
-                
+
                 # Clean author name for citation key
                 first_author_last = re.sub(r'[^a-zA-Z]', '', first_author_last).lower()
-                
+
                 # Create base citation key
                 base_key = f"{first_author_last}{year}"
-                
+
                 # Handle duplicate keys by adding numeric suffix
                 if base_key in citation_keys:
                     citation_keys[base_key] += 1
@@ -1613,7 +1613,7 @@ class LaTeXArticleGenerator:
         plan = self.data.get('plan', {})
         title = plan.get('title', 'Systematic Review')
         topic = plan.get('topic', 'the research topic')
-        quality_tool = plan.get('quality', 'GRADE') 
+        quality_tool = plan.get('quality', 'GRADE')
 
         # Get data summary
         data_summary = self.get_data_summary()
@@ -1946,21 +1946,23 @@ class LaTeXArticleGenerator:
 
         if all_findings:
             patterns.append("KEY FINDINGS PATTERNS:")
-            # Simple pattern detection - look for common words
+            # Simple pattern detection - look for common n-grams
             from collections import Counter
-            word_counts = Counter()
+            ngram_counts = Counter()
 
             for finding in all_findings:
                 words = finding.split()
-                for word in words:
-                    if len(word) > 3:  # Ignore very short words
-                        word_counts[word] += 1
+                # Generate n-grams of different lengths
+                for n in [3, 4, 5]:
+                    for i in range(len(words) - n + 1):
+                        ngram = ' '.join(words[i:i+n])
+                        ngram_counts[ngram] += 1
 
             # Get most common patterns
-            common_patterns = word_counts.most_common(10)
-            for word, count in common_patterns:
+            common_patterns = ngram_counts.most_common(10)
+            for ngram, count in common_patterns:
                 if count >= 2:  # Only show patterns that appear in multiple studies
-                    patterns.append(f"  - '{word}' appears in {count} studies")
+                    patterns.append(f"  - '{ngram}' appears in {count} studies")
 
         # Extract methodology insights
         modalities = {}
@@ -1971,14 +1973,14 @@ class LaTeXArticleGenerator:
             basic_info = study.get('basic_info', {})
             methodology = study.get('methodology', {})
 
-            modality = methodology.get('imaging_modality', basic_info.get('imaging_modality', study.get('imaging_modality', 'Unknown')))
+            modality = methodology.get('imaging_modality', basic_info.get('imaging_modality', study.get('imaging_modality', 'Unknown'))).title()
             if isinstance(modality, list):
                 for m in modality:
                     modalities[m] = modalities.get(m, 0) + 1
             elif modality:
                 modalities[modality] = modalities.get(modality, 0) + 1
 
-            domain = basic_info.get('clinical_domain', study.get('clinical_domain', 'Unknown'))
+            domain = basic_info.get('clinical_domain', study.get('clinical_domain', 'Unknown')).lower()
             domains[domain] = domains.get(domain, 0) + 1
 
         patterns.append("IMAGING MODALITIES:")
@@ -2063,7 +2065,7 @@ class LaTeXArticleGenerator:
             print(f"Error reading characteristics CSV: {str(e)}")
             return f"Error reading characteristics table: {str(e)}"
 
-    def _get_sample_size_range(self, characteristics: List[Dict]) -> str:
+    def get_sample_size_range(self, characteristics: List[Dict]) -> str:
         """Get the range of sample sizes from characteristics data.
 
         This method extracts and calculates the range of sample sizes from
@@ -2079,7 +2081,7 @@ class LaTeXArticleGenerator:
                 "min-max", or "N/A" if no valid sample sizes are found.
 
         Example:
-            range_str = generator._get_sample_size_range(characteristics)
+            range_str = generator.get_sample_size_range(characteristics)
             print(f"Sample size range: {range_str}")
         """
         sizes = []
