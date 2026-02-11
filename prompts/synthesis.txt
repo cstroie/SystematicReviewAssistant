@@ -110,8 +110,8 @@ PRESENTATION:
 
 OUTPUT FORMAT:
 Return as a markdown document with proper heading hierarchy:
-- # for main title
+- no main title
 - ## for each section (STUDY CHARACTERISTICS, DATA SYNTHESIS, etc.)
-- ### for subsections where needed
+- ### for subsections
 Use **bold** for key findings, *italics* for caveats, `code` for metrics.
 Cite studies as [PMID: 35234521].

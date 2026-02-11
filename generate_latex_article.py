@@ -45,7 +45,7 @@ Key Features:
 - Detailed progress reporting and debugging capabilities
 
 Technical Architecture:
-- ArticleDataCollector: Gathers and processes pipeline outputs
+- DataCollector: Gathers and processes pipeline outputs
 - LaTeXArticleGenerator: Constructs prompts and manages LLM API interactions
 - Modular prompt system with external template files
 - Robust data formatting and validation
@@ -103,7 +103,7 @@ import os
 import time
 
 
-class ArticleDataCollector:
+class DataCollector:
     """Collects and prepares systematic review data from pipeline outputs.
 
     This class orchestrates the complete data collection and preparation process
@@ -142,7 +142,7 @@ class ArticleDataCollector:
                     - statistics: Computed summary statistics and patterns
 
     Example:
-        collector = ArticleDataCollector('/path/to/pipeline/output')
+        collector = DataCollector('/path/to/pipeline/output')
         data = collector.collect_all_data()
         # data now contains all processed information ready for article generation
     """
@@ -161,11 +161,11 @@ class ArticleDataCollector:
                 stages.
 
         Example:
-            collector = ArticleDataCollector('/path/to/systematic/review/output')
+            collector = DataCollector('/path/to/systematic/review/output')
         """
         self.workdir = Path(workdir)
         self.data = {
-            'original_articles': []  # Articles from initial parsing
+            'original_articles': []
         }
 
     def collect_all_data(self) -> Dict:
@@ -211,7 +211,7 @@ class ArticleDataCollector:
             robustness against incomplete pipeline outputs.
 
         Example:
-            collector = ArticleDataCollector('/path/to/pipeline/output')
+            collector = DataCollector('/path/to/pipeline/output')
             data = collector.collect_all_data()
             print(f"Collected data for {data['statistics']['total_studies']} studies")
         """
@@ -243,7 +243,7 @@ class ArticleDataCollector:
         # Calculate statistics
         self._calculate_statistics()
 
-        print("✓ Data collection complete")
+        print("Data collection complete")
         return self.data
 
     def _load_screening_results(self) -> None:
@@ -317,7 +317,7 @@ class ArticleDataCollector:
             'included': included,
             'excluded': excluded,
             'uncertain': uncertain,
-            'excluded_total': excluded + uncertain,  # Uncertain go to full-text
+            'excluded_total': excluded + uncertain,
             'full_text_assessed': included + uncertain,
             'full_text_excluded': uncertain,
             'final_included': included
@@ -390,7 +390,7 @@ class ArticleDataCollector:
             return
 
         # Filter out items with errors
-        self.data['extracted'] = [d for d in data if 'extraction_error' not in d]
+        self.data['extracted'] = [d for d in data if 'error' not in d]
 
         print(f"  Extracted: {len(self.data['extracted'])} studies")
 
@@ -452,7 +452,7 @@ class ArticleDataCollector:
             self.data['quality'] = []
             return
 
-        self.data['quality'] = [d for d in data if 'assessment_error' not in d]
+        self.data['quality'] = [d for d in data if 'error' not in d]
 
         print(f"  Quality assessment: {len(self.data['quality'])} studies rated")
 
@@ -512,7 +512,7 @@ class ArticleDataCollector:
             self.data['synthesis'] = ""
             return
 
-        print(f"  Synthesis: {len(self.data['synthesis'])} characters")
+        print(f"  Synthesis: {len(self.data['synthesis'].split())} words, {len(self.data['synthesis'])} characters")
 
     def _load_original_articles(self) -> None:
         """Load original parsed articles from JSON file.
@@ -856,7 +856,6 @@ class ArticleDataCollector:
                 - year_range: Range of publication years (e.g., "2014-2024")
                 - modalities: Dictionary of imaging modalities and counts
                 - domains: Dictionary of clinical domains and counts
-                - extract_fields: Statistics for each extracted field
                 - study_designs: Dictionary of study designs and counts
                 - sample_sizes: Dictionary with median, range, and mean
                 - performance_metrics: Statistics for sensitivity, specificity, AUC
@@ -884,7 +883,6 @@ class ArticleDataCollector:
             'year_range': self._get_year_range(extracted),
             'modalities': self._get_modalities(extracted),
             'domains': self._get_domains(extracted),
-            'extract_fields': self._get_extract_fields(extracted),
             'study_designs': self._get_study_designs(extracted),
             'sample_sizes': self._get_sample_size_stats(extracted),
             'performance_metrics': self._get_performance_metrics(extracted),
@@ -918,26 +916,6 @@ class ArticleDataCollector:
             if domain:
                 domains[domain] = domains.get(domain, 0) + 1
         return dict(sorted(domains.items(), key=lambda x: x[1], reverse=True))
-
-    def _get_extract_fields(self, data: List[Dict]) -> Dict[str, Dict[str, int]]:
-        """Get statistics for all extract fields"""
-        extract_fields = {}
-        plan = self.data.get('plan', {})
-        extract_config = plan.get('extract', {})
-
-        for field in extract_config.keys():
-            field_values = {}
-            for d in data:
-                # Handle both top-level and extract section fields
-                value = d.get('extract', {}).get(field) or d.get(field, 'Unknown')
-                if isinstance(value, list):
-                    for v in value:
-                        field_values[v] = field_values.get(v, 0) + 1
-                else:
-                    field_values[value] = field_values.get(value, 0) + 1
-            extract_fields[field] = dict(sorted(field_values.items(), key=lambda x: x[1], reverse=True))
-
-        return extract_fields
 
     def _get_study_designs(self, data: List[Dict]) -> Dict[str, int]:
         designs = {}
@@ -1138,7 +1116,7 @@ class LaTeXArticleGenerator:
     for generating large documents efficiently.
 
     The generator follows a systematic approach to article generation:
-    1. Data collection and organization from ArticleDataCollector
+    1. Data collection and organization from DataCollector
     2. Prompt construction with structured requirements and formatting
     3. API communication with retry logic and error handling
     4. Response processing for both streaming and non-streaming modes
@@ -1150,7 +1128,7 @@ class LaTeXArticleGenerator:
 
     Attributes:
         data (dict): Dictionary containing all collected review data from
-                    ArticleDataCollector, including screening results,
+                    DataCollector, including screening results,
                     extracted studies, quality assessments, synthesis,
                     and computed statistics
         provider (str): LLM provider name ('anthropic', 'openrouter', 'together',
@@ -1191,7 +1169,7 @@ class LaTeXArticleGenerator:
 
         Args:
             data (dict): Comprehensive dictionary containing all collected review
-                        data from ArticleDataCollector, including screening
+                        data from DataCollector, including screening
                         results, extracted studies, quality assessments,
                         thematic synthesis, and computed statistics
             provider (str, optional): LLM provider name. Defaults to 'anthropic'.
@@ -1285,7 +1263,7 @@ class LaTeXArticleGenerator:
         else:
             self.api_key = None
 
-        print(f"✓ Initialized {provider.upper()} API client")
+        print(f"Initialized {provider.upper()} API client")
         print(f"  Model: {self.model}")
 
     def call_llm(self, prompt: str, max_retries: int = 3, stream: bool = False, temperature: float = 0.8, output_file: Optional[Path] = None, verbose: bool = False) -> str:
@@ -1550,7 +1528,7 @@ class LaTeXArticleGenerator:
         print("\nGenerating LaTeX article...")
 
         # Build comprehensive prompt with all data
-        prompt = self._build_article_prompt()
+        prompt = self.build_article_prompt()
 
         print(f"Prompt size for LLM call: {len(prompt) / 1024:.1f} KB")
 
@@ -1585,7 +1563,7 @@ class LaTeXArticleGenerator:
             # Response is expected to be the complete LaTeX document source
             return article_content
 
-    def _build_article_prompt(self) -> str:
+    def build_article_prompt(self) -> str:
         """Construct the complete LLM prompt with structured content requirements.
 
         This method creates a comprehensive prompt that provides the LLM with
@@ -1628,70 +1606,67 @@ class LaTeXArticleGenerator:
             saved to disk for debugging purposes when generating articles.
 
         Example:
-            prompt = generator._build_article_prompt()
+            prompt = generator.build_article_prompt()
             print(f"Prompt length: {len(prompt)} characters")
         """
-        try:
-            # Get plan data
-            plan = self.data.get('plan', {})
-            title = plan.get('title', 'Systematic Review')
-            topic = plan.get('topic', 'the research topic')
-            quality_tool = plan.get('quality', 'GRADE') 
+        # Get plan data
+        plan = self.data.get('plan', {})
+        title = plan.get('title', 'Systematic Review')
+        topic = plan.get('topic', 'the research topic')
+        quality_tool = plan.get('quality', 'GRADE') 
 
-            # Get data summary
-            data_summary = self._format_data_for_prompt()
+        # Get data summary
+        data_summary = self.get_data_summary()
 
-            # Get key study examples
-            study_examples = self._get_key_study_examples()
+        # Get key study examples
+        study_examples = self._get_key_study_examples()
 
-            # Get high-impact studies
-            high_impact_studies = self._get_high_impact_studies()
+        # Get high-impact studies
+        high_impact_studies = self._get_high_impact_studies()
 
-            # Get pattern insights
-            pattern_insights = self._extract_patterns_for_prompt()
+        # Get pattern insights
+        pattern_insights = self._extract_patterns_for_prompt()
 
-            # Format characteristics table as markdown
-            characteristics_table = self._format_characteristics_as_markdown()
+        # Format characteristics table as markdown
+        characteristics_table = self.format_characteristics_as_markdown()
 
-            # Get synthesis data
-            synthesis_data = self.data.get('synthesis', '')
+        # Get synthesis data
+        synthesis_data = self.data.get('synthesis', '')
 
-            # Format extract fields for quality requirements
-            extract = plan.get('extract', {})
-            extract_fields = '\n'.join(f'   * {field.replace("_", " ").title()}: {desc}' for field, desc in extract.items())
+        # Format extract fields for quality requirements
+        extract = plan.get('extract', {})
+        if extract:
+            extract_fields = '\n'.join([f'   - {field.replace("_", " ").title()}: {desc}' for field, desc in extract.items()])
+        else:
+            extract_fields = "No specific fields defined"
 
-            # Extract analysis themes from the plan
-            analysis = plan.get('analysis', [])
-            if analysis:
-                analysis_points = '\n'.join(f'      * {point}' for point in analysis)
-            else:
-                analysis_points = "      * No specific analysis themes defined"
+        # Extract analysis themes from the plan
+        analysis = plan.get('analysis', [])
+        if analysis:
+            analysis_points = '\n'.join(f'      * {point}' for point in analysis)
+        else:
+            analysis_points = "      * No specific analysis themes defined"
 
-            # Use template with placeholders
-            prompt_template = self._get_prompt_template()
+        # Use template with placeholders
+        prompt_template = self._get_prompt_template()
 
-            # Format the prompt with data
-            prompt = prompt_template.format(
-                title=title,
-                topic=topic,
-                data_summary=data_summary,
-                study_examples=study_examples,
-                high_impact_studies=high_impact_studies,
-                pattern_insights=pattern_insights,
-                characteristics_table=characteristics_table,
-                synthesis_data=synthesis_data,
-                extract_fields=extract_fields,
-                analysis_points=analysis_points,
-                quality_tool=quality_tool
-            )
+        # Format the prompt with data
+        prompt = prompt_template.format(
+            title=title,
+            topic=topic,
+            data_summary=data_summary,
+            study_examples=study_examples,
+            high_impact_studies=high_impact_studies,
+            pattern_insights=pattern_insights,
+            characteristics_table=characteristics_table,
+            synthesis_data=synthesis_data,
+            extract_fields=extract_fields,
+            analysis_points=analysis_points,
+            quality_tool=quality_tool
+        )
 
-            # Return the fully formatted prompt
-            return prompt
-
-        except (FileNotFoundError, IOError) as e:
-            print(f"Error loading prompt template: {str(e)}")
-            # Fallback to a simple prompt
-            return f"Generate a LaTeX article about {topic} with the following data:\n{self._format_data_for_prompt()}"
+        # Return the fully formatted prompt
+        return prompt
 
     def _get_prompt_template(self) -> str:
         """Load the prompt template from file.
@@ -1778,7 +1753,11 @@ class LaTeXArticleGenerator:
             lines.append(f"  Title: {study.get('title', 'N/A')}")
             lines.append(f"  Year: {study.get('year', 'N/A')}")
             lines.append(f"  Design: {study.get('study_design', 'N/A')}")
-            lines.append(f"  Modality: {study.get('imaging_modality', 'N/A')}")
+            # FIXME Provied comma-separated list of modalities, not json format
+            modalities = study.get('imaging_modality', 'N/A')
+            if isinstance(modalities, list):
+                modalities = ', '.join(modalities)
+            lines.append(f"  Modality: {modalities}")
             lines.append(f"  Domain: {study.get('clinical_domain', 'N/A')}")
             lines.append(f"  Main findings: {study.get('main_findings', 'N/A')}")
             lines.append(f"  Clinical implications: {study.get('clinical_implications', 'N/A')}")
@@ -1898,21 +1877,21 @@ class LaTeXArticleGenerator:
         # Format the high-impact studies section
         lines = ["HIGH-IMPACT STUDIES:", ""]
         for study, metrics in high_impact[:3]:  # Top 3
-            lines.append(f"  Study: {study.get('title', 'N/A')}")
-            lines.append(f"  Year: {study.get('year', 'N/A')}")
-            lines.append(f"  Design: {study.get('study_design', 'N/A')}")
+            lines.append(f"Study: {study.get('title', 'N/A')}")
+            lines.append(f"Year: {study.get('year', 'N/A')}")
+            lines.append(f"Design: {study.get('study_design', 'N/A')}")
             # Highlight novel approaches or exceptional metrics
             if isinstance(metrics, dict) and 'novel_approach' in metrics:
-                lines.append(f"  Innovation: Novel approach detected")
-                lines.append(f"  Key Finding: {study.get('main_findings', 'N/A')}")
+                lines.append(f"Innovation: Novel approach detected")
+                lines.append(f"Key Finding: {study.get('main_findings', 'N/A')}")
             else:
-                lines.append("  Performance:")
+                lines.append("Performance:")
                 if 'sensitivity' in metrics:
-                    lines.append(f"    - Sensitivity: {metrics.get('sensitivity', 'N/A')}")
+                    lines.append(f"  - Sensitivity: {metrics.get('sensitivity', 'N/A')}")
                 if 'specificity' in metrics:
-                    lines.append(f"    - Specificity: {metrics.get('specificity', 'N/A')}")
+                    lines.append(f"  - Specificity: {metrics.get('specificity', 'N/A')}")
                 if 'auc' in metrics:
-                    lines.append(f"    - AUC: {metrics.get('auc', 'N/A')}")
+                    lines.append(f"  - AUC: {metrics.get('auc', 'N/A')}")
             # Add spacing between studies
             lines.append("")
         # Return formatted high-impact studies section
@@ -2012,7 +1991,7 @@ class LaTeXArticleGenerator:
 
         return "\n".join(patterns)
 
-    def _format_characteristics_as_markdown(self) -> str:
+    def format_characteristics_as_markdown(self) -> str:
         """Format characteristics table as markdown table for prompt inclusion.
 
         This method presents the characteristics table data in a markdown format
@@ -2030,7 +2009,7 @@ class LaTeXArticleGenerator:
                 - Proper markdown table syntax
 
         Example:
-            markdown_table = generator._format_characteristics_as_markdown()
+            markdown_table = generator.format_characteristics_as_markdown()
             print(f"Markdown table with {len(markdown_table.splitlines())} lines")
         """
         # Get the workdir from data
@@ -2114,7 +2093,7 @@ class LaTeXArticleGenerator:
         sizes.sort()
         return f"{sizes[0]}-{sizes[-1]}"
 
-    def _format_data_for_prompt(self) -> str:
+    def get_data_summary(self) -> str:
         """Create human-readable summary of collected data for inclusion in prompt.
 
         This method formats the collected review data into a human-readable
@@ -2151,7 +2130,7 @@ class LaTeXArticleGenerator:
             relevant for article generation.
 
         Example:
-            data_summary = generator._format_data_for_prompt()
+            data_summary = generator.get_data_summary()
             print(f"Data summary length: {len(data_summary)} characters")
         """
         lines = []
@@ -2229,7 +2208,7 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
     from data collection through final file output. It serves as the primary
     interface for generating systematic review articles from pipeline outputs.
 
-    The function coordinates between the ArticleDataCollector for gathering
+    The function coordinates between the DataCollector for gathering
     and organizing data, and the LaTeXArticleGenerator for creating the
     actual document. It handles both streaming and non-streaming modes,
     with appropriate file management and error handling.
@@ -2306,7 +2285,7 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
     workdir = Path(workdir)
 
     # Collect data
-    collector = ArticleDataCollector(str(workdir))
+    collector = DataCollector(str(workdir))
     data = collector.collect_all_data()
 
     # Generate article
@@ -2333,7 +2312,7 @@ def generate_article_main(workdir: str, provider: str = 'openrouter',
     article_content = generator.generate_article(output_file=output_file, stream=stream, temperature=temperature)
 
     # Print success message
-    print(f"\n✓ Article generated successfully!")
+    print(f"\nArticle generated successfully!")
     print(f"  Saved to: {output_file}")
     print(f"  References saved to: {bib_file}")
     if not stream:

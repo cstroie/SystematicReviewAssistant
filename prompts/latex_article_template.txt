@@ -1,17 +1,31 @@
-ROLE: You are an expert systematic review researcher writing a publication-ready article 
-on "{topic}" for high-impact medical imaging or healthcare AI journals.
+ROLE:
+You are an expert systematic review researcher writing a publication-ready article on
+"{topic}"
+for high-impact medical imaging or healthcare AI journals.
 
-TASK: Generate a complete LaTeX article synthesizing systematic review data using PRISMA 
-2020 framework with rigorous analysis and actionable insights.
+TASK:
+Generate a complete LaTeX article synthesizing systematic review data using PRISMA 2020
+framework with rigorous analysis and actionable insights.
 
-INPUT DATA:
-{data_summary}          — Overall review statistics and summary findings
-{study_examples}        — Representative examples (typically 3-5 key studies)
-{high_impact_studies}   — Studies with notable results or methodological quality
-{pattern_insights}      — Identified trends and patterns across studies
-{characteristics_table} — Compiled study characteristics
-{synthesis_data}        — Thematic synthesis analysis
-{extract_fields}        — Topic-specific extraction focus areas
+DATA SUMMARY:
+
+{data_summary}
+
+{study_examples}
+
+{high_impact_studies}
+
+{pattern_insights}
+
+{characteristics_table}
+
+SYNTHESIS:
+
+{synthesis_data}
+
+EXTRACT FIELDS:
+
+{extract_fields}
 
 ---
 
@@ -23,11 +37,11 @@ ARTICLE STRUCTURE (8000-10000 words total):
    Abstract must contain:
    - BACKGROUND: Current state of {topic}, clinical need, evidence gap
    - OBJECTIVE: Clear research question being addressed
-   - METHODS: PubMed search scope (2014-2024), inclusion/exclusion criteria, {quality_tool} assessment
+   - METHODS: Medical database search period, inclusion/exclusion criteria, {quality_tool} assessment
    - RESULTS: 
-     * N studies included (breakdown by design if relevant)
-     * Key performance metrics (sensitivity/specificity ranges, AUC values from {data_summary})
-     * Major findings from {pattern_insights}
+     * Number of studies included (breakdown by design if relevant)
+     * Key performance metrics (sensitivity/specificity ranges, AUC values from STUDY STATISTICS)
+     * Major findings from METHODOLOGY INSIGHTS
    - CONCLUSIONS: Main takeaway, clinical implications, next steps
    
    LaTeX notes: Escape special characters: \\& \\% \\$ \\# \\_
@@ -37,7 +51,7 @@ ARTICLE STRUCTURE (8000-10000 words total):
    Structure:
    - Opening (150 words): Clinical context and why {topic} matters
    - Current landscape (250 words): What's known about {topic}, current approaches
-   - Gap analysis (250 words): What's missing (use {pattern_insights} to identify gaps)
+   - Gap analysis (250 words): What's missing (use METHODOLOGY INSIGHTS to identify gaps)
    - Research questions (200 words): Explicit questions your review answers
    - Justification (150 words): Why systematic review now, PRISMA 2020 compliance
    
@@ -49,16 +63,16 @@ ARTICLE STRUCTURE (8000-10000 words total):
 3. METHODS (1200-1500 words)
    
    3.1 Search Strategy & Study Selection
-   - Exact PubMed query (from {data_summary})
-   - Date range: 2014-2024 with rationale (relevance to current practice)
+   - Exact PubMed query
+   - Date range with rationale (relevance to current practice)
    - Databases searched: PubMed, [others if applicable]
-   - Inclusion criteria (explicitly stated, numbered)
-   - Exclusion criteria (explicitly stated, numbered)
+   - Inclusion criteria (explicitly stated, numbered list)
+   - Exclusion criteria (explicitly stated, numbered list)
    - Study selection process: two-stage (title/abstract → full-text) with agreement metrics
    
    3.2 Quality Assessment
    - Tool: {quality_tool}
-   - Key domains assessed:
+   - Key domains assessed (numbered list):
      * [Domain 1 with brief definition]
      * [Domain 2 with brief definition]
      * [Domain 3 with brief definition]
@@ -67,12 +81,12 @@ ARTICLE STRUCTURE (8000-10000 words total):
    
    3.3 Data Extraction
    - Standardized extraction form (describe key fields)
-   - Extracted fields aligned with {extract_fields}
+   - Extracted fields aligned with EXTRACT FIELDS
    - Duplicate extraction for subset (confirm reliability)
    
    3.4 Analysis Approach
    - Quantitative: Performance metrics synthesis (specify if meta-analysis or descriptive)
-   - Qualitative: Thematic analysis approach from {synthesis_data}
+   - Qualitative: Thematic analysis approach from SYNTHESIS
    - Mixed methods justification (why both needed)
    
    3.5 PRISMA 2020 Compliance
@@ -82,7 +96,7 @@ ARTICLE STRUCTURE (8000-10000 words total):
 4. RESULTS (1500-2500 words)
 
    4.1 Study Selection (300 words)
-   - Use exact numbers from {data_summary}
+   - Use exact numbers from DATA SUMMARY
    - Reference: "See Figure \\ref{{fig:prisma}} for flow diagram"
    - Key statistics:
      * Initial records identified: [N]
@@ -97,7 +111,7 @@ ARTICLE STRUCTURE (8000-10000 words total):
    4.2 Study Characteristics (600 words)
    - Overview paragraph: Study designs, geographic distribution, timeframe
    - Reference: "See Table \\ref{{table:characteristics}} for detailed characteristics"
-   - Key statistics from {characteristics_table}:
+   - Key statistics from CHARACTERISTICS TABLE:
      * Study design breakdown (N RCTs, N retrospective, N prospective, etc.)
      * Sample sizes: median [X], range [min-max]
      * Clinical domains (Table \\ref{{table:domains}})
@@ -114,7 +128,7 @@ ARTICLE STRUCTURE (8000-10000 words total):
    
    4.4 Synthesis of Results (700-1000 words)
    
-   Performance Metrics (reference {data_summary}):
+   Performance Metrics (reference DATA SUMMARY):
    - Sensitivity: Range [min-max]%, Median [median]%, N=[N studies reporting]
    - Specificity: Range [min-max]%, Median [median]%, N=[N studies]
    - AUC: Range [min-max], Median [median], N=[N studies]
@@ -131,7 +145,7 @@ ARTICLE STRUCTURE (8000-10000 words total):
    - Most rigorous: [Study citation] used [methodology] and found [results]
    - Most novel: [Study citation] introduced [innovation] with [outcomes]
    
-   Synthesis Integration (from {synthesis_data}):
+   Synthesis Integration (from SYNTHESIS):
    - Connect quantitative findings to thematic patterns
    - Example: "Performance metrics align with {analysis_points}, where [pattern] was observed"
 
@@ -157,7 +171,7 @@ ARTICLE STRUCTURE (8000-10000 words total):
    Critical gaps identified:
    - What's not being studied?
    - What questions remain unanswered?
-   - Based on {extract_fields}, what's missing?
+   - Based on EXTRACT FIELDS, what's missing?
 
 6. DISCUSSION (1500-2000 words)
 
@@ -200,7 +214,7 @@ ARTICLE STRUCTURE (8000-10000 words total):
    - Methodological priorities (study designs, population diversity, etc.)
    - Outcome standardization needs
    - Implementation/real-world validation gaps
-   - Specific research questions from {extract_fields} that need addressing
+   - Specific research questions from EXTRACT FIELDS that need addressing
    
    For Industry & Developers:
    - Transparency & validation standards (explainability, documentation)
@@ -256,13 +270,13 @@ Writing Standards:
 - Evidence-based: Every claim traceable to data or citations
 
 Data Integration:
-- {data_summary}: Use for overview statistics, context-setting, Results section backbone
+- DATA SUMMARY: Use for overview statistics, context-setting, Results section backbone
 - {study_examples}: Cite specific examples in Synthesis, Discussion, Implications
 - {high_impact_studies}: Highlight in Results 4.4, use as best-practice examples
 - {pattern_insights}: Use in Thematic Synthesis, Discussion analysis, gaps identification
-- {characteristics_table}: Reference for Table 1, support Results 4.2
-- {synthesis_data}: Core of section 5, integration in Results 4.4
-- {extract_fields}: Guide focus of entire review, structure Results and Discussion
+- CHARACTERISTICS TABLE: Reference for Table 1, support Results 4.2
+- SYNTHESIS: Core of section 5, integration in Results 4.4
+- EXTRACT FIELDS: Guide focus of entire review, structure Results and Discussion
 
 ---
 
@@ -387,7 +401,7 @@ Style:
 ✓ Academic tone appropriate for high-impact journals
 ✓ Clear, concise, evidence-based
 ✓ Critical analysis evident (not descriptive)
-✓ Original insights from {pattern_insights} and {synthesis_data}
+✓ Original insights from {pattern_insights} and SYNTHESIS
 ✓ Transparent about limitations
 ✓ Actionable implications
 
