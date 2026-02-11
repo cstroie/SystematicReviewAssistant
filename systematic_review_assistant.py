@@ -757,6 +757,75 @@ class DirectAPIClient:
         return sanitized
 
 
+class PMCArticleDownloader:
+    """Download full-text articles from PubMed Central"""
+    
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key
+        self.base_url = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa"
+    
+    def download_full_text(self, pmid: str, output_dir: str) -> Optional[str]:
+        """
+        Download full-text article from PMC for a given PMID
+        
+        Args:
+            pmid: PubMed ID
+            output_dir: Directory to save the article
+            
+        Returns:
+            Path to downloaded file or None if not available
+        """
+        # Build request URL
+        params = {
+            'id': pmid,
+            'format': 'xml'  # PMC provides XML format
+        }
+        
+        if self.api_key:
+            params['api_key'] = self.api_key
+        
+        query = urllib.parse.urlencode(params)
+        url = f"{self.base_url}?{query}"
+        
+        try:
+            with urllib.request.urlopen(url) as response:
+                content = response.read().decode('utf-8')
+                
+                # Save to file
+                output_path = Path(output_dir) / f"pmc_{pmid}.xml"
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                
+                return str(output_path)
+                
+        except Exception as e:
+            print(f"Failed to download PMC article {pmid}: {str(e)}")
+            return None
+    
+    def download_full_text_batch(self, pmids: List[str], output_dir: str) -> Dict[str, Optional[str]]:
+        """
+        Download full-text articles for multiple PMIDs
+        
+        Args:
+            pmids: List of PubMed IDs
+            output_dir: Directory to save articles
+            
+        Returns:
+            Dictionary mapping PMIDs to file paths (or None if not available)
+        """
+        output_dir = Path(output_dir)
+        output_dir.mkdir(exist_ok=True)
+        
+        results = {}
+        
+        for pmid in pmids:
+            file_path = self.download_full_text(pmid, str(output_dir))
+            results[pmid] = file_path
+            time.sleep(0.5)  # Rate limiting
+        
+        return results
+
+
 class PubMedParser:
     """Parse multiple PubMed export formats"""
     
@@ -1308,8 +1377,9 @@ class LitReviewProcessor:
         self.log_verbose = log_verbose
         self.start_time = datetime.now()
         
-        # Initialize preprint downloader
+        # Initialize preprint and PMC downloaders
         self.preprint_downloader = PreprintDownloader()
+        self.pmc_downloader = PMCArticleDownloader()
 
         # Initialize log file
         print(f"Pipeline initialized at {self.start_time}")
@@ -1378,27 +1448,43 @@ class LitReviewProcessor:
             print(f"  - EXCLUDE: {exclude_count}")
             print(f"  - UNCERTAIN: {uncertain_count}")
 
-            # Step 3: Extract data from included articles
-            extraction_file = self.workdir / "03_extracted_data.json"
+            # Step 3: Download full-text articles from PMC
+            pmc_dir = self.workdir / "pmc_fulltext"
             included_pmids = {r['pmid'] for r in screening_results if r['decision'] == 'INCLUDE'}
+            
+            if included_pmids:
+                print("\n[STEP 3/6] Downloading full-text articles from PMC...")
+                pmc_results = self.pmc_downloader.download_full_text_batch(
+                    list(included_pmids), 
+                    str(pmc_dir)
+                )
+                
+                successful_downloads = sum(1 for path in pmc_results.values() if path is not None)
+                print(f"✓ Downloaded {successful_downloads}/{len(included_pmids)} full-text articles from PMC")
+            else:
+                print("\n[STEP 3/6] No included articles - skipping PMC download")
+                pmc_results = {}
+
+            # Step 4: Extract data from included articles
+            extraction_file = self.workdir / "04_extracted_data.json"
             included_articles = [a for a in all_articles if a['pmid'] in included_pmids]
 
             if not included_articles:
                 print("ERROR: No articles included after screening. Aborting.", "ERROR")
                 return
 
-            print("\n[STEP 3/6] Extracting data from included articles...")
-            extracted_data = self._extract_article_data(included_articles, extraction_file)
+            print("\n[STEP 4/6] Extracting data from included articles...")
+            extracted_data = self._extract_article_data(included_articles, extraction_file, pmc_results)
             print(f"✓ Extracted data from {len(extracted_data)} articles")
 
-            # Step 4: Assess study quality
-            quality_file = self.workdir / "04_quality_assessment.json"
-            print("\n[STEP 4/6] Assessing study quality...")
+            # Step 5: Assess study quality
+            quality_file = self.workdir / "05_quality_assessment.json"
+            print("\n[STEP 5/6] Assessing study quality...")
             quality_assessments = self._assess_quality(included_articles, quality_file)
             print(f"✓ Quality assessment complete for {len(quality_assessments)} studies")
 
-            # Step 5: Synthesis
-            synthesis_file = self.workdir / "05_thematic_synthesis.txt"
+            # Step 6: Synthesis
+            synthesis_file = self.workdir / "06_thematic_synthesis.txt"
             if synthesis_file.exists():
                 print("\n[STEP 5/6] Using existing thematic synthesis")
                 synthesis = synthesis_file.read_text(encoding='utf-8')
@@ -1412,8 +1498,8 @@ class LitReviewProcessor:
                     synthesis_file.write_text(synthesis)
                     print(f"✓ Synthesis complete - {len(synthesis)} characters written")
 
-            # Step 6: Generate summary table
-            print("\n[STEP 6/6] Generating summary table...")
+            # Step 7: Generate summary table
+            print("\n[STEP 7/6] Generating summary table...")
             self._generate_summary_table(extracted_data)
 
             # Final summary
@@ -1594,8 +1680,8 @@ class LitReviewProcessor:
             cache_label='screening decisions'
         )
 
-    def _extract_article_data(self, articles: List[Dict], extraction_file: Path) -> List[Dict]:
-        """Extract article data with caching support"""
+    def _extract_article_data(self, articles: List[Dict], extraction_file: Path, pmc_results: Dict[str, Optional[str]] = None) -> List[Dict]:
+        """Extract article data with caching support and optional PMC full-text"""
         # Load extract fields template
         plan_file = self.workdir / "00_plan.json"
         extract_json = "{}"  # Default empty template
@@ -1613,11 +1699,23 @@ class LitReviewProcessor:
         def process_article(article):
             safe_title = sanitize_api_input(article.get('title', ''))
             safe_abstract = sanitize_api_input(article.get('abstract', ''))
+            
+            # Get PMC full-text if available
+            pmc_fulltext = None
+            if pmc_results and article['pmid'] in pmc_results:
+                pmc_file = pmc_results[article['pmid']]
+                if pmc_file and Path(pmc_file).exists():
+                    try:
+                        pmc_fulltext = Path(pmc_file).read_text(encoding='utf-8')
+                    except Exception as e:
+                        print(f"Error reading PMC file {pmc_file}: {str(e)}")
+            
             prompt = extraction_prompt.format(
                 extract=sanitize_api_input(extract_json),
                 pmid=article['pmid'],
                 title=safe_title,
-                abstract=safe_abstract
+                abstract=safe_abstract,
+                full_text=pmc_fulltext or ""
             )
 
             response_text = ""
