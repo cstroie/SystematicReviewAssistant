@@ -43,9 +43,15 @@ SYNTHESIS:
 
 ARTICLE STRUCTURE (8000-10000 words total):
 
-1. TITLE & ABSTRACT (350 words: ~50 title + 300 abstract)
-   Title: "{title}"
-   
+0. TITLE (~50 words)
+   Title is "{title}"
+   Format as:
+      \\title{{...}}
+      \\date{{...}}
+      \\author{{...}}
+   The use \\maketitle in document
+
+1. ABSTRACT (300 words)
    Abstract must contain:
    - BACKGROUND: Current state of {topic}, clinical need, evidence gap
    - OBJECTIVE: Clear research question being addressed
@@ -246,22 +252,7 @@ ARTICLE STRUCTURE (8000-10000 words total):
    - Statement on limitations and generalizability
    - Final perspective: Why this review matters now
 
-8. DECLARATIONS (300-500 words)
-
-   Funding and Conflicts of Interest:
-   - Funding sources: [Specific grants, agencies, amounts]
-   - Conflict of interest: [None / or specific financial/academic conflicts]
-   - Author contributions: [Specific roles for each author]
-   - Data availability: [Where data/code available, or statement that it's available on request]
-   - Ethical approval: [If applicable to the review process]
-   
-   Format as:
-   \\section{{Funding and Declarations}}
-   \\subsection{{Funding}}
-   [Text]
-   \\subsection{{Conflicts of Interest}}
-   [Text]
-   etc.
+8. REFERENCES (include all extracted articles)
 
 ---
 
@@ -317,7 +308,7 @@ Citations:
 - Numeric style: Use \\cite{{smith2023}} for in-text citations (generates [1], [2], etc.)
 - Multiple citations: \\cite{{smith2023,jones2022,brown2021}}
 - Bibliography: Use \\bibliographystyle{{plainnat}} and \\bibliography{{references}}
-- Do NOT use \\nocite{{*}} (generates unwanted citations)
+- Use \\nocite{{*}} to include ALL articles
 
 Special characters:
 - Escape: \\& for &, \\% for %, \\$ for $, \\# for #, \\_ for _
