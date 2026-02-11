@@ -1619,13 +1619,13 @@ class LaTeXArticleGenerator:
         data_summary = self.get_data_summary()
 
         # Get key study examples
-        study_examples = self._get_key_study_examples()
+        study_examples = self.get_key_study_examples()
 
         # Get high-impact studies
-        high_impact_studies = self._get_high_impact_studies()
+        high_impact_studies = self.get_high_impact_studies()
 
         # Get pattern insights
-        pattern_insights = self._extract_patterns_for_prompt()
+        pattern_insights = self.extract_patterns()
 
         # Format characteristics table as markdown
         characteristics_table = self.format_characteristics_as_markdown()
@@ -1703,7 +1703,7 @@ class LaTeXArticleGenerator:
         except IOError as e:
             raise IOError(f"Error reading prompt template file {prompt_file}: {str(e)}")
 
-    def _get_key_study_examples(self, max_examples: int = 5) -> str:
+    def get_key_study_examples(self, max_examples: int = 5) -> str:
         """Get a few representative study examples for the prompt.
 
         This method selects a subset of studies to provide concrete examples
@@ -1728,7 +1728,7 @@ class LaTeXArticleGenerator:
                 inclusion in the prompt template.
 
         Example:
-            examples = generator._get_key_study_examples(max_examples=3)
+            examples = generator.get_key_study_examples(max_examples=3)
             print(f"Generated examples for {len(examples)} studies")
         """
         extracted = self.data.get('extracted', [])
@@ -1747,29 +1747,30 @@ class LaTeXArticleGenerator:
         examples = sorted_examples[:max_examples]
 
         # Format the examples for the prompt
-        lines = ["KEY STUDY EXAMPLES:", ""]
+        lines = []
         for i, study in enumerate(examples, 1):
-            lines.append(f"Example Study {study.get('pmid', i)}:")
-            lines.append(f"  Title: {study.get('title', 'N/A')}")
-            lines.append(f"  Year: {study.get('year', 'N/A')}")
-            lines.append(f"  Design: {study.get('study_design', 'N/A')}")
-            # FIXME Provied comma-separated list of modalities, not json format
+            title = study.get('title', None)
+            if not title or title == 'N/A':
+                continue
+            lines.append(f"Study: {title}")
+            lines.append(f"Year: {study.get('year', 'N/A')}")
+            lines.append(f"Design: {study.get('study_design', 'N/A')}")
             modalities = study.get('imaging_modality', 'N/A')
             if isinstance(modalities, list):
                 modalities = ', '.join(modalities)
-            lines.append(f"  Modality: {modalities}")
-            lines.append(f"  Domain: {study.get('clinical_domain', 'N/A')}")
-            lines.append(f"  Main findings: {study.get('main_findings', 'N/A')}")
-            lines.append(f"  Clinical implications: {study.get('clinical_implications', 'N/A')}")
+            lines.append(f"Modality: {modalities}")
+            lines.append(f"Domain: {study.get('clinical_domain', 'N/A')}")
+            lines.append(f"Main findings: {study.get('main_findings', 'N/A')}")
+            lines.append(f"Clinical implications: {study.get('clinical_implications', 'N/A')}")
 
             # Sample size
             sample_size = study.get('sample_size', {})
             if isinstance(sample_size, dict):
                 total = sample_size.get('total_patients', None)
                 if total:
-                    lines.append(f"  Sample: {total} patients")
+                    lines.append(f"Sample: {total} patients")
             else:
-                lines.append(f"  Sample: {sample_size}")
+                lines.append(f"Sample: {sample_size}")
 
             # Performance metrics if available
             metrics = study.get('key_metrics', {})
@@ -1778,13 +1779,13 @@ class LaTeXArticleGenerator:
                 spec = metrics.get('specificity')
                 auc = metrics.get('auc')
                 if sens or spec or auc:
-                    lines.append("  Performance:")
+                    lines.append("Performance:")
                     if sens:
-                        lines.append(f"    - Sensitivity: {sens}")
+                        lines.append(f"  - Sensitivity: {sens}")
                     if spec:
-                        lines.append(f"    - Specificity: {spec}")
+                        lines.append(f"  - Specificity: {spec}")
                     if auc:
-                        lines.append(f"    - AUC: {auc}")
+                        lines.append(f"  - AUC: {auc}")
 
             # Add spacing between examples
             lines.append("")
@@ -1792,7 +1793,7 @@ class LaTeXArticleGenerator:
         # Return formatted examples section
         return "\n".join(lines)
 
-    def _get_high_impact_studies(self) -> str:
+    def get_high_impact_studies(self) -> str:
         """Get studies with exceptional results or novel approaches.
 
         This method identifies studies that demonstrate exceptional performance
@@ -1815,7 +1816,7 @@ class LaTeXArticleGenerator:
                 inclusion in the prompt template.
 
         Example:
-            high_impact = generator._get_high_impact_studies()
+            high_impact = generator.get_high_impact_studies()
             print(f"Found {len(high_impact.split('Study:')) - 1} high-impact studies")
         """
         extracted = self.data.get('extracted', [])
@@ -1875,29 +1876,37 @@ class LaTeXArticleGenerator:
             return "No studies with exceptional performance metrics or novel approaches found"
 
         # Format the high-impact studies section
-        lines = ["HIGH-IMPACT STUDIES:", ""]
+        lines = []
         for study, metrics in high_impact[:3]:  # Top 3
-            lines.append(f"Study: {study.get('title', 'N/A')}")
+            title = study.get('title', None)
+            if not title or title == 'N/A':
+                continue
+            lines.append(f"Study: {title}")
             lines.append(f"Year: {study.get('year', 'N/A')}")
             lines.append(f"Design: {study.get('study_design', 'N/A')}")
             # Highlight novel approaches or exceptional metrics
             if isinstance(metrics, dict) and 'novel_approach' in metrics:
                 lines.append(f"Innovation: Novel approach detected")
-                lines.append(f"Key Finding: {study.get('main_findings', 'N/A')}")
+                lines.append(f"Main finding: {study.get('main_findings', 'N/A')}")
             else:
                 lines.append("Performance:")
-                if 'sensitivity' in metrics:
-                    lines.append(f"  - Sensitivity: {metrics.get('sensitivity', 'N/A')}")
-                if 'specificity' in metrics:
-                    lines.append(f"  - Specificity: {metrics.get('specificity', 'N/A')}")
-                if 'auc' in metrics:
-                    lines.append(f"  - AUC: {metrics.get('auc', 'N/A')}")
+                sensitivity = metrics.get('sensitivity', None)
+                specificity = metrics.get('specificity', None)
+                auc = metrics.get('auc', None)
+                if sensitivity is not None and sensitivity != 'N/A':
+                    lines.append(f"  - Sensitivity: {sensitivity}")
+                if specificity is not None and specificity != 'N/A':
+                    lines.append(f"  - Specificity: {specificity}")
+                if auc is not None and auc != 'N/A':
+                    lines.append(f"  - AUC: {auc}")
+
             # Add spacing between studies
             lines.append("")
+
         # Return formatted high-impact studies section
         return "\n".join(lines)
 
-    def _extract_patterns_for_prompt(self) -> str:
+    def extract_patterns(self) -> str:
         """Extract key patterns from extracted data for prompt inclusion.
 
         This method analyzes the extracted study data to identify patterns
@@ -1919,7 +1928,7 @@ class LaTeXArticleGenerator:
                 inclusion in the prompt template.
 
         Example:
-            patterns = generator._extract_patterns_for_prompt()
+            patterns = generator.extract_patterns()
             print(f"Identified patterns across {len(patterns.split('STUDY DESIGNS:'))} categories")
         """
         extracted = self.data.get('extracted', [])
@@ -1931,7 +1940,7 @@ class LaTeXArticleGenerator:
         # Extract key findings patterns
         all_findings = []
         for study in extracted:
-            findings = study.get('key_findings', '')
+            findings = study.get('main_findings', '')
             if findings and findings != 'N/A':
                 all_findings.append(findings.lower())
 
@@ -1954,7 +1963,6 @@ class LaTeXArticleGenerator:
                     patterns.append(f"  - '{word}' appears in {count} studies")
 
         # Extract methodology insights
-        designs = {}
         modalities = {}
         domains = {}
 
@@ -1962,9 +1970,6 @@ class LaTeXArticleGenerator:
             # Use the improved characteristics data structure
             basic_info = study.get('basic_info', {})
             methodology = study.get('methodology', {})
-
-            design = methodology.get('study_design', basic_info.get('study_design', study.get('study_design', 'Unknown')))
-            designs[design] = designs.get(design, 0) + 1
 
             modality = methodology.get('imaging_modality', basic_info.get('imaging_modality', study.get('imaging_modality', 'Unknown')))
             if isinstance(modality, list):
@@ -1976,18 +1981,15 @@ class LaTeXArticleGenerator:
             domain = basic_info.get('clinical_domain', study.get('clinical_domain', 'Unknown'))
             domains[domain] = domains.get(domain, 0) + 1
 
-        patterns.append("\nMETHODOLOGY INSIGHTS:")
-        patterns.append("  Study designs:")
-        for design, count in sorted(designs.items(), key=lambda x: x[1], reverse=True):
-            patterns.append(f"    - {design}: {count} studies")
-
-        patterns.append("  Imaging modalities:")
+        patterns.append("IMAGING MODALITIES:")
         for mod, count in sorted(modalities.items(), key=lambda x: x[1], reverse=True):
             patterns.append(f"    - {mod}: {count} studies")
+        patterns.append("")
 
-        patterns.append("  Clinical domains:")
+        patterns.append("CLINICAL DOMAINS:")
         for domain, count in sorted(domains.items(), key=lambda x: x[1], reverse=True):
-            patterns.append(f"    - {domain}: {count} studies")
+            patterns.append(f"  - {domain}: {count} studies")
+        patterns.append("")
 
         return "\n".join(patterns)
 
@@ -2036,7 +2038,7 @@ class LaTeXArticleGenerator:
                 headers = reader.fieldnames or []
 
                 # Create markdown table
-                lines = ["CHARACTERISTICS TABLE:", ""]
+                lines = []
 
                 # Add table header
                 lines.append("| " + " | ".join(headers) + " |")
@@ -2152,48 +2154,44 @@ class LaTeXArticleGenerator:
         lines.append("STUDY STATISTICS:")
         lines.append(f"  - Total studies: {stats.get('total_studies', 0)}")
         lines.append(f"  - Year range: {stats.get('year_range', 'N/A')}")
+        lines.append("")
 
-        lines.append("  Modalities studied:")
-        for mod, count in stats.get('modalities', {}).items():
-            lines.append(f"    - {mod}: {count}")
-
-        lines.append("  Clinical domains:")
-        for domain, count in stats.get('domains', {}).items():
-            lines.append(f"    - {domain}: {count}")
-
-        lines.append("  Study designs:")
+        lines.append("STUDY DESIGNS:")
         for design, count in stats.get('study_designs', {}).items():
-            lines.append(f"    - {design}: {count}")
+            lines.append(f"  - {design}: {count}")
+        lines.append("")
 
         # Sample sizes
         sample_stats = stats.get('sample_sizes', {})
-        lines.append("  Sample sizes:")
-        lines.append(f"    - Median: {sample_stats.get('median', 'N/A')}")
-        lines.append(f"    - Range: {sample_stats.get('range', 'N/A')}")
+        if sample_stats:
+            lines.append("SAMPLE SIZES:")
+            lines.append(f"  - Median: {sample_stats.get('median', 'N/A')}")
+            lines.append(f"  - Range: {sample_stats.get('range', 'N/A')}")
+            lines.append("")
 
         # Performance metrics
         perf = stats.get('performance_metrics', {})
-        lines.append("  Performance metrics:")
-        if perf.get('sensitivity'):
-            lines.append(f"    - Sensitivity: {perf['sensitivity']}")
-        if perf.get('specificity'):
-            lines.append(f"    - Specificity: {perf['specificity']}")
-        if perf.get('auc'):
-            lines.append(f"    - AUC: {perf['auc']}")
-
-        lines.append("")
+        if perf:
+            lines.append("PERFORMANCE METRICS:")
+            if perf.get('sensitivity'):
+                lines.append(f"  - Sensitivity: {perf['sensitivity']}")
+            if perf.get('specificity'):
+                lines.append(f"  - Specificity: {perf['specificity']}")
+            if perf.get('auc'):
+                lines.append(f"  - AUC: {perf['auc']}")
+            lines.append("")
 
         # Quality assessment
-        lines.append("QUALITY ASSESSMENT SUMMARY:")
         quality = self.data.get('quality', [])
         if quality:
+            lines.append("QUALITY ASSESSMENT SUMMARY:")
             low_risk = sum(1 for q in quality if q.get('overall_bias') == 'Low')
             mod_risk = sum(1 for q in quality if q.get('overall_bias') == 'Moderate')
             high_risk = sum(1 for q in quality if q.get('overall_bias') == 'High')
             lines.append(f"  - Low risk: {low_risk} ({100*low_risk//len(quality)}%)")
             lines.append(f"  - Moderate risk: {mod_risk} ({100*mod_risk//len(quality)}%)")
             lines.append(f"  - High risk: {high_risk} ({100*high_risk//len(quality)}%)")
-        lines.append("")
+            lines.append("")
 
         return "\n".join(lines)
 

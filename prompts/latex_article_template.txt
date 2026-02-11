@@ -11,11 +11,17 @@ DATA SUMMARY:
 
 {data_summary}
 
+KEY STUDY EXAMPLES:
+
 {study_examples}
+
+HIGH-IMPACT STUDIES:
 
 {high_impact_studies}
 
 {pattern_insights}
+
+CHARACTERISTICS TABLE:
 
 {characteristics_table}
 
