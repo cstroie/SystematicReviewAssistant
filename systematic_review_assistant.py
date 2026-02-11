@@ -568,16 +568,19 @@ class DirectAPIClient:
 
         self.request_times.append(time.time())
 
-    def call(self, prompt: str, max_retries: int = 3) -> str:
+    def call(self, prompt: str, max_retries: int = 3, stream: bool = False, temperature: float = 0.8, output_file: Optional[Path] = None) -> str:
         """
         Call LLM API with direct HTTP request and retry logic
 
         Args:
             prompt: Input text to send to LLM
             max_retries: Number of retry attempts on failure
+            stream: Whether to enable streaming mode
+            temperature: Temperature parameter for LLM generation
+            output_file: Optional file path to write streaming output to
 
         Returns:
-            Validated and sanitized model response text
+            Validated and sanitized model response text (empty if streaming to file)
 
         Raises:
             ValueError: On persistent API failures or security issues
@@ -592,8 +595,16 @@ class DirectAPIClient:
         # Prepare request with types
         headers_dict = self.headers_fn(self.api_key, self.model)
         headers = {str(k): str(v) for k,v in headers_dict.items()}
+        
+        # Add temperature to body if supported
         body = self.body_fn(prompt, self.model)
-        body_json = json.dumps(body).encode('utf-8')
+        if hasattr(body, '__setitem__'):  # Check if body is mutable
+            body['temperature'] = temperature
+            if stream:
+                body['stream'] = stream
+            body_json = json.dumps(body).encode('utf-8')
+        else:
+            body_json = json.dumps(body).encode('utf-8')
 
         # Retry loop
         for attempt in range(max_retries):
@@ -609,18 +620,59 @@ class DirectAPIClient:
                     method='POST'
                 )
 
-                # Make request
-                with urllib.request.urlopen(req, timeout=self.timeout) as response:
-                    response_data = json.loads(response.read().decode('utf-8'))
-                    result = self.response_fn(response_data)
+                if stream:
+                    # Handle streaming response
+                    response = urllib.request.urlopen(req, timeout=self.timeout)
+                    full_response = ""
 
-                    if not result:
-                        raise ValueError("Empty response from API")
+                    # Open output file if provided
+                    file_handle = None
+                    if output_file:
+                        output_file.parent.mkdir(parents=True, exist_ok=True)
+                        file_handle = open(output_file, 'w', encoding='utf-8')
 
-                    # Validate and sanitize response for security
-                    validated_result = self.validate_api_response(result)
+                    try:
+                        for line in response:
+                            data_str = line.decode('utf-8').strip()
+                            if data_str.startswith('data: '):
+                                data_str = data_str[6:]
+                                try:
+                                    chunk_data = json.loads(data_str)
+                                    if "choices" in chunk_data and len(chunk_data["choices"]) > 0:
+                                        delta = chunk_data["choices"][0].get("delta", {})
+                                        if "content" in delta:
+                                            content = delta["content"]
+                                            full_response += content
 
-                    return validated_result
+                                            # Write to file and optionally print
+                                            if file_handle:
+                                                file_handle.write(content)
+                                                # Only flush if content contains a newline
+                                                if '\n' in content:
+                                                    file_handle.flush()
+                                            if self.verbose:
+                                                print(content, end="", flush=True)
+                                except json.JSONDecodeError:
+                                    # Skip invalid JSON lines
+                                    pass
+                    finally:
+                        if file_handle:
+                            file_handle.close()
+
+                    return full_response
+                else:
+                    # Handle non-streaming response
+                    with urllib.request.urlopen(req, timeout=self.timeout) as response:
+                        response_data = json.loads(response.read().decode('utf-8'))
+                        result = self.response_fn(response_data)
+
+                        if not result:
+                            raise ValueError("Empty response from API")
+
+                        # Validate and sanitize response for security
+                        validated_result = self.validate_api_response(result)
+
+                        return validated_result
 
             except urllib.error.HTTPError as e:
                 error_body = e.read().decode('utf-8')
@@ -1271,8 +1323,13 @@ class LitReviewProcessor:
         except IOError as e:
             raise ValueError(f"Failed to load prompt '{name}': {str(e)}") from e
 
-    def run_complete_pipeline(self, pubmed_file: str):
-        """Execute the complete workflow from CSV to synthesis"""
+    def run_complete_pipeline(self, pubmed_file: str, stream: bool = False):
+        """Execute the complete workflow from CSV to synthesis
+        
+        Args:
+            pubmed_file: Path to PubMed export file
+            stream: Whether to enable streaming mode for synthesis
+        """
 
         print("="*70)
         print("LITERATURE REVIEW PROCESSING PIPELINE")
@@ -1348,9 +1405,12 @@ class LitReviewProcessor:
                 print(f"✓ Loaded {len(synthesis)} characters from existing file")
             else:
                 print("\n[STEP 5/6] Performing thematic synthesis...")
-                synthesis = self._perform_synthesis(extracted_data)
-                synthesis_file.write_text(synthesis)
-                print(f"✓ Synthesis complete - {len(synthesis)} characters written")
+                synthesis = self._perform_synthesis(extracted_data, stream=stream, output_file=synthesis_file)
+                if not synthesis:  # Empty when streaming to file
+                    print(f"✓ Synthesis complete - streamed to {synthesis_file}")
+                else:
+                    synthesis_file.write_text(synthesis)
+                    print(f"✓ Synthesis complete - {len(synthesis)} characters written")
 
             # Step 6: Generate summary table
             print("\n[STEP 6/6] Generating summary table...")
@@ -1443,7 +1503,6 @@ class LitReviewProcessor:
         screening = plan.get('screening', {})
         inclusion = screening.get('inclusion', [])
         exclusion = screening.get('exclusion', [])
-        quality_tool = plan.get('quality', 'quadas2').lower()
 
         if not inclusion:
             raise ValueError("Screening criteria missing inclusion list in topic file")
@@ -1465,7 +1524,7 @@ class LitReviewProcessor:
                 topic=sanitize_api_input(topic),
                 inclusion=sanitize_api_input(inclusion_str),
                 exclusion=sanitize_api_input(exclusion_str),
-                pmid=article['pmid'],  # PMID is numeric so safe
+                pmid=article['pmid'],
                 title=safe_title,
                 abstract=safe_abstract
             )
@@ -1476,13 +1535,7 @@ class LitReviewProcessor:
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Screening failed for PMID {article['pmid']}: {sanitized_err}")
-                return {
-                    'pmid': article['pmid'],
-                    'decision': 'UNCERTAIN',
-                    'confidence': 0.0,
-                    'reasoning': f'Processing error: {sanitized_err[:100]}',
-                    'key_terms': []
-                }
+                return None
 
             try:
                 # Attempt multiple JSON extraction patterns
@@ -1525,7 +1578,6 @@ class LitReviewProcessor:
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Screening error for PMID {article['pmid']}: {sanitized_err}")
-                print(f"Response snippet: {response_text[:300]}")
                 return {
                     'pmid': article['pmid'],
                     'decision': 'UNCERTAIN',
@@ -1574,12 +1626,7 @@ class LitReviewProcessor:
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}")
-                print(f"Response snippet: {response_text[:300]}")
-                return {
-                    'pmid': article['pmid'],
-                    'title': article['title'],
-                    'extraction_error': sanitized_err[:200]
-                }
+                return None
 
             try:
                 # Attempt multiple JSON extraction patterns
@@ -1619,12 +1666,7 @@ class LitReviewProcessor:
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Extraction failed for PMID {article['pmid']}: {sanitized_err}")
-                print(f"Response snippet: {response_text[:300]}")
-                return {
-                    'pmid': article['pmid'],
-                    'title': article['title'],
-                    'extraction_error': sanitized_err[:200]
-                }
+                return None
 
         return self._process_with_caching(
             cache_file=extraction_file,
@@ -1658,7 +1700,12 @@ class LitReviewProcessor:
             response_text = ""
             try:
                 response_text = self.llm.call(prompt)
+            except Exception as e:
+                sanitized_err = sanitize_error_message(str(e))
+                print(f"Quality assessment failed for PMID {article['pmid']}: {sanitized_err}")
+                return None
                 
+            try:
                 # Attempt multiple JSON extraction patterns
                 json_match = re.search(r'```json\s*({.*?})\s*```', response_text, re.DOTALL)
                 if not json_match:
@@ -1677,11 +1724,7 @@ class LitReviewProcessor:
             except Exception as e:
                 sanitized_err = sanitize_error_message(str(e))
                 print(f"Quality assessment failed for PMID {article['pmid']}: {sanitized_err}")
-                print(f"Response snippet: {response_text[:300]}")
-                return {
-                    'pmid': article['pmid'],
-                    'assessment_error': sanitized_err[:200]
-                }
+                return None
 
         return self._process_with_caching(
             cache_file=quality_file,
@@ -1691,8 +1734,17 @@ class LitReviewProcessor:
             cache_label='quality assessments'
         )
 
-    def _perform_synthesis(self, extracted_data: List[Dict]) -> str:
-        """Perform thematic synthesis and identify patterns"""
+    def _perform_synthesis(self, extracted_data: List[Dict], stream: bool = False, output_file: Optional[Path] = None) -> str:
+        """Perform thematic synthesis and identify patterns with optional streaming support
+
+        Args:
+            extracted_data: List of extracted study data
+            stream: Whether to enable streaming mode
+            output_file: Optional file path to write streaming output to
+
+        Returns:
+            Synthesis text (empty if streaming to file)
+        """
 
         # Load review topic from metadata
         plan_file = self.workdir / "00_plan.json"
@@ -1735,9 +1787,16 @@ class LitReviewProcessor:
         )
 
         try:
-            response_text = self.llm.call(synthesis_prompt)
-            synthesis_text = response_text.strip()
-            return synthesis_text
+            if stream:
+                # Call LLM API with streaming to file
+                synthesis_text = self.llm.call(synthesis_prompt, stream=stream, output_file=output_file)
+                # Response is empty when streaming to file
+                return ""
+            else:
+                # Call LLM API normally
+                response_text = self.llm.call(synthesis_prompt)
+                synthesis_text = response_text.strip()
+                return synthesis_text
 
         except Exception as e:
             sanitized_err = sanitize_error_message(str(e))
@@ -1880,7 +1939,8 @@ class LitReviewProcessor:
 
         for i, item in enumerate(new_items):
             result = process_fn(item)
-            results.append(result)
+            if result:
+                results.append(result)
 
             # Save periodically
             if (i + 1) % 10 == 0 or i == total_new - 1:
@@ -1943,6 +2003,7 @@ Supported Providers:
     parser.add_argument('--plan', help='Free-text research topic description (generates PubMed query and metadata)')
     parser.add_argument('--download', action='store_true', help='Download PubMed articles matching query in file')
     parser.add_argument('--preprints', action='store_true', help='Download preprints from medRxiv and bioRxiv using query from 00_plan.json')
+    parser.add_argument('--stream', action='store_true', help='Enable streaming mode for synthesis generation')
     parser.add_argument('--provider', choices=list(API_CONFIGS.keys()),
                        default='openrouter', help='LLM provider')
     parser.add_argument('--model', help='Model name (uses provider default if not specified)')
@@ -2081,6 +2142,10 @@ def main():
             api_url=args.api_url,
             api_key=args.api_key
         )
+        
+        # Set verbose flag for streaming output
+        if hasattr(args, 'stream') and args.stream:
+            llm_client.verbose = True
 
         # Generate plan components if plan description provided
         workdir = Path(args.workdir)
@@ -2102,7 +2167,7 @@ def main():
             log_verbose=not args.quiet
         )
         input_path = Path(args.workdir) / "pubmed.txt"
-        processor.run_complete_pipeline(str(input_path))
+        processor.run_complete_pipeline(str(input_path), stream=args.stream)
 
     except APIKeyError as e:
         print("\n" + "="*70)

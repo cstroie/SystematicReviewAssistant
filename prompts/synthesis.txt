@@ -1,58 +1,117 @@
-You are writing a thematic synthesis section for a systematic review on 
-"{topic}".
+You are writing a comprehensive thematic synthesis section for a systematic review on:
+"{topic}"
 
-We have analyzed {total_studies} studies. Here's a sample of the extracted data:
+CONTEXT:
+- Total studies analyzed: {total_studies}
+- Quality assessment tool: {quality_tool}
+- Analysis plan: {analysis_points}
 
+DATA SAMPLE (representative subset):
 {data_sample}
 
-Based on this analysis and typical patterns in this field, provide a comprehensive synthesis with these sections:
+CRITICAL PRINCIPLES FOR SYNTHESIS:
+1. Ground all statements in the provided data sample. Do NOT invent findings or patterns not evident in the data.
+2. Distinguish between:
+   - What is REPORTED in studies (e.g., "X% of studies reported Y")
+   - What you INFER from patterns (e.g., "Studies with larger samples tended to report...")
+   - What is HYPOTHESIZED for explanation (e.g., "This discrepancy may be due to...")
+3. For conflicting findings, explain the conflict rather than ignoring it.
+4. Use precise language: "Most" = 70%+, "Many" = 50-70%, "Some" = 25-50%, "Few" = <25%
+5. When meta-analysis is possible but heterogeneity is high (I² >75%), discuss both pooled estimate AND reasons for heterogeneity.
+
+WRITE THESE SECTIONS:
 
 1. STUDY CHARACTERISTICS
-   - Range of years, study designs, sample sizes
-   - Imaging modalities covered
-   - Clinical domains studied
+   Describe the sample:
+   - Temporal range (earliest to latest publication year)
+   - Study designs included (counts: N RCTs, N retrospective, etc.)
+   - Sample size range (min-max total patients, min-max total images if applicable)
+   - Imaging modalities (list all, note if dominated by one type)
+   - Clinical domains (list applications covered, note any gaps or concentration)
+   - Geographic/institutional spread if relevant
 
-2. DATA SYNTHESIS METHODS
-   - Describe the synthesis approach (narrative, statistical, or mixed)
-   - If statistical synthesis was performed, detail the meta-analysis methods:
-     * Statistical models used (fixed-effect, random-effects)
-     * Heterogeneity assessment (I² statistic, Cochran's Q test)
-     * Methods for investigating sources of bias across studies
-     * Sensitivity analyses performed
-   - If narrative synthesis was used, describe the thematic analysis approach
+2. DATA SYNTHESIS APPROACH
+   Explain your synthesis decision logic:
+   - Is meta-analysis appropriate? (Check: Are metrics comparable? Is heterogeneity manageable?)
+     * If YES → Describe statistical synthesis method (fixed/random effects, heterogeneity testing)
+     * If NO → Explain why (e.g., "Heterogeneous outcomes, study designs, or metric reporting")
+   - For quantitative synthesis: Report I², Cochran's Q, methods for addressing heterogeneity
+   - For narrative synthesis: Describe thematic grouping approach
+   - If mixed: Explain which analyses are statistical vs. narrative
 
-3. ANALYSIS
-{analysis_points}
+3. ANALYSIS SYNTHESIS
+   Using the analysis plan points:
+   {analysis_points}
+   
+   For each analysis point:
+   - Synthesize findings across studies
+   - Quantify patterns where possible ("X of Y studies found...")
+   - Highlight convergence and divergence
+   - Explain contradictions (methodological differences? study quality? real heterogeneity?)
 
-4. CLINICAL PERFORMANCE
-   - Range of reported metrics (sensitivity, specificity, AUC)
-   - Best and worst performing systems
+4. PERFORMANCE METRICS
+   Present reported outcomes systematically:
+   - Sensitivity: range (min-max), median, distribution across studies
+   - Specificity: range (min-max), median, distribution across studies
+   - AUC (if reported): range, median, number of studies reporting
+   - Accuracy: range, median, any patterns by study type/domain
+   
+   Stratification (if data permits):
    - Performance by clinical domain
+   - Performance by imaging modality
+   - Performance trends by publication year (if evident)
+   
+   Interpretation:
+   - Best performing systems (cite studies, describe characteristics)
+   - Worst performing systems (cite studies, explain limitations)
+   - Are high performers using similar methods? Do they share quality features?
 
-5. THEMATIC ANALYSIS
-   - Common themes across studies
-   - Key findings and consistencies
-   - Important variations and contradictions
+5. THEMATIC FINDINGS
+   Synthesize key themes:
+   - What are the main conclusions across studies?
+   - Are findings consistent? If not, why? (Study quality? Methodology? Real heterogeneity?)
+   - Key implications from converging evidence
+   - Important caveats from divergent findings
+   - Unexpected or counterintuitive findings
 
-6. EVIDENCE QUALITY ASSESSMENT
-   - Confidence in the body of evidence using {quality_tool} framework
-   - Key factors influencing confidence (risk of bias, inconsistency, indirectness, imprecision)
-   - Assessment of publication bias (funnel plots, Egger's test if applicable)
+6. EVIDENCE QUALITY AND CONFIDENCE
+   Using {quality_tool} framework:
+   - Overall confidence rating (High/Moderate/Low/Very Low)
+   - For each quality domain, explain factors:
+     * Risk of bias: Common issues across studies? Any low-bias studies?
+     * Inconsistency: I² values? Do results point same direction?
+     * Indirectness: Are study populations/interventions close to clinical question?
+     * Imprecision: Are confidence intervals wide? Sample sizes adequate?
 
-7. METHODOLOGICAL ASSESSMENT  
-   - Common strengths
-   - Prevalent limitations
-   - Quality trends
+7. METHODOLOGICAL QUALITY TRENDS
+   - Common strengths (what do well-conducted studies do?)
+   - Prevalent limitations (what issues appear across studies?)
+   - Quality trends over time (improving? static?)
+   - Any quality patterns by domain or modality?
 
-8. CLINICAL IMPLICATIONS
-   - Evidence for clinical implementation
-   - Adoption barriers
-   - Impact on clinical workflows
+8. CLINICAL APPLICABILITY
+   - Current evidence for clinical implementation (what does body of evidence support?)
+   - Implementation barriers (cost, technical requirements, workflow integration?)
+   - Evidence gaps for clinical deployment (what would change practice?)
+   - Relevant context from lower-confidence evidence (pilot studies, feasibility work)
 
-9. RESEARCH GAPS AND RECOMMENDATIONS
-   - Underrepresented clinical domains
-   - Methodological gaps
-   - Recommendations for future research
+9. RESEARCH GAPS AND FUTURE DIRECTIONS
+   - Clinical domains underrepresented (which applications have few studies?)
+   - Methodological gaps (standardization issues? study design gaps?)
+   - Emerging approaches (new methods, modalities, applications?)
+   - Recommendations for future research based on identified gaps
 
-Write in clear, structured prose suitable for a systematic review report. Use concrete examples 
-from the studies where possible.
+PRESENTATION:
+- Write in clear markdown-formatted prose suitable for peer-reviewed publication.
+- Use concrete examples: cite PMIDs, specific findings from studies
+- Quantify patterns: "X of Y studies (Z%)" rather than vague language
+- Explain contradictions rather than averaging them away
+- Connect synthesis to your analysis plan - don't treat it as separate
+
+OUTPUT FORMAT:
+Return as a markdown document with proper heading hierarchy:
+- # for main title
+- ## for each section (STUDY CHARACTERISTICS, DATA SYNTHESIS, etc.)
+- ### for subsections where needed
+Use **bold** for key findings, *italics* for caveats, `code` for metrics.
+Cite studies as [PMID: 35234521].
